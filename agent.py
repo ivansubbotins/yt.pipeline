@@ -11,6 +11,8 @@ Usage:
   python agent.py shot-done <project_id>        Mark shooting as done
   python agent.py edit-done <project_id> [file] Mark editing as done
   python agent.py publish <project_id> --approve Publish (requires approval)
+                   [--schedule ISO8601] [--playlist ID] [--category ID]
+  python agent.py playlists                     List channel playlists
   python agent.py auth                          Authenticate with YouTube
 """
 
@@ -160,16 +162,53 @@ def cmd_publish(args):
     if not args.approve:
         print("Публикация требует утверждения Иваном.")
         print(f"Добавьте --approve: python agent.py publish {args.project_id} --approve")
+        print()
+        print("Дополнительные опции:")
+        print(f"  --schedule '2026-03-15T14:00:00Z'  Запланировать публикацию")
+        print(f"  --playlist <playlist_id>            Добавить в плейлист")
+        print(f"  --category <category_id>            ID категории YouTube")
         return
 
     pipe = Pipeline(args.project_id)
-    result = pipe.publish(approved=True)
+    result = pipe.publish(
+        approved=True,
+        schedule=args.schedule,
+        playlist_id=args.playlist,
+        category_id=args.category,
+    )
 
     if result.get("status") == "blocked":
         print(result["message"])
     else:
-        print(f"Видео загружено (private): {result.get('url', '—')}")
-        print("Для публикации измените статус видео в YouTube Studio.")
+        print(f"Видео загружено: {result.get('url', '—')}")
+        print(f"  Заголовок: {result.get('title', '—')}")
+        print(f"  Теги: {len(result.get('tags', []))} шт.")
+        print(f"  Категория: {result.get('category_id', '—')}")
+        print(f"  Обложка: {'да' if result.get('has_thumbnail') else 'нет'}")
+        print(f"  Описание: {'да' if result.get('has_description') else 'нет'}")
+
+        if result.get("publish_at"):
+            print(f"  Запланировано: {result['publish_at']}")
+        else:
+            print("  Статус: private (измените в YouTube Studio или запланируйте)")
+
+        if result.get("playlist_id"):
+            print(f"  Плейлист: {result['playlist_id']}")
+        if result.get("playlist_error"):
+            print(f"  Ошибка плейлиста: {result['playlist_error']}")
+
+
+def cmd_playlists(_args):
+    yt = YouTubeAPI()
+    playlists = yt.get_playlists()
+    if not playlists:
+        print("Плейлисты не найдены.")
+        return
+
+    print(f"Плейлисты ({len(playlists)}):")
+    for p in playlists:
+        desc = f" — {p['description']}" if p["description"] else ""
+        print(f"  {p['id']}: {p['title']}{desc}")
 
 
 def cmd_auth(_args):
@@ -226,6 +265,12 @@ def main():
     p_pub = subparsers.add_parser("publish", help="Опубликовать видео")
     p_pub.add_argument("project_id", help="ID проекта")
     p_pub.add_argument("--approve", action="store_true", help="Подтвердить публикацию")
+    p_pub.add_argument("--schedule", default=None, help="Дата публикации (ISO 8601, напр. 2026-03-15T14:00:00Z)")
+    p_pub.add_argument("--playlist", default=None, help="ID плейлиста YouTube")
+    p_pub.add_argument("--category", default=None, help="ID категории YouTube (напр. 27=Education)")
+
+    # playlists
+    subparsers.add_parser("playlists", help="Список плейлистов канала")
 
     # auth
     subparsers.add_parser("auth", help="Авторизация YouTube API")
@@ -248,6 +293,7 @@ def main():
         "shot-done": cmd_shot_done,
         "edit-done": cmd_edit_done,
         "publish": cmd_publish,
+        "playlists": cmd_playlists,
         "auth": cmd_auth,
     }
 

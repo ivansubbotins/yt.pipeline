@@ -180,6 +180,38 @@ class YouTubeAPI:
         self.service.videos().update(part="status", body=body).execute()
         logger.info(f"Video {video_id} set to public")
 
+    def add_to_playlist(self, playlist_id: str, video_id: str) -> dict:
+        """Add a video to a playlist."""
+        body = {
+            "snippet": {
+                "playlistId": playlist_id,
+                "resourceId": {
+                    "kind": "youtube#video",
+                    "videoId": video_id,
+                },
+            },
+        }
+        result = self.service.playlistItems().insert(part="snippet", body=body).execute()
+        logger.info(f"Video {video_id} added to playlist {playlist_id}")
+        return result
+
+    def get_playlists(self, max_results: int = 25) -> list[dict]:
+        """Get playlists for the authenticated channel."""
+        result = self.service.playlists().list(
+            part="snippet",
+            mine=True,
+            maxResults=max_results,
+        ).execute()
+
+        playlists = []
+        for item in result.get("items", []):
+            playlists.append({
+                "id": item["id"],
+                "title": item["snippet"]["title"],
+                "description": item["snippet"].get("description", ""),
+            })
+        return playlists
+
     def get_channel_info(self) -> dict:
         """Get authenticated user's channel info."""
         result = self.service.channels().list(part="snippet,statistics", mine=True).execute()

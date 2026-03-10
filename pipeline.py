@@ -99,10 +99,35 @@ class Pipeline:
         self.state._save()
         logger.info("Editing marked as done. Ready for publication approval.")
 
-    def publish(self, approved: bool = False) -> dict:
-        """Publish video (only if approved by Ivan)."""
+    def publish(
+        self,
+        approved: bool = False,
+        schedule: str | None = None,
+        playlist_id: str | None = None,
+        category_id: str | None = None,
+    ) -> dict:
+        """Publish video (only if approved by Ivan).
+
+        Args:
+            approved: Must be True — Ivan's explicit approval.
+            schedule: ISO 8601 datetime for scheduled publishing (e.g. '2026-03-15T14:00:00Z').
+            playlist_id: YouTube playlist ID to add the video to.
+            category_id: YouTube category ID override.
+        """
         if not approved:
             return {"status": "blocked", "message": "Публикация требует утверждения Иваном. Используйте --approve."}
+
+        # Pre-set publish parameters so the step can pick them up
+        publish_params = {}
+        if schedule:
+            publish_params["publish_at"] = schedule
+        if playlist_id:
+            publish_params["playlist_id"] = playlist_id
+        if category_id:
+            publish_params["category_id"] = category_id
+        if publish_params:
+            for key, value in publish_params.items():
+                self.state.update_step_data("publish", key, value)
 
         self.state.mark_approved("publish")
         result = self.run_step("publish")
