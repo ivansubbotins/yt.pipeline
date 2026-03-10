@@ -130,10 +130,17 @@ class Pipeline:
         # Script summary
         script = self.state.get_step("script").get("data", {})
         if script:
-            scenes = script.get("scenes", [])
-            lines.append(f"🎬 СЦЕНАРИЙ: {len(scenes)} сцен")
-            for s in scenes:
-                lines.append(f"   {s.get('scene_number', '?')}. {s.get('name', '—')} ({s.get('duration_seconds', 0)}s)")
+            blocks = script.get("blocks", script.get("scenes", []))
+            lines.append(f"🎬 СЦЕНАРИЙ: {len(blocks)} блоков, ~{script.get('total_duration_minutes', '?')} мин")
+            for b in blocks:
+                num = b.get("block_number", b.get("scene_number", "?"))
+                name = b.get("name", "—")
+                ts = b.get("timestamp_start", "")
+                dur = b.get("duration_seconds", 0)
+                btype = b.get("block_type", b.get("type", ""))
+                lines.append(f"   {num}. [{ts}] {name} ({dur}s) [{btype}]")
+            if script.get("climax_setup"):
+                lines.append(f"   🎯 Кульминация: {script['climax_setup']}")
             lines.append("")
 
         # Teleprompter

@@ -10,25 +10,40 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """Ты — профессиональный сценарист YouTube-видео.
 Напиши полный скелет сценария для длинного видео (10+ минут).
 
+Скелет ОБЯЗАТЕЛЬНО содержит следующие структурные блоки:
+1. ХУК (первые 30 секунд) — мощная зацепка, провокационный вопрос или шок-факт
+2. ИНТРО (15-30 сек) — представление темы и обещание ценности
+3. ОСНОВНЫЕ БЛОКИ (3-5 блоков по 2-4 минуты) — раскрытие темы по частям
+4. КУЛЬМИНАЦИЯ (1-2 минуты) — главный инсайт, «ага-момент»
+5. CTA + АУТРО (30-60 сек) — призыв к действию и завершение
+
+Между каждым блоком укажи тип перехода (transition).
+В каждом основном блоке укажи retention-хук для удержания зрителя.
+
 Ответ ВСЕГДА в формате JSON (без markdown-блоков):
 {
   "title": "заголовок",
   "total_duration_minutes": 12,
-  "scenes": [
+  "blocks": [
     {
-      "scene_number": 1,
-      "name": "Хук / Интро",
+      "block_number": 1,
+      "block_type": "hook | intro | main | climax | cta_outro",
+      "name": "название блока",
+      "timestamp_start": "0:00",
       "duration_seconds": 30,
-      "type": "talking_head | b_roll | screen_record | mixed",
+      "format": "talking_head | b_roll | screen_record | mixed",
       "talking_points": ["пункт 1", "пункт 2"],
+      "key_phrase": "ключевая фраза, которую ведущий должен произнести",
       "visual_direction": "описание того, что на экране",
       "audio_notes": "музыка, звуковые эффекты",
-      "transition": "тип перехода к следующей сцене"
+      "retention_hook": "хук удержания (для основных блоков)",
+      "transition_to_next": "тип и описание перехода к следующему блоку"
     }
   ],
   "key_messages": ["ключевое сообщение 1", "ключевое сообщение 2"],
   "tone": "описание тона видео",
-  "pacing_notes": "заметки по темпу"
+  "pacing_notes": "заметки по темпу — где ускориться, где замедлиться",
+  "climax_setup": "как основные блоки подводят к кульминации"
 }"""
 
 
@@ -55,10 +70,15 @@ class ScriptStep(BaseStep):
 
 Требования:
 - Минимум 10 минут хронометража
-- Конкретные talking points для каждой сцены
+- Обязательные блоки: хук (30 сек), интро, 3-5 основных блоков, кульминация, CTA+аутро
+- Тайминг (timestamp_start) и длительность (duration_seconds) для КАЖДОГО блока
+- Ключевые переходы (transition_to_next) между блоками
+- Конкретные talking points для каждого блока
+- Retention-хук в каждом основном блоке
+- Ключевая фраза (key_phrase) — дословно что произнести
 - Визуальные указания для оператора/монтажёра
-- Retention-хуки через каждые 2-3 минуты
-- Естественный, разговорный тон"""
+- Естественный, разговорный тон
+- Кульминация должна быть логическим итогом основных блоков"""
 
         response = self.ask_claude(SYSTEM_PROMPT, prompt)
 
@@ -72,6 +92,15 @@ class ScriptStep(BaseStep):
             else:
                 result = {"raw_response": response}
 
-        scenes_count = len(result.get("scenes", []))
-        logger.info(f"Script created: {scenes_count} scenes")
+        blocks_count = len(result.get("blocks", []))
+        total_min = result.get("total_duration_minutes", "?")
+        logger.info(f"Script skeleton created: {blocks_count} blocks, ~{total_min} min")
+
+        # Validate required block types are present
+        block_types = {b.get("block_type") for b in result.get("blocks", [])}
+        required_types = {"hook", "main", "climax", "cta_outro"}
+        missing = required_types - block_types
+        if missing:
+            logger.warning(f"Script skeleton missing block types: {missing}")
+
         return result

@@ -44,8 +44,8 @@ class TeleprompterStep(BaseStep):
 Заголовок: {script.get('title', self.state.topic)}
 Тон: {script.get('tone', 'разговорный')}
 
-Сцены:
-{json.dumps(script.get('scenes', []), ensure_ascii=False, indent=2)}
+Блоки сценария:
+{json.dumps(script.get('blocks', script.get('scenes', [])), ensure_ascii=False, indent=2)}
 
 Требования:
 - {TELEPROMPTER_WORDS_PER_LINE} слов на строку
