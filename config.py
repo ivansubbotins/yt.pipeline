@@ -23,6 +23,9 @@ YOUTUBE_TOKEN_FILE = BASE_DIR / "youtube_token.json"
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 
+# Recraft API (AI image generation for thumbnails)
+RECRAFT_API_KEY = os.getenv("RECRAFT_API_KEY", "")
+
 # Pipeline defaults
 DEFAULT_VIDEO_MIN_LENGTH_MINUTES = 10
 DEFAULT_VIDEOS_PER_MONTH = 4
