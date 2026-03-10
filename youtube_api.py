@@ -206,12 +206,20 @@ class YouTubeAPI:
 
         videos = []
         for item in result.get("items", []):
+            thumbnails = item["snippet"].get("thumbnails", {})
+            # Prefer maxres > high > medium > default
+            thumb_url = ""
+            for res in ("maxres", "high", "medium", "default"):
+                if res in thumbnails:
+                    thumb_url = thumbnails[res]["url"]
+                    break
             videos.append({
                 "video_id": item["id"]["videoId"],
                 "title": item["snippet"]["title"],
                 "channel": item["snippet"]["channelTitle"],
                 "published_at": item["snippet"]["publishedAt"],
                 "description": item["snippet"]["description"],
+                "thumbnail_url": thumb_url,
                 "url": f"https://youtu.be/{item['id']['videoId']}",
             })
         return videos
