@@ -179,8 +179,17 @@ class Pipeline:
         # Description
         desc = self.state.get_step("description").get("data", {})
         if desc:
+            ts_count = len(desc.get("timestamps", []))
+            kw_count = len(desc.get("keywords", []))
+            tag_count = len(desc.get("tags", []))
+            ht_count = len(desc.get("hashtags", []))
             lines.append(f"📝 DESCRIPTION: готово")
-            lines.append(f"   Теги: {', '.join(desc.get('tags', []))}")
+            lines.append(f"   Таймкоды: {ts_count} шт.")
+            lines.append(f"   Ключевые слова: {kw_count} шт. — {', '.join(desc.get('keywords', [])[:5])}...")
+            lines.append(f"   Теги: {tag_count} шт.")
+            lines.append(f"   Хэштеги: {', '.join('#' + h if not h.startswith('#') else h for h in desc.get('hashtags', []))}")
+            if desc.get("cta_question"):
+                lines.append(f"   CTA-вопрос: {desc['cta_question']}")
             if desc.get("description_file"):
                 lines.append(f"   Файл: {desc['description_file']}")
             lines.append("")

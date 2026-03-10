@@ -32,11 +32,12 @@ DEFAULT_VIDEOS_PER_MONTH = 4
 THUMBNAIL_WIDTH = 1280
 THUMBNAIL_HEIGHT = 720
 
-# Description template
+# Description template (reference format — actual formatting is in steps/description.py)
 DESCRIPTION_TEMPLATE = """
-{title}
+{first_line}
+{second_line}
 
-{summary}
+{body}
 
 ⏱ Таймкоды:
 {timestamps}
@@ -46,10 +47,13 @@ DESCRIPTION_TEMPLATE = """
 📌 Полезные ссылки:
 {links}
 
-👉 Подписывайтесь на канал: {channel_url}
-🔔 Нажмите колокольчик, чтобы не пропустить новые видео!
+{cta_text}
 
-#shorts #{hashtags}
+💬 {cta_question}
+
+👉 Подписывайтесь на канал и нажмите 🔔, чтобы не пропустить новые видео!
+
+{hashtags}
 """.strip()
 
 # Teleprompter settings
