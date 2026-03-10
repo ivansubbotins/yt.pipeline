@@ -1,0 +1,14 @@
+# Secrets
+.env
+youtube_token.json
+
+# Data (generated per project)
+data/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
