@@ -739,7 +739,11 @@ http.createServer(async (req, res) => {
       // Fetch fresh
       const output = await runAgent(['channel-videos', isDefault ? '' : channelId]);
       let videos = [];
-      try { videos = JSON.parse(output); } catch(e) {}
+      try {
+        // Output may contain Python log lines before JSON — find the array
+        const jsonMatch = output.match(/\[[\s\S]*\]/);
+        if (jsonMatch) videos = JSON.parse(jsonMatch[0]);
+      } catch(e) { console.error('channel-videos parse error:', e.message); }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, videos }));
     } catch (err) {
