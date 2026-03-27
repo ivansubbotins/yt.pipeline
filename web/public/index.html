@@ -6,11 +6,7 @@
 <title>YouTube Pipeline — Админка</title>
 <link rel="stylesheet" href="/shared.css">
 <style>
-/* ── Header (index-specific) ── */
-.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
-.header h1 { font-size: 20px; font-weight: 600; }
-.header h1 span { color: var(--red); }
-.header .btn-new { margin-left: auto; }
+/* Header removed — using sidebar now */
 
 /* ── Projects List ── */
 .projects-grid { display: grid; gap: 12px; margin-top: 20px; }
@@ -107,17 +103,44 @@ select.ctx-input { appearance: none; }
 </style>
 </head>
 <body>
+<div class="app-layout">
 
-<div class="header">
-  <h1>▶ <span>YouTube</span> Pipeline</h1>
-  <a href="/express.html" class="btn btn-outline" style="text-decoration:none;background:rgba(245,158,11,0.1);border-color:var(--orange);color:var(--orange);">Express</a>
-  <button class="btn btn-outline" onclick="showSettings()">⚙ Настройки</button>
-  <button class="btn btn-red btn-new" onclick="showModal()">+ Новый проект</button>
-  <a href="/api/logout" class="btn btn-outline" style="font-size:11px;padding:6px 12px;text-decoration:none;color:#888;">Выйти</a>
-</div>
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5"><path d="M22.5 7.5a2.5 2.5 0 00-1.8-1.8C19 5.3 12 5.3 12 5.3s-7 0-8.7.4a2.5 2.5 0 00-1.8 1.8A26 26 0 001 12a26 26 0 00.5 4.5 2.5 2.5 0 001.8 1.8c1.7.4 8.7.4 8.7.4s7 0 8.7-.4a2.5 2.5 0 001.8-1.8A26 26 0 0023 12a26 26 0 00-.5-4.5z"/><path d="M10 15.5l5.5-3.5L10 8.5z" fill="var(--red)"/></svg>
+    <h1><span>YT</span> Pipeline</h1>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#" onclick="showList(); setActiveNav(this)" class="active" id="navMain">
+      <span class="nav-icon">🏠</span> Главная
+    </a>
+    <a href="/express.html" id="navExpress">
+      <span class="nav-icon">⚡</span> Express
+    </a>
+    <a href="#" onclick="showSettings(); setActiveNav(this)" id="navSettings">
+      <span class="nav-icon">⚙</span> Настройки
+    </a>
+  </div>
+  <div class="sidebar-bottom">
+    <a href="#" onclick="showModal()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);font-size:13px;color:var(--accent);text-decoration:none;border:1px dashed var(--border);justify-content:center;font-weight:600;">
+      + Новый проект
+    </a>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-top:6px;border-radius:var(--radius-lg);font-size:12px;color:var(--muted);text-decoration:none;">
+      <span class="nav-icon">🚪</span> Выйти
+    </a>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="main-content">
 
 <!-- Projects List View -->
 <div class="container" id="listView">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2 style="font-size:20px;">Проекты</h2>
+    <button class="btn btn-blue" onclick="showModal()">+ Новый проект</button>
+  </div>
   <div id="projectsList" class="projects-grid"></div>
   <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
 </div>
@@ -163,151 +186,145 @@ select.ctx-input { appearance: none; }
 
 <!-- Settings View -->
 <div class="container" id="settingsView" style="display:none">
-  <div class="detail-header">
-    <a class="back" onclick="showList()">←</a>
-    <h2>Настройки канала</h2>
+
+  <!-- Channels -->
+  <div class="settings-section">
+    <h3>Каналы</h3>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+      <div style="flex-shrink:0;font-size:12px;color:var(--muted);font-weight:500;">Текущий канал</div>
+      <select id="channelSelect" style="flex:1;padding:10px 14px;font-size:13px;" onchange="loadChannelContext()">
+        <option value="">Канал по умолчанию</option>
+      </select>
+      <button class="btn btn-blue" onclick="showAddChannelModal()">+ Добавить канал</button>
+    </div>
+    <div id="channelNicheInfo" style="font-size:12px;color:var(--muted);display:none;margin-bottom:8px;"></div>
+    <div id="channelMetaFields" style="display:none;">
+      <div class="settings-row">
+        <div class="settings-field"><label>Ниша канала</label><input class="ctx-input" id="ctx-niche" placeholder="Бизнес, маркетинг, AI"></div>
+        <div class="settings-field"><label>Целевая аудитория</label><input class="ctx-input" id="ctx-target-audience" placeholder="Предприниматели, маркетологи, 25-45 лет"></div>
+      </div>
+    </div>
+    <div id="channelAnalyticsBtn" style="display:none;margin-top:10px;display:flex;gap:8px;">
+      <button class="btn btn-outline btn-sm" onclick="loadChannelVideos()">📊 Видео канала</button>
+      <button class="btn btn-outline btn-sm" onclick="loadRecommendations()">💡 Рекомендации тем</button>
+    </div>
   </div>
 
-  <div style="display:grid; gap:20px;">
-    <!-- Channel selector -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">📺 Каналы</h3>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <select id="channelSelect" class="ctx-input" style="flex:1;min-width:200px;margin-top:0;" onchange="loadChannelContext()">
-          <option value="">Канал по умолчанию</option>
-        </select>
-        <button class="btn btn-blue btn-sm" onclick="showAddChannelModal()">+ Добавить канал</button>
-      </div>
-      <div id="channelNicheInfo" style="margin-top:8px;font-size:12px;color:var(--muted);display:none;"></div>
+  <!-- Video analytics -->
+  <div class="settings-section" id="channelVideosSection" style="display:none;">
+    <h3>📊 Видео канала</h3>
+    <div id="channelVideosList"></div>
+  </div>
 
-      <!-- Channel niche & audience (shown when channel selected) -->
-      <div id="channelMetaFields" style="display:none;margin-top:12px;">
-        <div style="display:grid;gap:10px;">
-          <div><label style="font-size:12px;color:var(--muted);">Ниша канала</label><input class="ctx-input" id="ctx-niche" placeholder="Бизнес, маркетинг, AI"></div>
-          <div><label style="font-size:12px;color:var(--muted);">Целевая аудитория</label><input class="ctx-input" id="ctx-target-audience" placeholder="Предприниматели, маркетологи, 25-45 лет"></div>
+  <!-- Recommendations -->
+  <div class="settings-section" id="channelRecsSection" style="display:none;">
+    <h3>💡 Рекомендации тем</h3>
+    <div id="channelRecsList"></div>
+  </div>
+
+  <!-- Author -->
+  <div class="settings-section">
+    <h3>Автор</h3>
+    <div class="settings-row">
+      <div class="settings-field"><label>Имя</label><input class="ctx-input" id="ctx-author-name" placeholder="Иван"></div>
+      <div class="settings-field"><label>Полное имя</label><input class="ctx-input" id="ctx-author-full_name" placeholder="Иван Субботин"></div>
+      <div class="settings-field"><label>Кто он</label><input class="ctx-input" id="ctx-author-who" placeholder="Предприниматель, маркетолог"></div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-field"><label>Экспертиза (через запятую)</label><input class="ctx-input" id="ctx-author-expertise" placeholder="маркетинг, AI, бизнес"></div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-field"><label>Опыт</label><input class="ctx-input" id="ctx-author-experience" placeholder="10 лет в маркетинге, основатель..."></div>
+      <div class="settings-field"><label>Тон подачи</label><input class="ctx-input" id="ctx-author-tone" placeholder="экспертный, но дружелюбный"></div>
+    </div>
+  </div>
+
+  <!-- Social & Links -->
+  <div class="settings-section">
+    <h3>Социальные сети и ссылки</h3>
+    <div class="social-row">
+      <div class="social-icon" style="background:rgba(255,0,0,0.1);color:#f00;">▶</div>
+      <input class="ctx-input" id="ctx-channel-youtube_url" placeholder="https://youtube.com/@channel" style="margin-top:0;">
+    </div>
+    <div class="social-row">
+      <div class="social-icon" style="background:rgba(0,136,204,0.1);color:#0088cc;">✈</div>
+      <input class="ctx-input" id="ctx-channel-telegram_url" placeholder="https://t.me/channel" style="flex:1;margin-top:0;">
+      <input class="ctx-input" id="ctx-channel-telegram_group" placeholder="https://t.me/group" style="flex:1;margin-top:0;">
+    </div>
+    <div class="social-row">
+      <div class="social-icon" style="background:rgba(59,130,246,0.1);color:var(--blue);">🌐</div>
+      <input class="ctx-input" id="ctx-channel-website" placeholder="https://example.com" style="margin-top:0;">
+    </div>
+    <input class="ctx-input" id="ctx-channel-name" type="hidden">
+
+  </div>
+
+  <!-- CTA & Вставки -->
+  <div class="settings-section">
+    <h3>CTA и рекламные вставки</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <!-- Lead Magnet -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-lead_magnet-enabled" style="width:auto;margin-right:6px;"> Лидмагнит</label>
+        </div>
+        <div class="settings-field"><label>Текст для озвучки</label><input class="ctx-input" id="ctx-cta-lead_magnet-text" placeholder="Забирайте бесплатный гайд..."></div>
+        <div class="settings-row" style="margin-top:8px;">
+          <div class="settings-field"><label>URL</label><input class="ctx-input" id="ctx-cta-lead_magnet-url" placeholder="https://t.me/bot"></div>
+          <div class="settings-field"><label>Размещение</label><select class="ctx-input" id="ctx-cta-lead_magnet-placement"><option value="intro">В начале</option><option value="hook">В хуке</option><option value="outro">В конце</option></select></div>
         </div>
       </div>
 
-      <!-- Video analytics button -->
-      <div id="channelAnalyticsBtn" style="display:none;margin-top:10px;">
-        <button class="btn btn-outline btn-sm" onclick="loadChannelVideos()">📊 Загрузить видео канала</button>
-        <button class="btn btn-outline btn-sm" onclick="loadRecommendations()">💡 Рекомендации тем</button>
-      </div>
-    </div>
-
-    <!-- Video analytics (shown when loaded) -->
-    <div class="project-card" id="channelVideosSection" style="display:none;">
-      <h3 style="margin-bottom:12px;">📊 Видео канала</h3>
-      <div id="channelVideosList"></div>
-    </div>
-
-    <!-- Topic recommendations (shown when loaded) -->
-    <div class="project-card" id="channelRecsSection" style="display:none;">
-      <h3 style="margin-bottom:12px;">💡 Рекомендации тем</h3>
-      <div id="channelRecsList"></div>
-    </div>
-
-    <!-- Author -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">👤 Автор</h3>
-      <div style="display:grid; gap:10px;">
-        <div><label style="font-size:12px;color:var(--muted);">Имя</label><input class="ctx-input" id="ctx-author-name" placeholder="Иван"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Полное имя</label><input class="ctx-input" id="ctx-author-full_name" placeholder="Иван Субботин"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Кто он</label><input class="ctx-input" id="ctx-author-who" placeholder="Предприниматель, маркетолог"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Экспертиза (через запятую)</label><input class="ctx-input" id="ctx-author-expertise" placeholder="маркетинг, AI, бизнес"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Опыт</label><input class="ctx-input" id="ctx-author-experience" placeholder="10 лет в маркетинге, основатель..."></div>
-        <div><label style="font-size:12px;color:var(--muted);">Тон подачи</label><input class="ctx-input" id="ctx-author-tone" placeholder="экспертный, но дружелюбный"></div>
-      </div>
-    </div>
-
-    <!-- Channel -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">📺 Канал</h3>
-      <div style="display:grid; gap:10px;">
-        <div><label style="font-size:12px;color:var(--muted);">Название канала</label><input class="ctx-input" id="ctx-channel-name" placeholder=""></div>
-        <div><label style="font-size:12px;color:var(--muted);">YouTube URL</label><input class="ctx-input" id="ctx-channel-youtube_url" placeholder="https://youtube.com/@channel"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Telegram канал</label><input class="ctx-input" id="ctx-channel-telegram_url" placeholder="https://t.me/channel"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Telegram группа</label><input class="ctx-input" id="ctx-channel-telegram_group" placeholder="https://t.me/group"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Сайт</label><input class="ctx-input" id="ctx-channel-website" placeholder="https://example.com"></div>
-      </div>
-    </div>
-
-    <!-- Lead Magnet -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">🎁 Лидмагнит</h3>
-      <div style="display:grid; gap:10px;">
-        <div><label><input type="checkbox" id="ctx-cta-lead_magnet-enabled"> Включен</label></div>
-        <div><label style="font-size:12px;color:var(--muted);">Текст для озвучки</label><input class="ctx-input" id="ctx-cta-lead_magnet-text" placeholder="Забирайте бесплатный гайд по ссылке в описании!"></div>
-        <div><label style="font-size:12px;color:var(--muted);">URL</label><input class="ctx-input" id="ctx-cta-lead_magnet-url" placeholder="https://t.me/bot"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Размещение</label>
-          <select class="ctx-input" id="ctx-cta-lead_magnet-placement"><option value="intro">В начале (интро)</option><option value="hook">В хуке</option><option value="outro">В конце</option></select>
+      <!-- Mid-Roll -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-mid_roll-enabled" style="width:auto;margin-right:6px;"> Рекламная вставка</label>
         </div>
-      </div>
-    </div>
-
-    <!-- Mid-Roll Ad -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">📢 Рекламная вставка (mid-roll)</h3>
-      <div style="display:grid; gap:10px;">
-        <div><label><input type="checkbox" id="ctx-cta-mid_roll-enabled"> Включена</label></div>
-        <div><label style="font-size:12px;color:var(--muted);">Текст для озвучки</label><input class="ctx-input" id="ctx-cta-mid_roll-text" placeholder="У меня есть закрытая группа где я делюсь промптами..."></div>
-        <div><label style="font-size:12px;color:var(--muted);">URL</label><input class="ctx-input" id="ctx-cta-mid_roll-url" placeholder="https://t.me/group"></div>
-        <div><label style="font-size:12px;color:var(--muted);">После какого блока</label><input class="ctx-input" type="number" id="ctx-cta-mid_roll-placement_after_block" value="3" min="1" max="6"></div>
+        <div class="settings-field"><label>Текст для озвучки</label><input class="ctx-input" id="ctx-cta-mid_roll-text" placeholder="У меня есть закрытая группа..."></div>
+        <div class="settings-row" style="margin-top:8px;">
+          <div class="settings-field"><label>URL</label><input class="ctx-input" id="ctx-cta-mid_roll-url" placeholder="https://t.me/group"></div>
+          <div class="settings-field"><label>После блока №</label><input class="ctx-input" type="number" id="ctx-cta-mid_roll-placement_after_block" value="3" min="1" max="6"></div>
+        </div>
       </div>
     </div>
 
     <!-- End Screen -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">🏁 Концовка</h3>
-      <div style="display:grid; gap:10px;">
-        <div><label><input type="checkbox" id="ctx-cta-end_screen-enabled" checked> Включена</label></div>
-        <div><label style="font-size:12px;color:var(--muted);">Текст концовки</label><input class="ctx-input" id="ctx-cta-end_screen-text" placeholder="Ставьте лайк и подписывайтесь!"></div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+      <div class="settings-row">
+        <div class="settings-field"><label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-end_screen-enabled" checked style="width:auto;margin-right:6px;"> Концовка</label><input class="ctx-input" id="ctx-cta-end_screen-text" placeholder="Ставьте лайк и подписывайтесь!" style="margin-top:8px;"></div>
+        <div class="settings-field"><label>Хэштеги</label><input class="ctx-input" id="ctx-hashtags_always" placeholder="ИмяКанала, Маркетинг"></div>
+        <div class="settings-field"><label>Теги</label><input class="ctx-input" id="ctx-tags_always" placeholder="имя канала, маркетинг"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expert Photo & Styles -->
+  <div class="settings-section">
+    <h3>Фото и стили обложек</h3>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label>Фото эксперта (для обложек)</label>
+        <input type="file" id="expertPhotoInput" accept="image/*" style="margin-top:4px;">
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Фон будет удалён автоматически</p>
+        <div id="expertPreview" style="margin-top:8px;"></div>
       </div>
     </div>
 
-    <!-- Always-on tags -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">🏷 Постоянные теги и хэштеги</h3>
-      <div style="display:grid; gap:10px;">
-        <div><label style="font-size:12px;color:var(--muted);">Хэштеги (через запятую, без #)</label><input class="ctx-input" id="ctx-hashtags_always" placeholder="ИмяКанала, Маркетинг"></div>
-        <div><label style="font-size:12px;color:var(--muted);">Теги (через запятую)</label><input class="ctx-input" id="ctx-tags_always" placeholder="имя канала, маркетинг"></div>
-      </div>
-    </div>
-
-    <!-- Expert Photo -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">📸 Фото эксперта (для обложек)</h3>
-      <input type="file" id="expertPhotoInput" accept="image/*">
-      <p style="font-size:12px;color:var(--muted);margin-top:8px;">Фото на нейтральном фоне. Фон будет удалён автоматически.</p>
-      <div id="expertPreview" style="margin-top:8px;"></div>
-    </div>
-
-    <!-- Styles Gallery -->
-    <div class="project-card">
-      <h3 style="margin-bottom:12px;">🎨 Стили обложек (референсы)</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Загрузите примеры обложек как стили. Выбранный стиль будет использоваться как референс при генерации через Nano Banana 2.</p>
-
+    <div style="margin-top:16px;">
+      <label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;margin-bottom:8px;">Стили-референсы</label>
       <div id="stylesGallery" class="styles-grid"></div>
-
-      <div style="margin-top:16px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
-        <div>
-          <label style="font-size:12px;color:var(--muted);">Картинка-референс</label>
-          <input type="file" id="styleFileInput" accept="image/*">
-        </div>
-        <div style="flex:1; min-width:150px;">
-          <label style="font-size:12px;color:var(--muted);">Название стиля</label>
-          <input class="ctx-input" id="styleNameInput" placeholder="Например: Неон синий">
-        </div>
-        <div style="flex:1; min-width:200px;">
-          <label style="font-size:12px;color:var(--muted);">Подсказка для промпта (опционально)</label>
-          <input class="ctx-input" id="stylePromptInput" placeholder="neon blue glow, dramatic lighting...">
-        </div>
-        <button class="btn btn-blue btn-sm" onclick="uploadStyle()">+ Добавить стиль</button>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+        <div><label>Картинка</label><input type="file" id="styleFileInput" accept="image/*"></div>
+        <div style="flex:1;min-width:120px;"><label>Название</label><input class="ctx-input" id="styleNameInput" placeholder="Неон синий"></div>
+        <div style="flex:1;min-width:160px;"><label>Промпт-подсказка</label><input class="ctx-input" id="stylePromptInput" placeholder="neon blue glow..."></div>
+        <button class="btn btn-blue btn-sm" onclick="uploadStyle()">+ Добавить</button>
       </div>
     </div>
+  </div>
 
     <!-- 2FA Settings -->
-    <div class="project-card">
+    <div class="settings-section">
       <h3 style="margin-bottom:12px;">🔒 Двухфакторная аутентификация (2FA)</h3>
       <div id="twoFaStatus"></div>
       <div id="twoFaSetup" style="display:none;">
@@ -332,8 +349,10 @@ select.ctx-input { appearance: none; }
       </div>
     </div>
 
-    <button class="btn btn-green" onclick="saveContext()" style="width:fit-content;">💾 Сохранить настройки</button>
+  <div style="display:flex;justify-content:flex-end;margin-top:8px;margin-bottom:24px;">
+    <button class="btn btn-blue" onclick="saveContext()" style="padding:12px 32px;font-size:14px;">Сохранить изменения</button>
   </div>
+
 </div>
 
 <!-- Custom Cover Modal -->
@@ -362,6 +381,9 @@ select.ctx-input { appearance: none; }
     </div>
   </div>
 </div>
+
+</div><!-- /main-content -->
+</div><!-- /app-layout -->
 
 <div class="toast" id="toast"></div>
 
@@ -1161,7 +1183,7 @@ async function refreshDetail() {
         <!-- Stats + Copy all (real word count from actual text) -->
         ${(() => {
           const allText = scenes.map(sc => sc.teleprompter_text || '').join(' ');
-          const realWordCount = allText.split(/\\s+/).filter(Boolean).length;
+          const realWordCount = allText.trim().split(/\s+/).filter(Boolean).length;
           const WORDS_PER_MIN = 150; // average Russian speaking speed
           const realReadMin = (realWordCount / WORDS_PER_MIN).toFixed(1);
           const minNeeded = totalWords > realWordCount ? totalWords - realWordCount : 0;
@@ -1396,10 +1418,17 @@ function showList() {
   document.getElementById('detailView').style.display = 'none';
   document.getElementById('settingsView').style.display = 'none';
   document.getElementById('listView').style.display = 'block';
+  setActiveNav(document.getElementById('navMain'));
   loadProjects();
 }
 
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// Sidebar nav
+function setActiveNav(el) {
+  document.querySelectorAll('.sidebar-nav a, .sidebar-nav button').forEach(a => a.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
 
 // Enter in modal
 document.getElementById('topicInput').addEventListener('keydown', e => { if (e.key === 'Enter') createProject(); });

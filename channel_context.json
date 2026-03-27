@@ -1,7 +1,7 @@
 {
   "author": {
     "name": "Иван",
-    "full_name": "Иван Субботин",
+    "full_name": "Субботин",
     "who": "Предприниматель, маркетолог",
     "expertise": [
       "маркетинг",
@@ -53,6 +53,5 @@
     }
   ],
   "hashtags_always": [],
-  "tags_always": [],
-  "selected_style": ""
+  "tags_always": []
 }
