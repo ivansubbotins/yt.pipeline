@@ -222,6 +222,97 @@ select.ctx-input { appearance: none; }
     <div id="channelRecsList"></div>
   </div>
 
+  <!-- Channel Setup Wizard -->
+  <div class="settings-section" id="channelWizardSection">
+    <h3>Быстрая настройка канала</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Ответьте на вопросы — AI сгенерирует описание, баннер и аватар канала.</p>
+
+    <!-- Step 1: Questions -->
+    <div id="wizardQuestions">
+      <div class="settings-row">
+        <div class="settings-field"><label>Название канала</label><input class="ctx-input" id="wizName" placeholder="Иван Субботин"></div>
+        <div class="settings-field"><label>Ниша</label><input class="ctx-input" id="wizNiche" placeholder="Маркетинг, AI, бизнес"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-field"><label>Для кого канал (ЦА)</label><input class="ctx-input" id="wizAudience" placeholder="Предприниматели, маркетологи 25-45"></div>
+        <div class="settings-field"><label>Экспертиза автора</label><input class="ctx-input" id="wizExpertise" placeholder="13 лет в маркетинге, основатель агентства"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-field"><label>Тон подачи</label><input class="ctx-input" id="wizTone" placeholder="Экспертный, но дружелюбный"></div>
+        <div class="settings-field"><label>Цели канала</label><input class="ctx-input" id="wizGoals" placeholder="Обучение, лидогенерация, личный бренд"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-field"><label>Стиль визуала</label>
+          <select class="ctx-input" id="wizStyle">
+            <option value="modern-minimal">Современный минимализм</option>
+            <option value="bold-creative">Яркий креативный</option>
+            <option value="corporate">Деловой/корпоративный</option>
+            <option value="neon-dark">Неон на тёмном</option>
+            <option value="warm-friendly">Тёплый дружелюбный</option>
+          </select>
+        </div>
+        <div class="settings-field"><label>Аватар</label>
+          <select class="ctx-input" id="wizAvatarType">
+            <option value="logo">Логотип/иконка</option>
+            <option value="photo">Фото эксперта (стилизованное)</option>
+            <option value="illustration">Иллюстрация</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-blue" onclick="runWizard('all')" id="btnWizardAll">Сгенерировать всё</button>
+        <button class="btn btn-outline btn-sm" onclick="runWizard('description')">Только описание</button>
+        <button class="btn btn-outline btn-sm" onclick="runWizard('banner')">Только баннер</button>
+        <button class="btn btn-outline btn-sm" onclick="runWizard('avatar')">Только аватар</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="wizardResults" style="display:none;margin-top:16px;">
+
+      <!-- Description -->
+      <div id="wizDescResult" style="display:none;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:6px;">Описание канала</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+          <div id="wizDescText" style="font-size:13px;line-height:1.6;white-space:pre-wrap;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+            <span id="wizDescChars" style="font-size:10px;color:var(--muted);"></span>
+            <button class="btn btn-outline btn-xs" onclick="copyWizDesc()">📋 Скопировать</button>
+          </div>
+        </div>
+        <div id="wizShortDesc" style="margin-top:6px;font-size:11px;color:var(--text2);"></div>
+        <div id="wizKeywords" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Banner -->
+      <div id="wizBannerResult" style="display:none;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px;">Баннер канала (2560×1440)</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+          <div id="wizBannerLayout" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizBannerColors"></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Текст на баннере:</div>
+          <div id="wizBannerText" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Промпт для генерации:</div>
+          <div id="wizBannerPrompt" style="font-size:11px;color:var(--text2);background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;white-space:pre-wrap;"></div>
+          <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizBannerPrompt').textContent)" style="margin-top:6px;">📋 Скопировать промпт</button>
+        </div>
+      </div>
+
+      <!-- Avatar -->
+      <div id="wizAvatarResult" style="display:none;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">Аватар канала (800×800)</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+          <div id="wizAvatarDesc" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizAvatarColors"></div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Промпт для генерации:</div>
+          <div id="wizAvatarPrompt" style="font-size:11px;color:var(--text2);background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;white-space:pre-wrap;"></div>
+          <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizAvatarPrompt').textContent)" style="margin-top:6px;">📋 Скопировать промпт</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Author -->
   <div class="settings-section">
     <h3>Автор</h3>
@@ -239,24 +330,66 @@ select.ctx-input { appearance: none; }
     </div>
   </div>
 
-  <!-- Social & Links -->
+  <!-- Dynamic Links + UTM -->
   <div class="settings-section">
-    <h3>Социальные сети и ссылки</h3>
-    <div class="social-row">
-      <div class="social-icon" style="background:rgba(255,0,0,0.1);color:#f00;">▶</div>
-      <input class="ctx-input" id="ctx-channel-youtube_url" placeholder="https://youtube.com/@channel" style="margin-top:0;">
-    </div>
-    <div class="social-row">
-      <div class="social-icon" style="background:rgba(0,136,204,0.1);color:#0088cc;">✈</div>
-      <input class="ctx-input" id="ctx-channel-telegram_url" placeholder="https://t.me/channel" style="flex:1;margin-top:0;">
-      <input class="ctx-input" id="ctx-channel-telegram_group" placeholder="https://t.me/group" style="flex:1;margin-top:0;">
-    </div>
-    <div class="social-row">
-      <div class="social-icon" style="background:rgba(59,130,246,0.1);color:var(--blue);">🌐</div>
-      <input class="ctx-input" id="ctx-channel-website" placeholder="https://example.com" style="margin-top:0;">
-    </div>
-    <input class="ctx-input" id="ctx-channel-name" type="hidden">
+    <h3>Ссылки для описания видео</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Автоматически вставляются в описание каждого видео. UTM-метки генерируются автоматически.</p>
 
+    <div id="dynamicLinksList" style="margin-bottom:12px;"></div>
+
+    <div style="background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:12px;">
+      <div class="settings-row">
+        <div class="settings-field">
+          <label>Тип</label>
+          <select class="ctx-input" id="newLinkType" style="margin-top:0;">
+            <option value="youtube">▶ YouTube</option>
+            <option value="telegram">✈ Telegram</option>
+            <option value="website">🌐 Сайт</option>
+            <option value="instagram">📷 Instagram</option>
+            <option value="vk">💬 VK</option>
+            <option value="other">🔗 Другое</option>
+          </select>
+        </div>
+        <div class="settings-field">
+          <label>Название</label>
+          <input class="ctx-input" id="newLinkLabel" placeholder="Мой Telegram-канал">
+        </div>
+        <div class="settings-field">
+          <label>URL</label>
+          <input class="ctx-input" id="newLinkUrl" placeholder="https://t.me/channel">
+        </div>
+      </div>
+      <div class="settings-row" style="margin-top:8px;">
+        <div class="settings-field">
+          <label>Эмодзи</label>
+          <input class="ctx-input" id="newLinkEmoji" placeholder="📌" style="width:60px;" maxlength="4">
+        </div>
+        <div class="settings-field">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:12px;">
+            <input type="checkbox" id="newLinkUtm" checked style="width:auto;"> UTM-метки
+          </label>
+        </div>
+        <div class="settings-field" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-blue btn-sm" onclick="addDynamicLink()">+ Добавить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UTM defaults -->
+    <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;">UTM по умолчанию</div>
+      <div class="settings-row">
+        <div class="settings-field"><label>utm_source</label><input class="ctx-input" id="utmSource" value="youtube"></div>
+        <div class="settings-field"><label>utm_medium</label><input class="ctx-input" id="utmMedium" value="video_description"></div>
+        <div class="settings-field"><label>utm_campaign</label><input class="ctx-input" id="utmCampaign" placeholder="авто из названия"></div>
+      </div>
+    </div>
+
+    <input class="ctx-input" id="ctx-channel-name" type="hidden">
+    <input class="ctx-input" id="ctx-channel-youtube_url" type="hidden">
+    <input class="ctx-input" id="ctx-channel-telegram_url" type="hidden">
+    <input class="ctx-input" id="ctx-channel-telegram_group" type="hidden">
+    <input class="ctx-input" id="ctx-channel-website" type="hidden">
   </div>
 
   <!-- CTA & Вставки -->
@@ -1518,6 +1651,23 @@ async function loadContext() {
   // Tags
   el('ctx-hashtags_always').value = (ctx.hashtags_always || []).join(', ');
   el('ctx-tags_always').value = (ctx.tags_always || []).join(', ');
+
+  // Load dynamic links
+  channelLinks = ctx.links_raw || [];
+  // Migrate from old format if needed
+  if (channelLinks.length === 0 && ctx.description_links?.length) {
+    channelLinks = ctx.description_links.map(l => ({
+      type: l.type || 'other', label: l.label, url: l.raw_url || l.url, emoji: l.emoji, utm: l.utm !== false
+    }));
+  }
+  renderDynamicLinks();
+
+  // Load UTM defaults
+  if (ctx.utm_defaults) {
+    if (el('utmSource')) el('utmSource').value = ctx.utm_defaults.source || 'youtube';
+    if (el('utmMedium')) el('utmMedium').value = ctx.utm_defaults.medium || 'video_description';
+    if (el('utmCampaign')) el('utmCampaign').value = ctx.utm_defaults.campaign || '';
+  }
 }
 
 async function saveContext() {
@@ -1558,15 +1708,23 @@ async function saveContext() {
         text: el('ctx-cta-end_screen-text').value,
       },
     },
-    description_links: [],
+    description_links: channelLinks.map(link => ({
+      label: link.label,
+      url: link.utm ? buildUtmUrl(link.url) : link.url,
+      emoji: link.emoji || '🔗',
+      type: link.type,
+      raw_url: link.url,
+      utm: link.utm,
+    })),
+    links_raw: channelLinks,
+    utm_defaults: {
+      source: el('utmSource')?.value || 'youtube',
+      medium: el('utmMedium')?.value || 'video_description',
+      campaign: el('utmCampaign')?.value || '',
+    },
     hashtags_always: el('ctx-hashtags_always').value.split(',').map(s => s.trim()).filter(Boolean),
     tags_always: el('ctx-tags_always').value.split(',').map(s => s.trim()).filter(Boolean),
   };
-
-  // Add channel links as description_links
-  if (ctx.channel.telegram_url) ctx.description_links.push({ label: 'Telegram', url: ctx.channel.telegram_url, emoji: '📌' });
-  if (ctx.channel.telegram_group) ctx.description_links.push({ label: 'Telegram-группа', url: ctx.channel.telegram_group, emoji: '📌' });
-  if (ctx.channel.website) ctx.description_links.push({ label: 'Сайт', url: ctx.channel.website, emoji: '🌐' });
 
   try {
     const data = await api('/api/context', { context: ctx });
@@ -2173,6 +2331,15 @@ async function loadChannelContext() {
   el('ctx-channel-telegram_url').value = ch.telegram_url || '';
   el('ctx-channel-telegram_group').value = ch.telegram_group || '';
   el('ctx-channel-website').value = ch.website || '';
+
+  // Load dynamic links for channel
+  channelLinks = ctx.links_raw || [];
+  renderDynamicLinks();
+  if (ctx.utm_defaults) {
+    if (el('utmSource')) el('utmSource').value = ctx.utm_defaults.source || 'youtube';
+    if (el('utmMedium')) el('utmMedium').value = ctx.utm_defaults.medium || 'video_description';
+    if (el('utmCampaign')) el('utmCampaign').value = ctx.utm_defaults.campaign || '';
+  }
 }
 
 function showAddChannelModal() {
@@ -2390,6 +2557,140 @@ loadProjects = async function() {
   const cards = document.querySelectorAll('.project-card .topic');
   // We need to re-read projects to get channel_id — handled in the card render
 };
+
+// ── Channel Wizard ──
+async function runWizard(mode) {
+  const params = {
+    name: el('wizName').value.trim(),
+    niche: el('wizNiche').value.trim(),
+    audience: el('wizAudience').value.trim(),
+    expertise: el('wizExpertise').value.trim(),
+    tone: el('wizTone').value.trim(),
+    goals: el('wizGoals').value.trim(),
+    style_preference: el('wizStyle').value,
+    use_photo: el('wizAvatarType').value === 'photo',
+  };
+
+  if (!params.name) { toast('Введите название канала', true); return; }
+
+  const btn = el('btnWizardAll');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Генерирую...';
+  document.getElementById('wizardResults').style.display = '';
+
+  const tasks = mode === 'all' ? ['description', 'banner', 'avatar'] : [mode];
+
+  for (const task of tasks) {
+    try {
+      toast(`Генерирую ${task === 'description' ? 'описание' : task === 'banner' ? 'баннер' : 'аватар'}...`);
+      const data = await api(`/api/channels/wizard/${task}`, params);
+
+      if (task === 'description' && data.ok) {
+        const desc = data.description || '';
+        el('wizDescText').textContent = desc;
+        el('wizDescChars').textContent = `${desc.length} / 1000 символов`;
+        el('wizShortDesc').textContent = data.short_description ? `Короткое: ${data.short_description}` : '';
+        const kwContainer = el('wizKeywords');
+        kwContainer.innerHTML = (data.keywords || []).map(k => `<span style="background:rgba(59,130,246,0.1);color:var(--blue);padding:2px 6px;border-radius:3px;font-size:10px;">${esc(k)}</span>`).join('');
+        el('wizDescResult').style.display = '';
+      }
+
+      if (task === 'banner' && data.ok) {
+        el('wizBannerLayout').textContent = data.layout_description || '';
+        el('wizBannerText').textContent = data.text_on_banner || '';
+        el('wizBannerPrompt').textContent = data.prompt || '';
+        const colorsEl = el('wizBannerColors');
+        colorsEl.innerHTML = (data.color_scheme || []).map(c => `<div style="width:28px;height:28px;border-radius:6px;background:${c};border:1px solid rgba(255,255,255,0.1);" title="${c}"></div>`).join('');
+        el('wizBannerResult').style.display = '';
+      }
+
+      if (task === 'avatar' && data.ok) {
+        el('wizAvatarDesc').textContent = data.description || '';
+        el('wizAvatarPrompt').textContent = data.prompt || '';
+        const colorsEl = el('wizAvatarColors');
+        colorsEl.innerHTML = (data.colors || []).map(c => `<div style="width:28px;height:28px;border-radius:6px;background:${c};border:1px solid rgba(255,255,255,0.1);" title="${c}"></div>`).join('');
+        el('wizAvatarResult').style.display = '';
+      }
+    } catch(e) { toast(`Ошибка: ${e.message}`, true); }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Сгенерировать всё';
+  toast('Готово!');
+}
+
+function copyWizDesc() {
+  const text = el('wizDescText').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('Описание скопировано!')).catch(() => toast('Ошибка', true));
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Скопировано!')).catch(() => toast('Ошибка', true));
+}
+
+// ── Dynamic Links ──
+let channelLinks = [];
+
+function renderDynamicLinks() {
+  const list = document.getElementById('dynamicLinksList');
+  if (!list) return;
+
+  if (channelLinks.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px;">Нет ссылок. Добавьте ссылки для описания видео.</div>';
+    return;
+  }
+
+  const typeIcons = { youtube: '▶', telegram: '✈', website: '🌐', instagram: '📷', vk: '💬', other: '🔗' };
+  const typeColors = { youtube: 'rgba(255,0,0,0.1)', telegram: 'rgba(0,136,204,0.1)', website: 'rgba(59,130,246,0.1)', instagram: 'rgba(168,85,247,0.1)', vk: 'rgba(59,130,246,0.1)', other: 'rgba(255,255,255,0.06)' };
+
+  list.innerHTML = channelLinks.map((link, i) => {
+    const icon = link.emoji || typeIcons[link.type] || '🔗';
+    const bg = typeColors[link.type] || 'rgba(255,255,255,0.06)';
+    const utmUrl = link.utm ? buildUtmUrl(link.url) : link.url;
+    return `
+      <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:4px;">
+        <div style="width:30px;height:30px;border-radius:6px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;">${esc(link.label || link.url)}</div>
+          <div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(utmUrl)}</div>
+        </div>
+        ${link.utm ? '<span style="font-size:9px;background:rgba(34,197,94,0.1);color:var(--green);padding:2px 4px;border-radius:2px;">UTM</span>' : ''}
+        <button onclick="removeDynamicLink(${i})" style="width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.1);color:var(--red);border:none;cursor:pointer;font-size:10px;flex-shrink:0;">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function buildUtmUrl(url) {
+  const source = el('utmSource')?.value || 'youtube';
+  const medium = el('utmMedium')?.value || 'video_description';
+  const campaign = el('utmCampaign')?.value || '';
+  const sep = url.includes('?') ? '&' : '?';
+  let utm = `${sep}utm_source=${encodeURIComponent(source)}&utm_medium=${encodeURIComponent(medium)}`;
+  if (campaign) utm += `&utm_campaign=${encodeURIComponent(campaign)}`;
+  return url + utm;
+}
+
+function addDynamicLink() {
+  const type = el('newLinkType').value;
+  const label = el('newLinkLabel').value.trim();
+  const url = el('newLinkUrl').value.trim();
+  const emoji = el('newLinkEmoji').value.trim();
+  const utm = el('newLinkUtm').checked;
+
+  if (!url) { toast('Введите URL', true); return; }
+
+  channelLinks.push({ type, label: label || url, url, emoji, utm });
+  el('newLinkLabel').value = '';
+  el('newLinkUrl').value = '';
+  el('newLinkEmoji').value = '';
+  renderDynamicLinks();
+  toast('Ссылка добавлена');
+}
+
+function removeDynamicLink(i) {
+  channelLinks.splice(i, 1);
+  renderDynamicLinks();
+}
 
 // ── Personas Management ──
 async function loadPersonas() {

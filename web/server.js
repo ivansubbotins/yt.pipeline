@@ -934,6 +934,124 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // ── Channel Setup Wizard ──
+
+  // POST /api/channels/wizard/description — Generate channel description
+  if (pathname === '/api/channels/wizard/description' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const { name, niche, audience, tone, expertise, goals } = body;
+
+      const result = await callClaude(
+        'Ты — эксперт по YouTube-каналам. Напиши описание канала для YouTube. Ответ СТРОГО JSON: {"description": "текст до 1000 символов", "short_description": "текст до 150 символов для мета-описания", "keywords": ["тег1","тег2"]}',
+        `Создай описание YouTube-канала.
+Название: ${name || 'не указано'}
+Ниша: ${niche || 'не указана'}
+Целевая аудитория: ${audience || 'не указана'}
+Тон подачи: ${tone || 'экспертный, дружелюбный'}
+Экспертиза автора: ${expertise || 'не указана'}
+Цели канала: ${goals || 'не указаны'}
+
+Требования:
+- Описание до 1000 символов (основное для YouTube)
+- Короткое описание до 150 символов (для поисковиков)
+- 10-15 ключевых слов/тегов для канала
+- Русский язык
+- Включи CTA (подписка, уведомления)
+- Упомяни что зритель получит от канала`
+      );
+
+      let data = {};
+      try {
+        const match = result.match(/\{[\s\S]*\}/);
+        if (match) data = JSON.parse(match[0]);
+      } catch(e) { data = { description: result }; }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // POST /api/channels/wizard/banner — Generate channel banner prompt
+  if (pathname === '/api/channels/wizard/banner' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const { name, niche, audience, tone, style_preference } = body;
+
+      const result = await callClaude(
+        'Ты — дизайнер YouTube-баннеров. Создай промпт для AI-генерации баннера канала. Ответ СТРОГО JSON: {"prompt": "English prompt for AI image generator", "text_on_banner": "текст на баннере (рус)", "color_scheme": ["#hex1","#hex2","#hex3"], "layout_description": "описание композиции на русском"}',
+        `Создай промпт для баннера YouTube-канала (2560×1440).
+Название канала: ${name}
+Ниша: ${niche}
+Аудитория: ${audience}
+Тон: ${tone || 'профессиональный'}
+Стиль: ${style_preference || 'современный, минималистичный'}
+
+Требования к баннеру:
+- Размер 2560×1440 (YouTube banner)
+- Безопасная зона для текста: центр 1546×423
+- Крупное название канала
+- Краткий слоган (1 строка)
+- Профессиональный вид
+- Должен работать на мобильных (центральная часть)`
+      );
+
+      let data = {};
+      try {
+        const match = result.match(/\{[\s\S]*\}/);
+        if (match) data = JSON.parse(match[0]);
+      } catch(e) { data = { prompt: result }; }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // POST /api/channels/wizard/avatar — Generate channel avatar prompt
+  if (pathname === '/api/channels/wizard/avatar' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const { name, niche, style_preference, use_photo } = body;
+
+      const result = await callClaude(
+        'Ты — дизайнер. Создай промпт для AI-генерации аватара YouTube-канала. Ответ СТРОГО JSON: {"prompt": "English prompt for AI (800x800 square)", "style": "тип: logo/photo/illustration", "colors": ["#hex1","#hex2"], "description": "описание на русском"}',
+        `Создай промпт для аватара YouTube-канала (800×800).
+Название канала: ${name}
+Ниша: ${niche}
+Стиль: ${style_preference || 'современный логотип'}
+Фото эксперта: ${use_photo ? 'да, использовать фото' : 'нет, сделать логотип/иконку'}
+
+Требования:
+- Квадрат 800×800
+- Хорошо читается в маленьком размере (32px)
+- Узнаваемый на обложках видео рядом с названием
+- Если логотип: простой, 1-2 цвета, без мелких деталей
+- Если фото: стилизованное, с цветовым акцентом`
+      );
+
+      let data = {};
+      try {
+        const match = result.match(/\{[\s\S]*\}/);
+        if (match) data = JSON.parse(match[0]);
+      } catch(e) { data = { prompt: result }; }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
   // ── Sources Management ──
 
   // GET /api/project/:id/sources — List project sources (auto-populate from research)
