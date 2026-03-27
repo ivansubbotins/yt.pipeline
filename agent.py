@@ -158,6 +158,117 @@ def cmd_edit_done(args):
     print(f"Публикация: python agent.py publish {args.project_id} --approve")
 
 
+def cmd_generate_cover_custom(args):
+    """Generate a single custom cover with specified prompt, style, and text."""
+    import json as json_mod
+    from config import BASE_DIR, FAL_KEY
+    from thumbnail_generator import generate_thumbnail_nano_banana
+
+    params = json_mod.loads(args.params)
+    prompt = params.get("prompt", "")
+    text_on_image = params.get("text_on_image", "")
+    style_id = params.get("style_id", "")
+    text_style_id = params.get("text_style_id", "")
+    neon_color = params.get("neon_color", "#00BFFF")
+    clothing_id = params.get("clothing_id", "")
+    clothing_url = params.get("clothing_url", "")
+
+    # Add clothing description to prompt if selected
+    if clothing_id:
+        gender = "male" if "male:" in clothing_id else "female"
+        prompt += f" The person is wearing specific clothing (see reference image for {gender} outfit)."
+
+    # Add text style description to prompt if selected
+    TEXT_STYLE_PROMPTS = {
+        "brush_script": "brush script handwritten calligraphy text style",
+        "thin_condensed": "thin condensed minimal modern uppercase text style",
+        "ornamental": "ornamental decorative serif text with curls and swirls",
+        "brush_bold": "bold brush italic grunge painted text style",
+        "distressed": "distressed grunge worn-out bold uppercase text style",
+        "elegant": "thin elegant sophisticated sans-serif text style",
+        "classic_serif": "classic serif traditional bold text style",
+        "3d_white": "3D white extruded bold text with depth and shadow",
+        "red_banner": "bold text on red banner/rectangle background, YouTube style",
+        "explosion": "bold text with explosion dust particles smoke effect behind",
+        "modern_bold": "modern bold italic sans-serif text style",
+        "impact": "extra bold condensed impact uppercase text style",
+        "neon_glow": "neon glowing cursive text with blue/cyan light effect",
+    }
+    if text_style_id and text_style_id in TEXT_STYLE_PROMPTS:
+        prompt += f" Text style: {TEXT_STYLE_PROMPTS[text_style_id]}."
+
+    # Find expert photo
+    expert_photo = None
+    for name in ["expert.jpg", "expert.png"]:
+        p = BASE_DIR / "assets" / name
+        if p.exists():
+            expert_photo = str(p)
+            break
+
+    if not expert_photo:
+        print("Error: no expert photo found")
+        sys.exit(1)
+
+    # Find style image (cover style reference)
+    style_image = None
+    if style_id:
+        # First check built-in references
+        ref_map = {
+            "dramatic": "dramatic.webp", "bright": "yarkiy.webp", "sport": "sport.webp",
+            "glossy": "glyanec.webp", "confidence": "uverennost.webp", "adrenaline": "adrenaline.webp",
+            "levitation": "levitation.webp", "at_work": "za_rabotoi.webp", "esoteric": "ezoterika.webp",
+            "atmospheric": "athmosphere.webp", "jump": "prizhok.webp", "calm": "spokoiniy.webp",
+            "vogue": "vogue.webp", "before_after": "do_posle.webp", "cinema": "cinematic.webp",
+            "cyberpunk": "cyberpunk.webp", "giant": "gigantskiy_masshab.webp", "miniature": "miniature-mir.webp",
+            "simple": "prostota.webp", "podcast": "podcast.webp", "street": "na_ulice.webp",
+            "vulnerable": "vulnerability.webp", "wind": "veter.webp",
+        }
+        if style_id in ref_map:
+            ref_path = BASE_DIR / "assets" / "references" / ref_map[style_id]
+            if ref_path.exists():
+                style_image = str(ref_path)
+        # Fallback to uploaded styles
+        if not style_image:
+            styles_meta = BASE_DIR / "assets" / "styles" / "styles.json"
+            if styles_meta.exists():
+                styles = json_mod.loads(styles_meta.read_text(encoding="utf-8"))
+                for s in styles:
+                    if s["id"] == style_id:
+                        sp = BASE_DIR / "assets" / "styles" / s["file"]
+                        if sp.exists():
+                            style_image = str(sp)
+                        break
+
+    # Find clothing image
+    clothing_image = None
+    if clothing_id:
+        # clothing_id format: "male:filename.webp" or "female:filename.webp"
+        parts = clothing_id.split(":", 1)
+        if len(parts) == 2:
+            gender_dir, filename = parts
+            cp = BASE_DIR / "assets" / "clothing" / gender_dir / filename
+            if cp.exists():
+                clothing_image = str(cp)
+
+    # Generate thumbnail
+    pipe = Pipeline(args.project_id)
+    out_dir = pipe.state.project_dir / "thumbnails"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Find next available filename
+    existing = list(out_dir.glob("custom_*.jpg"))
+    idx = len(existing) + 1
+    out_path = out_dir / f"custom_{idx}.jpg"
+
+    img = generate_thumbnail_nano_banana(
+        prompt, expert_photo,
+        style_image_path=style_image,
+        clothing_image_path=clothing_image,
+    )
+    img.save(str(out_path), "JPEG", quality=95)
+    print(f"Generated: {out_path}")
+
+
 def cmd_publish(args):
     if not args.approve:
         print("Публикация требует утверждения Иваном.")
@@ -224,6 +335,41 @@ def cmd_auth(_args):
         print("Авторизация выполнена, но канал не найден.")
 
 
+def cmd_splittest_start(args):
+    """Start a split-test from config file."""
+    import json as json_mod
+    from splittest import start_test
+    from config import BASE_DIR
+
+    config_file = BASE_DIR / "data" / args.project_id / "splittest_config.json"
+    if not config_file.exists():
+        print(f"Error: config file not found: {config_file}")
+        sys.exit(1)
+
+    config = json_mod.loads(config_file.read_text())
+    result = start_test(
+        project_id=args.project_id,
+        video_id=config["video_id"],
+        variants=config["variants"],
+        rotation_hours=config.get("rotation_hours", 6),
+        duration_hours=config.get("duration_hours", 72),
+    )
+    print(f"Split-test started: {len(result['variants'])} variants, rotate every {result['rotation_hours']}h")
+
+
+def cmd_splittest_finish(args):
+    """Finish a split-test."""
+    from splittest import finish_test
+
+    result = finish_test(
+        project_id=args.project_id,
+        method=args.method,
+        winner_index=args.winner_index,
+    )
+    winner = result["winner"]
+    print(f"Split-test finished! Winner: variant {winner['index'] + 1} ({winner['method']})")
+
+
 def main():
     parser = argparse.ArgumentParser(description="YouTube Pipeline Agent")
     subparsers = parser.add_subparsers(dest="command", help="Команда")
@@ -269,11 +415,25 @@ def main():
     p_pub.add_argument("--playlist", default=None, help="ID плейлиста YouTube")
     p_pub.add_argument("--category", default=None, help="ID категории YouTube (напр. 27=Education)")
 
+    # generate-cover-custom
+    p_gcc = subparsers.add_parser("generate-cover-custom", help="Сгенерировать обложку с кастомным промптом")
+    p_gcc.add_argument("project_id", help="ID проекта")
+    p_gcc.add_argument("params", help="JSON params: {prompt, text_on_image, style_id, neon_color}")
+
     # playlists
     subparsers.add_parser("playlists", help="Список плейлистов канала")
 
     # auth
     subparsers.add_parser("auth", help="Авторизация YouTube API")
+
+    # split-test
+    p_st_start = subparsers.add_parser("splittest-start", help="Запустить A/B тест")
+    p_st_start.add_argument("project_id", help="ID проекта")
+
+    p_st_finish = subparsers.add_parser("splittest-finish", help="Завершить A/B тест")
+    p_st_finish.add_argument("project_id", help="ID проекта")
+    p_st_finish.add_argument("method", nargs="?", default="auto", help="auto или manual")
+    p_st_finish.add_argument("winner_index", nargs="?", type=int, default=None, help="Индекс победителя (для manual)")
 
     args = parser.parse_args()
 
@@ -292,9 +452,12 @@ def main():
         "list": cmd_list,
         "shot-done": cmd_shot_done,
         "edit-done": cmd_edit_done,
+        "generate-cover-custom": cmd_generate_cover_custom,
         "publish": cmd_publish,
         "playlists": cmd_playlists,
         "auth": cmd_auth,
+        "splittest-start": cmd_splittest_start,
+        "splittest-finish": cmd_splittest_finish,
     }
 
     cmd_func = commands.get(args.command)

@@ -1,0 +1,58 @@
+{
+  "author": {
+    "name": "Иван",
+    "full_name": "Иван Субботин",
+    "who": "Предприниматель, маркетолог",
+    "expertise": [
+      "маркетинг",
+      "AI",
+      "бизнес",
+      "стоматологии"
+    ],
+    "experience": "13 лет в маркетинге, основатель Subbota-Inc и Ai-Маркетолог, резидент сколково",
+    "tone": "экспертный, но дружелюбный, разговорный"
+  },
+  "channel": {
+    "name": "Иван Субботин",
+    "youtube_url": "https://www.youtube.com/@subbotinivan",
+    "telegram_url": "https://t.me/vibekoding_for_marketers",
+    "telegram_group": "",
+    "website": "Subbotin-ai.ru",
+    "social_links": {}
+  },
+  "cta": {
+    "subscribe": "Подписывайтесь на канал и нажмите колокольчик!",
+    "like_comment": "Ставьте лайк и напишите в комментариях",
+    "lead_magnet": {
+      "enabled": false,
+      "text": "Забирайте бесплатно в ТГ все материалы из видео по ссылке в описании",
+      "url": "https://t.me/vibekoding_for_marketers/14",
+      "placement": "hook"
+    },
+    "mid_roll": {
+      "enabled": false,
+      "text": "Я создал сервис для маркетологов, который экономит годы и тонны денег, посмотрите демо по ссылке в описании и записывайтесь в Early Bird",
+      "url": "https://t.me/vibekoding_for_marketers/14",
+      "placement_after_block": 4
+    },
+    "end_screen": {
+      "enabled": true,
+      "text": "Если вам было полезно — посмотрите еще вот это видео, которое для вас подобрал ИИ. Увидимся в следующем видео!"
+    }
+  },
+  "description_links": [
+    {
+      "label": "Telegram",
+      "url": "https://t.me/vibekoding_for_marketers",
+      "emoji": "📌"
+    },
+    {
+      "label": "Сайт",
+      "url": "Subbotin-ai.ru",
+      "emoji": "🌐"
+    }
+  ],
+  "hashtags_always": [],
+  "tags_always": [],
+  "selected_style": ""
+}

@@ -23,8 +23,11 @@ YOUTUBE_TOKEN_FILE = BASE_DIR / "youtube_token.json"
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 
-# Recraft API (AI image generation for thumbnails)
+# Recraft API (AI image generation for thumbnails — fallback)
 RECRAFT_API_KEY = os.getenv("RECRAFT_API_KEY", "")
+
+# fal.ai API (Nano Banana 2 — primary thumbnail generation)
+FAL_KEY = os.getenv("FAL_KEY", "")
 
 # Pipeline defaults
 DEFAULT_VIDEO_MIN_LENGTH_MINUTES = 10
@@ -55,6 +58,23 @@ DESCRIPTION_TEMPLATE = """
 
 {hashtags}
 """.strip()
+
+# Channel context
+CHANNEL_CONTEXT_FILE = BASE_DIR / "channel_context.json"
+
+def load_channel_context() -> dict:
+    """Load channel context (author, CTA, links)."""
+    if CHANNEL_CONTEXT_FILE.exists():
+        import json
+        with open(CHANNEL_CONTEXT_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_channel_context(ctx: dict):
+    """Save channel context."""
+    import json
+    with open(CHANNEL_CONTEXT_FILE, "w", encoding="utf-8") as f:
+        json.dump(ctx, f, ensure_ascii=False, indent=2)
 
 # Teleprompter settings
 TELEPROMPTER_FONT_SIZE = "large"

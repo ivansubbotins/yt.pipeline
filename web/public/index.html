@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Pipeline — Админка</title>
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #e0e0e0;
+  --muted: #888;
+  --red: #ff4444;
+  --green: #4caf50;
+  --blue: #2196f3;
+  --orange: #ff9800;
+  --yellow: #ffc107;
+  --purple: #9c27b0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Header ── */
+.header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header h1 span { color: var(--red); }
+.header .btn-new { margin-left: auto; }
+
+/* ── Buttons ── */
+.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:hover:not(:disabled) { background: #e03030; }
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-blue:hover:not(:disabled) { background: #1976d2; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover:not(:disabled) { background: #388e3c; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover:not(:disabled) { border-color: var(--muted); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── Layout ── */
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+/* ── Projects List ── */
+.projects-grid { display: grid; gap: 12px; margin-top: 20px; }
+.project-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; cursor: pointer; transition: border-color 0.2s; }
+.project-card:hover { border-color: var(--muted); }
+.project-card .topic { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.project-card .meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.project-card .steps-bar { display: flex; gap: 3px; }
+.step-dot { width: 100%; height: 6px; border-radius: 3px; background: var(--border); }
+.step-dot.completed { background: var(--green); }
+.step-dot.in_progress { background: var(--blue); animation: pulse 1.5s infinite; }
+.step-dot.waiting { background: var(--orange); }
+.step-dot.failed { background: var(--red); }
+.step-dot.approved { background: var(--purple); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ── New Project Modal ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: 460px; max-width: 90vw; }
+.modal h2 { font-size: 18px; margin-bottom: 16px; }
+.modal input { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; outline: none; }
+.modal input:focus { border-color: var(--blue); }
+.modal .actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+/* ── Project Detail ── */
+.detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.detail-header .back { font-size: 24px; cursor: pointer; color: var(--muted); text-decoration: none; }
+.detail-header .back:hover { color: var(--text); }
+.detail-header h2 { font-size: 22px; flex: 1; }
+
+.steps-timeline { display: grid; gap: 10px; }
+.step-row { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+.step-row .num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.step-row .num.pending { background: var(--border); color: var(--muted); }
+.step-row .num.completed { background: var(--green); color: #fff; }
+.step-row .num.in_progress { background: var(--blue); color: #fff; animation: pulse 1.5s infinite; }
+.step-row .num.waiting { background: var(--orange); color: #fff; }
+.step-row .num.failed { background: var(--red); color: #fff; }
+.step-row .num.approved { background: var(--purple); color: #fff; }
+.step-row .info { flex: 1; }
+.step-row .info .name { font-weight: 600; font-size: 14px; }
+.step-row .info .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.step-row .status-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+/* ── Step Data Panel ── */
+.step-data { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px; max-height: 400px; overflow-y: auto; }
+.step-data pre { font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--muted); }
+
+/* ── Thumbnails ── */
+.thumbs-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.thumbs-grid img { width: 280px; border-radius: 8px; border: 1px solid var(--border); }
+
+/* ── Text Output ── */
+.text-output { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px; max-height: 300px; overflow-y: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: var(--text); }
+
+/* ── Loading ── */
+.loading { display: inline-block; width: 16px; height: 16px; border: 2px solid transparent; border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Styles Gallery ── */
+.styles-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.style-card { position: relative; width: 200px; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+.style-card.selected { border-color: var(--blue); box-shadow: 0 0 8px rgba(33,150,243,0.4); }
+.style-card:hover { border-color: var(--muted); }
+.style-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.style-card .style-name { padding: 6px 8px; font-size: 12px; font-weight: 600; background: var(--card); }
+.style-card .style-prompt { padding: 2px 8px 6px; font-size: 11px; color: var(--muted); background: var(--card); }
+.style-card .style-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; border: none; font-size: 12px; cursor: pointer; display: none; }
+.style-card:hover .style-delete { display: block; }
+
+/* ── Custom Cover Modal ── */
+.cover-modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+.cover-modal h2 { margin-bottom: 16px; font-size: 18px; }
+.cover-modal label { display: block; font-size: 12px; color: var(--muted); margin-top: 12px; margin-bottom: 4px; }
+.cover-modal textarea { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; resize: vertical; min-height: 80px; outline: none; font-family: inherit; }
+.cover-modal textarea:focus { border-color: var(--blue); }
+.cover-modal .actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; font-size: 13px; z-index: 200; display: none; }
+.toast.show { display: block; animation: fadeIn 0.3s; }
+.toast.error { border-color: var(--red); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.run-all-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+
+/* ── Settings ── */
+.ctx-input { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none; margin-top: 4px; }
+.ctx-input:focus { border-color: var(--blue); }
+select.ctx-input { appearance: none; }
+
+/* ═══ MOBILE ═══ */
+@media (max-width: 768px) {
+  .header { padding: 12px 14px; gap: 8px; flex-wrap: wrap; }
+  .header h1 { font-size: 16px; }
+  .header .btn { font-size: 11px; padding: 6px 10px; }
+  .header .btn-new { margin-left: 0; }
+
+  .container { padding: 14px; }
+
+  .project-card { padding: 14px; }
+  .project-card .topic { font-size: 14px; }
+
+  .modal { width: 95vw; padding: 20px; }
+  .cover-modal { width: 95vw; padding: 16px; }
+
+  .detail-header { flex-wrap: wrap; gap: 8px; }
+  .detail-header h2 { font-size: 18px; }
+
+  .step-row { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  .step-row .info .name { font-size: 13px; }
+
+  .thumbs-grid img { width: 100%; max-width: 280px; }
+
+  .styles-grid { gap: 8px; }
+  .style-card { width: 140px; }
+  .style-card img { height: auto; }
+
+  .run-all-bar { flex-wrap: wrap; }
+
+  .toast { bottom: 12px; right: 12px; left: 12px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>▶ <span>YouTube</span> Pipeline</h1>
+  <a href="/express.html" class="btn btn-outline" style="text-decoration:none;background:rgba(245,158,11,0.1);border-color:var(--orange);color:var(--orange);">Express</a>
+  <button class="btn btn-outline" onclick="showSettings()">⚙ Настройки</button>
+  <button class="btn btn-red btn-new" onclick="showModal()">+ Новый проект</button>
+  <a href="/api/logout" class="btn btn-outline" style="font-size:11px;padding:6px 12px;text-decoration:none;color:#888;">Выйти</a>
+</div>
+
+<!-- Projects List View -->
+<div class="container" id="listView">
+  <div id="projectsList" class="projects-grid"></div>
+  <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
+</div>
+
+<!-- Project Detail View -->
+<div class="container" id="detailView" style="display:none">
+  <div class="detail-header">
+    <a class="back" onclick="showList()">←</a>
+    <h2 id="detailTopic"></h2>
+    <span id="detailMeta" style="color:var(--muted); font-size:12px;"></span>
+  </div>
+  <div class="run-all-bar">
+    <button class="btn btn-blue" id="btnRunAll" onclick="runAll()">▶ Запустить все авто-шаги</button>
+    <button class="btn btn-outline btn-sm" onclick="showCoverModal()">🎨 Кастомная обложка</button>
+    <button class="btn btn-outline btn-sm" onclick="openEditor()">🖼 Cover Editor</button>
+    <button class="btn btn-outline btn-sm" onclick="refreshDetail()">↻ Обновить</button>
+  </div>
+  <div class="steps-timeline" id="stepsTimeline"></div>
+
+  <div id="filesSection" style="margin-top:24px;"></div>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="newModal">
+  <div class="modal">
+    <h2>Новый видео-проект</h2>
+    <input type="text" id="topicInput" placeholder="Тема видео..." autofocus>
+    <div class="actions">
+      <button class="btn btn-outline" onclick="hideModal()">Отмена</button>
+      <button class="btn btn-red" id="btnCreate" onclick="createProject()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings View -->
+<div class="container" id="settingsView" style="display:none">
+  <div class="detail-header">
+    <a class="back" onclick="showList()">←</a>
+    <h2>Настройки канала</h2>
+  </div>
+
+  <div style="display:grid; gap:20px;">
+    <!-- Author -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">👤 Автор</h3>
+      <div style="display:grid; gap:10px;">
+        <div><label style="font-size:12px;color:var(--muted);">Имя</label><input class="ctx-input" id="ctx-author-name" placeholder="Иван"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Полное имя</label><input class="ctx-input" id="ctx-author-full_name" placeholder="Иван Субботин"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Кто он</label><input class="ctx-input" id="ctx-author-who" placeholder="Предприниматель, маркетолог"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Экспертиза (через запятую)</label><input class="ctx-input" id="ctx-author-expertise" placeholder="маркетинг, AI, бизнес"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Опыт</label><input class="ctx-input" id="ctx-author-experience" placeholder="10 лет в маркетинге, основатель..."></div>
+        <div><label style="font-size:12px;color:var(--muted);">Тон подачи</label><input class="ctx-input" id="ctx-author-tone" placeholder="экспертный, но дружелюбный"></div>
+      </div>
+    </div>
+
+    <!-- Channel -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">📺 Канал</h3>
+      <div style="display:grid; gap:10px;">
+        <div><label style="font-size:12px;color:var(--muted);">Название канала</label><input class="ctx-input" id="ctx-channel-name" placeholder=""></div>
+        <div><label style="font-size:12px;color:var(--muted);">YouTube URL</label><input class="ctx-input" id="ctx-channel-youtube_url" placeholder="https://youtube.com/@channel"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Telegram канал</label><input class="ctx-input" id="ctx-channel-telegram_url" placeholder="https://t.me/channel"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Telegram группа</label><input class="ctx-input" id="ctx-channel-telegram_group" placeholder="https://t.me/group"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Сайт</label><input class="ctx-input" id="ctx-channel-website" placeholder="https://example.com"></div>
+      </div>
+    </div>
+
+    <!-- Lead Magnet -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">🎁 Лидмагнит</h3>
+      <div style="display:grid; gap:10px;">
+        <div><label><input type="checkbox" id="ctx-cta-lead_magnet-enabled"> Включен</label></div>
+        <div><label style="font-size:12px;color:var(--muted);">Текст для озвучки</label><input class="ctx-input" id="ctx-cta-lead_magnet-text" placeholder="Забирайте бесплатный гайд по ссылке в описании!"></div>
+        <div><label style="font-size:12px;color:var(--muted);">URL</label><input class="ctx-input" id="ctx-cta-lead_magnet-url" placeholder="https://t.me/bot"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Размещение</label>
+          <select class="ctx-input" id="ctx-cta-lead_magnet-placement"><option value="intro">В начале (интро)</option><option value="hook">В хуке</option><option value="outro">В конце</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mid-Roll Ad -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">📢 Рекламная вставка (mid-roll)</h3>
+      <div style="display:grid; gap:10px;">
+        <div><label><input type="checkbox" id="ctx-cta-mid_roll-enabled"> Включена</label></div>
+        <div><label style="font-size:12px;color:var(--muted);">Текст для озвучки</label><input class="ctx-input" id="ctx-cta-mid_roll-text" placeholder="У меня есть закрытая группа где я делюсь промптами..."></div>
+        <div><label style="font-size:12px;color:var(--muted);">URL</label><input class="ctx-input" id="ctx-cta-mid_roll-url" placeholder="https://t.me/group"></div>
+        <div><label style="font-size:12px;color:var(--muted);">После какого блока</label><input class="ctx-input" type="number" id="ctx-cta-mid_roll-placement_after_block" value="3" min="1" max="6"></div>
+      </div>
+    </div>
+
+    <!-- End Screen -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">🏁 Концовка</h3>
+      <div style="display:grid; gap:10px;">
+        <div><label><input type="checkbox" id="ctx-cta-end_screen-enabled" checked> Включена</label></div>
+        <div><label style="font-size:12px;color:var(--muted);">Текст концовки</label><input class="ctx-input" id="ctx-cta-end_screen-text" placeholder="Ставьте лайк и подписывайтесь!"></div>
+      </div>
+    </div>
+
+    <!-- Always-on tags -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">🏷 Постоянные теги и хэштеги</h3>
+      <div style="display:grid; gap:10px;">
+        <div><label style="font-size:12px;color:var(--muted);">Хэштеги (через запятую, без #)</label><input class="ctx-input" id="ctx-hashtags_always" placeholder="ИмяКанала, Маркетинг"></div>
+        <div><label style="font-size:12px;color:var(--muted);">Теги (через запятую)</label><input class="ctx-input" id="ctx-tags_always" placeholder="имя канала, маркетинг"></div>
+      </div>
+    </div>
+
+    <!-- Expert Photo -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">📸 Фото эксперта (для обложек)</h3>
+      <input type="file" id="expertPhotoInput" accept="image/*">
+      <p style="font-size:12px;color:var(--muted);margin-top:8px;">Фото на нейтральном фоне. Фон будет удалён автоматически.</p>
+      <div id="expertPreview" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- Styles Gallery -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">🎨 Стили обложек (референсы)</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Загрузите примеры обложек как стили. Выбранный стиль будет использоваться как референс при генерации через Nano Banana 2.</p>
+
+      <div id="stylesGallery" class="styles-grid"></div>
+
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+          <label style="font-size:12px;color:var(--muted);">Картинка-референс</label>
+          <input type="file" id="styleFileInput" accept="image/*">
+        </div>
+        <div style="flex:1; min-width:150px;">
+          <label style="font-size:12px;color:var(--muted);">Название стиля</label>
+          <input class="ctx-input" id="styleNameInput" placeholder="Например: Неон синий">
+        </div>
+        <div style="flex:1; min-width:200px;">
+          <label style="font-size:12px;color:var(--muted);">Подсказка для промпта (опционально)</label>
+          <input class="ctx-input" id="stylePromptInput" placeholder="neon blue glow, dramatic lighting...">
+        </div>
+        <button class="btn btn-blue btn-sm" onclick="uploadStyle()">+ Добавить стиль</button>
+      </div>
+    </div>
+
+    <button class="btn btn-green" onclick="saveContext()" style="width:fit-content;">💾 Сохранить настройки</button>
+  </div>
+</div>
+
+<!-- Custom Cover Modal -->
+<div class="modal-overlay" id="coverModal">
+  <div class="cover-modal">
+    <h2>🎨 Кастомная обложка</h2>
+
+    <label>Стиль-референс</label>
+    <div id="coverStyleSelect" class="styles-grid" style="margin-bottom:0;"></div>
+
+    <label>Промпт (на английском — описание полной сцены)</label>
+    <textarea id="coverPromptInput" placeholder="A man pointing at the camera with surprised expression, neon blue glow behind him, bold text says 'ШОК', YouTube thumbnail style, 16:9..."></textarea>
+
+    <label>Текст на обложке (русский, 2-4 слова)</label>
+    <input class="ctx-input" id="coverTextInput" placeholder="СЕКРЕТ УСПЕХА" style="margin-top:0;">
+
+    <label>Цвет неона</label>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="color" id="coverNeonColor" value="#00BFFF" style="width:40px;height:30px;border:none;cursor:pointer;">
+      <span id="coverNeonHex" style="font-size:12px;color:var(--muted);">#00BFFF</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-outline" onclick="hideCoverModal()">Отмена</button>
+      <button class="btn btn-blue" id="btnGenCover" onclick="generateCustomCover()">🎨 Сгенерировать</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STEPS = [
+  { key: 'research', name: 'Исследование', desc: 'Анализ темы, ключевые слова, конкуренты', auto: true },
+  { key: 'content_plan', name: 'Контент-план', desc: 'Структура видео, хук, CTA', auto: true },
+  { key: 'references', name: 'Референсы', desc: 'Анализ конкурентов, скачивание обложек', auto: true },
+  { key: 'script', name: 'Сценарий', desc: 'Блоки сценария с таймкодами', auto: true },
+  { key: 'teleprompter', name: 'Телесуфлёр', desc: 'Текст для телесуфлёра', auto: true },
+  { key: 'covers', name: 'Обложки', desc: 'Генерация 3 вариантов обложек', auto: true },
+  { key: 'description', name: 'Описание', desc: 'SEO описание + теги + хэштеги', auto: true },
+  { key: 'shooting', name: 'Съёмка', desc: 'Ручной этап — съёмка видео', auto: false },
+  { key: 'editing', name: 'Монтаж', desc: 'Ручной этап — монтаж', auto: false },
+  { key: 'publish', name: 'Публикация', desc: 'Загрузка на YouTube', auto: false },
+];
+
+let currentProject = null;
+
+// ── API ──
+async function api(url, body) {
+  const opts = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+  const res = await fetch(url, opts);
+  if (res.status === 401) { window.location.href = '/login.html'; return {}; }
+  return res.json();
+}
+
+// ── Toast ──
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ── Modal ──
+function showModal() { document.getElementById('newModal').classList.add('show'); document.getElementById('topicInput').focus(); }
+function hideModal() { document.getElementById('newModal').classList.remove('show'); }
+
+// ── Create Project ──
+async function createProject() {
+  const input = document.getElementById('topicInput');
+  const topic = input.value.trim();
+  if (!topic) return;
+  const btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Создаю...';
+  try {
+    const data = await api('/api/new', { topic });
+    if (data.ok) {
+      toast('Проект создан!');
+      input.value = '';
+      hideModal();
+      await loadProjects();
+    } else {
+      toast(data.error || 'Ошибка', true);
+    }
+  } catch (e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.textContent = 'Создать';
+}
+
+// ── Load Projects ──
+async function loadProjects() {
+  const data = await api('/api/projects');
+  const list = document.getElementById('projectsList');
+  const empty = document.getElementById('emptyMsg');
+
+  if (!data.projects || data.projects.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = data.projects.map(p => {
+    const stepsHtml = STEPS.map(s => {
+      const status = p.steps[s.key]?.status || 'pending';
+      return `<div class="step-dot ${status}"></div>`;
+    }).join('');
+    const date = new Date(p.created_at).toLocaleDateString('ru-RU');
+    return `
+      <div class="project-card" onclick="openProject('${p.id}')">
+        <div class="topic">${esc(p.topic)}</div>
+        <div class="meta">${p.id} • ${date} • Текущий шаг: ${p.current_step}</div>
+        <div class="steps-bar">${stepsHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── Open Project ──
+async function openProject(id) {
+  currentProject = id;
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'block';
+  await refreshDetail();
+}
+
+// ── Refresh Detail ──
+async function refreshDetail() {
+  if (!currentProject) return;
+  const data = await api(`/api/project/${currentProject}`);
+  if (!data.ok) { toast('Не удалось загрузить', true); return; }
+
+  const { state, files } = data;
+  document.getElementById('detailTopic').textContent = state.topic;
+  document.getElementById('detailMeta').textContent = `ID: ${state.project_id} • Создан: ${new Date(state.created_at).toLocaleString('ru-RU')}`;
+
+  // Steps timeline
+  const timeline = document.getElementById('stepsTimeline');
+  timeline.innerHTML = STEPS.map((s, i) => {
+    const stepState = state.steps[s.key] || {};
+    const status = stepState.status || 'pending';
+    const statusLabels = { pending: '⬜ Ожидает', in_progress: '🔄 Выполняется', completed: '✅ Готово', waiting: '⏳ Ожидание', failed: '❌ Ошибка', approved: '👍 Подтверждено' };
+    const statusColors = { pending: 'var(--muted)', completed: 'var(--green)', in_progress: 'var(--blue)', waiting: 'var(--orange)', failed: 'var(--red)', approved: 'var(--purple)' };
+
+    let actionBtn = '';
+    if (s.auto && (status === 'pending' || status === 'failed')) {
+      actionBtn = `<button class="btn btn-blue btn-sm" onclick="runStep('${s.key}', this)">▶ Запустить</button>`;
+    } else if (s.auto && (status === 'completed' || status === 'approved')) {
+      actionBtn = `<button class="btn btn-outline btn-sm" onclick="restartStep('${s.key}', this)">🔄 Перезапустить</button>`;
+    } else if (s.key === 'shooting' && status === 'waiting') {
+      actionBtn = `<button class="btn btn-green btn-sm" onclick="shotDone(this)">✓ Съёмка готова</button>`;
+    } else if (s.key === 'editing' && status === 'waiting') {
+      actionBtn = `<button class="btn btn-green btn-sm" onclick="editDone(this)">✓ Монтаж готов</button>`;
+    }
+
+    let dataToggle = '';
+    if (stepState.data && Object.keys(stepState.data).length > 0) {
+      dataToggle = `<button class="btn btn-outline btn-sm" onclick="toggleData('data-${s.key}')">📋 Данные</button>`;
+    }
+
+    return `
+      <div class="step-row">
+        <div class="num ${status}">${i + 1}</div>
+        <div class="info">
+          <div class="name">${s.name}</div>
+          <div class="desc">${s.desc}</div>
+        </div>
+        <span class="status-label" style="color:${statusColors[status]}">${statusLabels[status]}</span>
+        ${dataToggle}
+        ${actionBtn}
+      </div>
+      ${stepState.data ? `<div class="step-data" id="data-${s.key}" style="display:none"><pre>${esc(JSON.stringify(stepState.data, null, 2))}</pre></div>` : ''}
+    `;
+  }).join('');
+
+  // Files section
+  const filesSection = document.getElementById('filesSection');
+  let filesHtml = '';
+
+  if (files.thumbnails && files.thumbnails.length) {
+    filesHtml += '<h3 style="margin-bottom:8px;">🎨 Обложки</h3>';
+    filesHtml += '<div class="thumbs-grid">';
+    files.thumbnails.forEach(t => { filesHtml += `<img src="${t}" alt="thumbnail">`; });
+    filesHtml += '</div>';
+  }
+  if (files.teleprompter) {
+    filesHtml += '<h3 style="margin-top:20px; margin-bottom:8px;">📝 Телесуфлёр</h3>';
+    filesHtml += `<div class="text-output">${esc(files.teleprompter)}</div>`;
+  }
+  if (files.description) {
+    filesHtml += '<h3 style="margin-top:20px; margin-bottom:8px;">📄 Описание для YouTube</h3>';
+    filesHtml += `<div class="text-output">${esc(files.description)}</div>`;
+  }
+  filesSection.innerHTML = filesHtml;
+}
+
+function toggleData(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── Run Step ──
+async function runStep(step, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Работаю...';
+  try {
+    const data = await api('/api/run-step', { project_id: currentProject, step });
+    if (data.ok) {
+      toast(`Шаг "${step}" выполнен!`);
+      await refreshDetail();
+    } else {
+      toast(data.error || 'Ошибка', true);
+    }
+  } catch (e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.textContent = '▶ Запустить';
+}
+
+// ── Restart Step ──
+async function restartStep(step, btn) {
+  if (!confirm(`Перезапустить шаг «${step}»? Текущие данные будут сброшены.`)) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Сброс...';
+  try {
+    const resetData = await api('/api/reset-step', { project_id: currentProject, step });
+    if (!resetData.ok) { toast(resetData.error || 'Ошибка сброса', true); return; }
+    const runData = await api('/api/run-step', { project_id: currentProject, step });
+    if (runData.ok) {
+      toast(`Шаг «${step}» перезапущен!`);
+      await refreshDetail();
+    } else {
+      toast(runData.error || 'Ошибка запуска', true);
+    }
+  } catch (e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.textContent = '🔄 Перезапустить';
+}
+
+// ── Run All ──
+async function runAll() {
+  const btn = document.getElementById('btnRunAll');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Запуск всех шагов...';
+  try {
+    const data = await api('/api/run-all', { project_id: currentProject });
+    if (data.ok) {
+      toast('Все авто-шаги выполнены!');
+      await refreshDetail();
+    } else {
+      toast(data.error || 'Ошибка', true);
+    }
+  } catch (e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.textContent = '▶ Запустить все авто-шаги';
+}
+
+// ── Manual Steps ──
+async function shotDone(btn) {
+  btn.disabled = true;
+  const data = await api('/api/shot-done', { project_id: currentProject });
+  if (data.ok) { toast('Съёмка отмечена!'); await refreshDetail(); }
+  else toast(data.error, true);
+  btn.disabled = false;
+}
+
+async function editDone(btn) {
+  btn.disabled = true;
+  const data = await api('/api/edit-done', { project_id: currentProject });
+  if (data.ok) { toast('Монтаж отмечен!'); await refreshDetail(); }
+  else toast(data.error, true);
+  btn.disabled = false;
+}
+
+// ── Show List ──
+function showList() {
+  currentProject = null;
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('settingsView').style.display = 'none';
+  document.getElementById('listView').style.display = 'block';
+  loadProjects();
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// Enter in modal
+document.getElementById('topicInput').addEventListener('keydown', e => { if (e.key === 'Enter') createProject(); });
+
+// ── Settings ──
+function showSettings() {
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('settingsView').style.display = 'block';
+  loadContext();
+}
+
+async function loadContext() {
+  const data = await api('/api/context');
+  if (!data.ok) return;
+  const ctx = data.context;
+
+  // Author
+  const a = ctx.author || {};
+  el('ctx-author-name').value = a.name || '';
+  el('ctx-author-full_name').value = a.full_name || '';
+  el('ctx-author-who').value = a.who || '';
+  el('ctx-author-expertise').value = (a.expertise || []).join(', ');
+  el('ctx-author-experience').value = a.experience || '';
+  el('ctx-author-tone').value = a.tone || '';
+
+  // Channel
+  const ch = ctx.channel || {};
+  el('ctx-channel-name').value = ch.name || '';
+  el('ctx-channel-youtube_url').value = ch.youtube_url || '';
+  el('ctx-channel-telegram_url').value = ch.telegram_url || '';
+  el('ctx-channel-telegram_group').value = ch.telegram_group || '';
+  el('ctx-channel-website').value = ch.website || '';
+
+  // Lead magnet
+  const lm = (ctx.cta || {}).lead_magnet || {};
+  el('ctx-cta-lead_magnet-enabled').checked = lm.enabled || false;
+  el('ctx-cta-lead_magnet-text').value = lm.text || '';
+  el('ctx-cta-lead_magnet-url').value = lm.url || '';
+  el('ctx-cta-lead_magnet-placement').value = lm.placement || 'intro';
+
+  // Mid-roll
+  const mr = (ctx.cta || {}).mid_roll || {};
+  el('ctx-cta-mid_roll-enabled').checked = mr.enabled || false;
+  el('ctx-cta-mid_roll-text').value = mr.text || '';
+  el('ctx-cta-mid_roll-url').value = mr.url || '';
+  el('ctx-cta-mid_roll-placement_after_block').value = mr.placement_after_block || 3;
+
+  // End screen
+  const es = (ctx.cta || {}).end_screen || {};
+  el('ctx-cta-end_screen-enabled').checked = es.enabled !== false;
+  el('ctx-cta-end_screen-text').value = es.text || '';
+
+  // Tags
+  el('ctx-hashtags_always').value = (ctx.hashtags_always || []).join(', ');
+  el('ctx-tags_always').value = (ctx.tags_always || []).join(', ');
+}
+
+async function saveContext() {
+  const ctx = {
+    author: {
+      name: el('ctx-author-name').value,
+      full_name: el('ctx-author-full_name').value,
+      who: el('ctx-author-who').value,
+      expertise: el('ctx-author-expertise').value.split(',').map(s => s.trim()).filter(Boolean),
+      experience: el('ctx-author-experience').value,
+      tone: el('ctx-author-tone').value,
+    },
+    channel: {
+      name: el('ctx-channel-name').value,
+      youtube_url: el('ctx-channel-youtube_url').value,
+      telegram_url: el('ctx-channel-telegram_url').value,
+      telegram_group: el('ctx-channel-telegram_group').value,
+      website: el('ctx-channel-website').value,
+      social_links: {},
+    },
+    cta: {
+      subscribe: 'Подписывайтесь на канал и нажмите колокольчик!',
+      like_comment: 'Ставьте лайк и напишите в комментариях',
+      lead_magnet: {
+        enabled: el('ctx-cta-lead_magnet-enabled').checked,
+        text: el('ctx-cta-lead_magnet-text').value,
+        url: el('ctx-cta-lead_magnet-url').value,
+        placement: el('ctx-cta-lead_magnet-placement').value,
+      },
+      mid_roll: {
+        enabled: el('ctx-cta-mid_roll-enabled').checked,
+        text: el('ctx-cta-mid_roll-text').value,
+        url: el('ctx-cta-mid_roll-url').value,
+        placement_after_block: parseInt(el('ctx-cta-mid_roll-placement_after_block').value) || 3,
+      },
+      end_screen: {
+        enabled: el('ctx-cta-end_screen-enabled').checked,
+        text: el('ctx-cta-end_screen-text').value,
+      },
+    },
+    description_links: [],
+    hashtags_always: el('ctx-hashtags_always').value.split(',').map(s => s.trim()).filter(Boolean),
+    tags_always: el('ctx-tags_always').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+
+  // Add channel links as description_links
+  if (ctx.channel.telegram_url) ctx.description_links.push({ label: 'Telegram', url: ctx.channel.telegram_url, emoji: '📌' });
+  if (ctx.channel.telegram_group) ctx.description_links.push({ label: 'Telegram-группа', url: ctx.channel.telegram_group, emoji: '📌' });
+  if (ctx.channel.website) ctx.description_links.push({ label: 'Сайт', url: ctx.channel.website, emoji: '🌐' });
+
+  try {
+    const data = await api('/api/context', { context: ctx });
+    if (data.ok) toast('Настройки сохранены!');
+    else toast(data.error || 'Ошибка', true);
+  } catch (e) { toast(e.message, true); }
+
+  // Upload expert photo if selected
+  const fileInput = el('expertPhotoInput');
+  if (fileInput.files.length > 0) {
+    try {
+      toast('Загружаю фото...');
+      const fd = new FormData();
+      fd.append('photo', fileInput.files[0]);
+      const resp = await fetch('/api/upload-expert', { method: 'POST', body: fd });
+      const r = await resp.json();
+      if (r.ok) toast('Фото эксперта загружено!');
+      else toast(r.error || 'Ошибка загрузки', true);
+    } catch (e) { toast('Ошибка загрузки фото: ' + e.message, true); }
+  }
+}
+
+function el(id) { return document.getElementById(id); }
+
+// ── Styles ──
+let allStyles = [];
+let selectedStyleId = '';
+
+async function loadStyles() {
+  const data = await api('/api/styles');
+  allStyles = data.styles || [];
+  renderStylesGallery();
+}
+
+function renderStylesGallery() {
+  const gallery = document.getElementById('stylesGallery');
+  if (!gallery) return;
+  if (allStyles.length === 0) {
+    gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">Нет загруженных стилей. Добавьте референс-обложки выше.</p>';
+    return;
+  }
+  gallery.innerHTML = allStyles.map(s => `
+    <div class="style-card ${s.id === selectedStyleId ? 'selected' : ''}" onclick="selectStyle('${s.id}')">
+      <img src="/api/styles/${s.id}/image" alt="${esc(s.name)}">
+      <div class="style-name">${esc(s.name)}</div>
+      ${s.prompt ? `<div class="style-prompt">${esc(s.prompt)}</div>` : ''}
+      <button class="style-delete" onclick="event.stopPropagation(); deleteStyle('${s.id}')" title="Удалить">✕</button>
+    </div>
+  `).join('');
+}
+
+function selectStyle(id) {
+  selectedStyleId = selectedStyleId === id ? '' : id;
+  renderStylesGallery();
+  renderCoverStyleSelect();
+  // Save selection to context
+  api('/api/context').then(data => {
+    if (data.ok) {
+      const ctx = data.context || {};
+      ctx.selected_style = selectedStyleId;
+      api('/api/context', { context: ctx });
+    }
+  });
+}
+
+async function uploadStyle() {
+  const fileInput = el('styleFileInput');
+  const name = el('styleNameInput').value.trim();
+  const prompt = el('stylePromptInput').value.trim();
+
+  if (!fileInput.files.length) { toast('Выберите картинку', true); return; }
+  if (!name) { toast('Введите название стиля', true); return; }
+
+  const fd = new FormData();
+  fd.append('image', fileInput.files[0]);
+  fd.append('name', name);
+  fd.append('prompt', prompt);
+
+  try {
+    toast('Загружаю стиль...');
+    const resp = await fetch('/api/upload-style', { method: 'POST', body: fd });
+    const r = await resp.json();
+    if (r.ok) {
+      toast('Стиль добавлен!');
+      el('styleNameInput').value = '';
+      el('stylePromptInput').value = '';
+      fileInput.value = '';
+      await loadStyles();
+    } else {
+      toast(r.error || 'Ошибка', true);
+    }
+  } catch (e) { toast(e.message, true); }
+}
+
+async function deleteStyle(id) {
+  if (!confirm('Удалить этот стиль?')) return;
+  await fetch(`/api/styles/${id}`, { method: 'DELETE' });
+  if (selectedStyleId === id) selectedStyleId = '';
+  await loadStyles();
+  toast('Стиль удалён');
+}
+
+// ── Custom Cover Modal ──
+function showCoverModal() {
+  renderCoverStyleSelect();
+  document.getElementById('coverModal').classList.add('show');
+}
+
+function hideCoverModal() {
+  document.getElementById('coverModal').classList.remove('show');
+}
+
+function renderCoverStyleSelect() {
+  const container = document.getElementById('coverStyleSelect');
+  if (!container) return;
+  if (allStyles.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:12px;">Нет стилей. Загрузите в настройках.</p>';
+    return;
+  }
+  container.innerHTML = allStyles.map(s => `
+    <div class="style-card ${s.id === selectedStyleId ? 'selected' : ''}" onclick="selectStyle('${s.id}')" style="width:140px;">
+      <img src="/api/styles/${s.id}/image" alt="${esc(s.name)}">
+      <div class="style-name">${esc(s.name)}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('coverNeonColor').addEventListener('input', function() {
+  document.getElementById('coverNeonHex').textContent = this.value;
+});
+
+async function generateCustomCover() {
+  const prompt = el('coverPromptInput').value.trim();
+  const textOnImage = el('coverTextInput').value.trim();
+  const neonColor = el('coverNeonColor').value;
+
+  if (!prompt) { toast('Введите промпт', true); return; }
+  if (!currentProject) { toast('Откройте проект', true); return; }
+
+  const btn = el('btnGenCover');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Генерирую...';
+
+  try {
+    const data = await api('/api/generate-cover-custom', {
+      project_id: currentProject,
+      prompt,
+      text_on_image: textOnImage,
+      style_id: selectedStyleId,
+      neon_color: neonColor,
+    });
+    if (data.ok) {
+      toast('Обложка сгенерирована!');
+      hideCoverModal();
+      await refreshDetail();
+    } else {
+      toast(data.error || 'Ошибка генерации', true);
+    }
+  } catch (e) { toast(e.message, true); }
+
+  btn.disabled = false;
+  btn.textContent = '🎨 Сгенерировать';
+}
+
+// ── Load styles on settings page ──
+const _origShowSettings = showSettings;
+showSettings = function() {
+  _origShowSettings();
+  loadStyles();
+};
+
+// ── Open Cover Editor ──
+function openEditor() {
+  if (!currentProject) { toast('Откройте проект', true); return; }
+  window.open(`/editor.html?project=${currentProject}`, '_blank');
+}
+
+// Init — load styles selection from context
+async function initStyles() {
+  await loadStyles();
+  const ctxData = await api('/api/context');
+  if (ctxData.ok && ctxData.context?.selected_style) {
+    selectedStyleId = ctxData.context.selected_style;
+    renderStylesGallery();
+  }
+}
+
+// Init
+loadProjects();
+initStyles();
+</script>
+</body>
+</html>

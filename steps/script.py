@@ -50,9 +50,46 @@ SYSTEM_PROMPT = """Ты — профессиональный сценарист 
 class ScriptStep(BaseStep):
     step_name = "script"
 
+    def _build_cta_instructions(self) -> str:
+        """Build CTA instructions from channel context."""
+        ctx = self.get_channel_context()
+        if not ctx:
+            return ""
+
+        lines = []
+        cta = ctx.get("cta", {})
+
+        lead = cta.get("lead_magnet", {})
+        if lead.get("enabled") and lead.get("text"):
+            placement = lead.get("placement", "intro")
+            lines.append(
+                f"- ЛИДМАГНИТ (вставить в {placement}): "
+                f"Автор должен произнести: \"{lead['text']}\""
+            )
+
+        mid = cta.get("mid_roll", {})
+        if mid.get("enabled") and mid.get("text"):
+            block_num = mid.get("placement_after_block", 3)
+            lines.append(
+                f"- РЕКЛАМНАЯ ВСТАВКА (после блока {block_num}): "
+                f"Автор должен произнести: \"{mid['text']}\""
+            )
+
+        end = cta.get("end_screen", {})
+        if end.get("enabled") and end.get("text"):
+            lines.append(
+                f"- КОНЦОВКА: \"{end['text']}\""
+            )
+
+        if not lines:
+            return ""
+        return "\n\nCTA-вставки (ОБЯЗАТЕЛЬНО включить в сценарий):\n" + "\n".join(lines)
+
     def execute(self) -> dict:
         content_plan = self.get_previous_step_data("content_plan")
         research = self.get_previous_step_data("research")
+
+        cta_instructions = self._build_cta_instructions()
 
         prompt = f"""Напиши скелет сценария для YouTube-видео.
 
@@ -78,7 +115,7 @@ class ScriptStep(BaseStep):
 - Ключевая фраза (key_phrase) — дословно что произнести
 - Визуальные указания для оператора/монтажёра
 - Естественный, разговорный тон
-- Кульминация должна быть логическим итогом основных блоков"""
+- Кульминация должна быть логическим итогом основных блоков{cta_instructions}"""
 
         response = self.ask_claude(SYSTEM_PROMPT, prompt)
 

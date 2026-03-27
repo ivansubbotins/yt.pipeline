@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cover Editor — YouTube Pipeline</title>
+<style>
+@font-face { font-family: 'Oswald-Bold'; src: url('/api/fonts/Oswald-Bold.ttf') format('truetype'); font-weight: bold; }
+
+:root {
+  --bg: #0c0c0c;
+  --card: #151515;
+  --card2: #1a1a1a;
+  --border: #262626;
+  --border-light: #333;
+  --text: #e8e8e8;
+  --text2: #bbb;
+  --muted: #666;
+  --blue: #3b82f6;
+  --red: #ef4444;
+  --green: #22c55e;
+  --purple: #a855f7;
+  --magenta: #ec4899;
+  --orange: #f59e0b;
+  --accent: #3b82f6;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── Top Bar ── */
+.topbar { height: 48px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; }
+.topbar .back-btn { color: var(--muted); text-decoration: none; font-size: 18px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.15s; }
+.topbar .back-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.topbar h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+.topbar h1 span { color: var(--magenta); }
+.topbar .spacer { flex: 1; }
+.topbar .project-name { font-size: 11px; color: var(--muted); background: var(--bg); padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border); }
+.topbar .top-actions { display: flex; gap: 6px; }
+
+/* ── Main Area ── */
+.main-area { flex: 1; display: flex; overflow: hidden; }
+
+/* ── Left: Layers ── */
+.layers-panel { width: 260px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+.layers-scroll { flex: 1; overflow-y: auto; }
+.panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); padding: 12px 12px 6px; display: flex; justify-content: space-between; align-items: center; }
+.panel-title .title-action { font-size: 14px; cursor: pointer; opacity: 0.5; transition: opacity 0.15s; text-transform: none; letter-spacing: 0; }
+.panel-title .title-action:hover { opacity: 1; }
+.layer-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; font-size: 12px; transition: all 0.12s; user-select: none; border-left: 3px solid transparent; position: relative; margin: 0 4px; border-radius: 0 6px 6px 0; }
+.layer-item:hover { background: rgba(255,255,255,0.04); }
+.layer-item.selected { background: rgba(59,130,246,0.12); border-left-color: var(--accent); }
+.layer-item .icon { width: 26px; height: 26px; text-align: center; flex-shrink: 0; font-size: 14px; line-height: 26px; background: var(--bg); border-radius: 5px; border: 1px solid var(--border); }
+.layer-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500; }
+.layer-item .layer-actions { display: flex; gap: 1px; opacity: 0; transition: opacity 0.15s; }
+.layer-item:hover .layer-actions, .layer-item.selected .layer-actions { opacity: 1; }
+.layer-item .layer-actions button { width: 22px; height: 22px; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 0; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.layer-item .layer-actions button:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.layer-item .layer-actions button.vis-off { opacity: 0.3; }
+.layer-add-btns { display: flex; gap: 4px; padding: 8px 10px; }
+.layer-add-btns button { flex: 1; padding: 7px; border: 1px dashed var(--border); background: none; color: var(--muted); border-radius: 6px; font-size: 10px; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+.layer-add-btns button:hover { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.05); }
+
+/* ── Center: Canvas ── */
+.canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #080808; position: relative; overflow: hidden; }
+.canvas-wrapper { position: relative; background: #1a1a1a; box-shadow: 0 8px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05); transform-origin: center center; overflow: hidden; border-radius: 4px; }
+.canvas-wrapper .layer-bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.canvas-wrapper .layer-person { position: absolute; inset: 0; pointer-events: none; }
+.canvas-wrapper .text-layer { position: absolute; cursor: move; user-select: none; font-weight: 900; line-height: 1.1; white-space: nowrap; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.text-layer.sel { outline: 2px solid var(--accent); outline-offset: 4px; }
+.text-layer .rh { position: absolute; bottom: -6px; right: -6px; width: 12px; height: 12px; background: var(--accent); border: 2px solid #fff; border-radius: 50%; cursor: nwse-resize; display: none; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.text-layer.sel .rh { display: block; }
+.text-layer .rot { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: var(--purple); border: 2px solid #fff; border-radius: 50%; cursor: grab; display: none; font-size: 9px; text-align: center; line-height: 12px; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.text-layer.sel .rot { display: block; }
+
+/* ── Right: Properties ── */
+.props-panel { width: 280px; background: var(--card); border-left: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; padding: 14px; }
+.prop-section { margin-bottom: 16px; }
+.prop-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: 500; }
+.prop-label b { color: var(--text); font-weight: 600; }
+.prop-input { width: 100%; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; outline: none; transition: border-color 0.15s; }
+.prop-input:focus { border-color: var(--accent); }
+textarea.prop-input { resize: vertical; min-height: 46px; font-family: inherit; }
+input[type="range"] { width: 100%; accent-color: var(--accent); height: 4px; }
+.color-row { display: flex; gap: 8px; align-items: center; }
+.color-row input[type="color"] { width: 30px; height: 26px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; background: var(--bg); padding: 1px; }
+.font-select { width: 100%; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; }
+.pos-btns { display: flex; gap: 4px; }
+.pos-btns button { flex: 1; padding: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text2); border-radius: 6px; font-size: 10px; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+.pos-btns button:hover { border-color: var(--muted); }
+.pos-btns button.active { border-color: var(--accent); background: rgba(59,130,246,0.12); color: var(--accent); }
+
+/* ── Bottom Toolbar ── */
+.bottom-toolbar { height: 58px; background: var(--card); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0 16px; flex-shrink: 0; }
+.tb-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 58px; height: 46px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 10px; font-size: 9px; gap: 3px; transition: all 0.15s; font-weight: 500; letter-spacing: 0.2px; }
+.tb-btn:hover { background: rgba(255,255,255,0.06); color: var(--text2); }
+.tb-btn.active { background: rgba(59,130,246,0.15); color: var(--accent); }
+.tb-btn .tb-icon { font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 20px; }
+.tb-btn .tb-icon svg { flex-shrink: 0; }
+.tb-sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+.tb-gen { display: flex; align-items: center; gap: 6px; padding: 10px 24px; border: none; background: linear-gradient(135deg, var(--accent), #2563eb); color: #fff; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; margin-left: 8px; transition: all 0.2s; box-shadow: 0 2px 12px rgba(59,130,246,0.3); letter-spacing: -0.2px; }
+.tb-gen:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(59,130,246,0.4); }
+.tb-gen:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Slide-up Panel ── */
+.slide-panel { position: fixed; bottom: 58px; left: 260px; right: 280px; background: var(--card2); border-top: 1px solid var(--border-light); border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-radius: 12px 12px 0 0; max-height: 360px; overflow-y: auto; z-index: 50; display: none; animation: slideUp 0.2s ease-out; padding: 18px 24px; box-shadow: 0 -8px 40px rgba(0,0,0,0.4); }
+.slide-panel.show { display: block; }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.slide-panel h3 { font-size: 14px; margin-bottom: 14px; font-weight: 700; }
+.slide-panel .close-panel { position: absolute; top: 14px; right: 18px; background: rgba(255,255,255,0.06); border: none; color: var(--muted); font-size: 16px; cursor: pointer; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.slide-panel .close-panel:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+/* ── Style Grid ── */
+.style-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.style-item { border: 2px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg); overflow: hidden; position: relative; }
+.style-item:hover { border-color: var(--muted); }
+.style-item.selected { border-color: var(--magenta); box-shadow: 0 0 8px rgba(224,64,251,0.3); }
+.style-item .s-img { width: 100%; height: 80px; object-fit: cover; display: block; }
+.style-item .s-noimg { width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; background: var(--card); font-size: 28px; }
+.style-item .s-name { font-size: 10px; padding: 4px 6px; color: var(--text); background: rgba(0,0,0,0.6); position: absolute; bottom: 0; left: 0; right: 0; text-align: center; }
+
+/* ── BG Grid ── */
+.bg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.bg-item { border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; background: var(--bg); overflow: hidden; position: relative; }
+.bg-item:hover { border-color: var(--muted); }
+.bg-item.selected { border-color: var(--blue); box-shadow: 0 0 8px rgba(33,150,243,0.3); }
+.bg-item .bg-img { width: 100%; height: 70px; object-fit: cover; display: block; }
+.bg-item .bg-noimg { width: 100%; height: 70px; display: flex; align-items: center; justify-content: center; background: var(--card); font-size: 24px; }
+.bg-item .bg-name { font-size: 10px; padding: 3px 6px; color: var(--text); background: rgba(0,0,0,0.6); position: absolute; bottom: 0; left: 0; right: 0; text-align: center; }
+
+/* ── Clothing Grid ── */
+.clothing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.clothing-item { border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; overflow: hidden; position: relative; }
+.clothing-item:hover { border-color: var(--muted); }
+.clothing-item.selected { border-color: var(--green); box-shadow: 0 0 8px rgba(76,175,80,0.3); }
+.clothing-item img { width: 100%; height: 120px; object-fit: cover; display: block; }
+.clothing-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+.clothing-tabs button { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.clothing-tabs button.active { border-color: var(--green); background: rgba(76,175,80,0.15); color: var(--green); }
+
+/* ── Format Toggle ── */
+.format-toggle { display: flex; gap: 4px; }
+.format-toggle button { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.format-toggle button.active { border-color: var(--blue); background: rgba(33,150,243,0.15); color: var(--blue); }
+
+/* ── Expert photo hint ── */
+.expert-hint { display: flex; gap: 12px; align-items: flex-start; margin-top: 10px; }
+.expert-hint .hint-img { width: 60px; height: 80px; border-radius: 6px; background: #333; display: flex; align-items: center; justify-content: center; font-size: 28px; border: 1px solid var(--border); flex-shrink: 0; }
+.expert-hint .hint-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.expert-status { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; border-radius: 6px; background: var(--bg); font-size: 12px; }
+.expert-status.loaded { border: 1px solid var(--green); }
+.expert-status.empty { border: 1px solid var(--orange); }
+
+/* ── Buttons ── */
+.btn { padding: 7px 14px; border: none; border-radius: 7px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.1px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:active { transform: scale(0.97); }
+.btn-blue { background: var(--accent); color: #fff; }
+.btn-blue:hover { background: #2563eb; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #16a34a; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-outline { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--text2); }
+.btn-outline:hover { border-color: var(--muted); background: rgba(255,255,255,0.06); color: var(--text); }
+.btn-magenta { background: var(--magenta); color: #fff; }
+
+/* ── Toast ── */
+.toast { position: fixed; top: 60px; right: 24px; background: var(--card2); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 18px; font-size: 12px; z-index: 200; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.4); font-weight: 500; backdrop-filter: blur(8px); }
+.toast.show { display: block; animation: toastIn 0.25s ease-out; }
+.toast.error { border-color: var(--red); background: rgba(239,68,68,0.1); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Prompt area ── */
+.prompt-area { width: 100%; min-height: 52px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 11px; resize: vertical; outline: none; font-family: inherit; transition: border-color 0.15s; }
+.prompt-area:focus { border-color: var(--accent); }
+.prompt-result { width: 100%; min-height: 44px; padding: 8px 10px; background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.15); border-radius: 6px; color: var(--text); font-size: 10px; resize: vertical; outline: none; font-family: inherit; margin-top: 6px; }
+.loading { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Intensity slider row ── */
+.intensity-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; padding: 8px 0; }
+.intensity-row label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.intensity-row b { font-size: 12px; color: var(--text); min-width: 32px; }
+
+/* ── Drawing Canvas ── */
+#drawingCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; cursor: crosshair; }
+#drawingCanvas.active { pointer-events: auto; }
+#textLayersContainer { position: relative; z-index: 10; }
+
+/* ── Brush Panel ── */
+.brush-settings { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+.brush-settings .setting { display: flex; align-items: center; gap: 6px; }
+.brush-settings .setting label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.brush-settings .setting b { font-size: 12px; color: var(--text); min-width: 28px; }
+.brush-preview { width: 60px; height: 60px; border: 1px solid var(--border); border-radius: 8px; background: #111; display: flex; align-items: center; justify-content: center; margin-top: 8px; }
+.brush-mode-btns { display: flex; gap: 4px; margin-bottom: 8px; }
+.brush-mode-btns button { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.brush-mode-btns button.active { border-color: var(--magenta); background: rgba(224,64,251,0.15); color: var(--magenta); }
+/* ── Text Style Grid ── */
+.text-style-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.text-style-item { border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; overflow: hidden; position: relative; }
+.text-style-item:hover { border-color: var(--muted); }
+.text-style-item.selected { border-color: var(--orange); box-shadow: 0 0 8px rgba(255,152,0,0.3); }
+.text-style-item img { width: 100%; height: 60px; object-fit: cover; display: block; }
+.text-style-item .ts-name { font-size: 10px; padding: 3px 6px; color: var(--text); background: rgba(0,0,0,0.6); position: absolute; bottom: 0; left: 0; right: 0; text-align: center; }
+
+/* ── Emotion visual ── */
+.emotion-markers { display: flex; justify-content: space-between; padding: 0 2px; margin-top: -2px; }
+.emotion-markers span { font-size: 14px; cursor: default; opacity: 0.4; transition: opacity 0.15s; }
+.emotion-markers span.active-emoji { opacity: 1; transform: scale(1.3); }
+
+/* ── Onboarding hint ── */
+.hint-box { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); border-radius: 8px; padding: 8px 10px; font-size: 10px; color: var(--muted); line-height: 1.6; }
+.hint-box b { color: var(--text2); font-weight: 600; }
+
+.tb-btn.tool-active { border-color: var(--magenta) !important; background: rgba(224,64,251,0.15) !important; color: var(--magenta) !important; }
+
+/* ═══ MOBILE ═══ */
+@media (max-width: 768px) {
+  body { height: auto; overflow: auto; }
+
+  /* Topbar */
+  .topbar { height: 44px; padding: 0 10px; gap: 6px; }
+  .topbar h1 { font-size: 13px; }
+  .topbar .project-name { display: none; }
+  .topbar .top-actions { gap: 4px; }
+  .topbar .top-actions .btn { font-size: 9px; padding: 4px 8px; }
+
+  /* Main area — vertical stack */
+  .main-area { flex-direction: column; height: auto; min-height: calc(100vh - 44px - 58px); }
+
+  /* Hide side panels by default, toggle with JS */
+  .layers-panel { width: 100%; height: auto; max-height: 0; overflow: hidden; border-right: none; border-bottom: 1px solid var(--border); transition: max-height 0.3s ease; }
+  .layers-panel.mob-open { max-height: 50vh; overflow-y: auto; }
+
+  .props-panel { width: 100%; height: auto; max-height: 0; overflow: hidden; border-left: none; border-top: 1px solid var(--border); transition: max-height 0.3s ease; }
+  .props-panel.mob-open { max-height: 80vh; overflow-y: auto; }
+
+  /* Canvas fills width */
+  .canvas-area { min-height: 240px; flex: none; height: 55vw; }
+
+  /* Bottom toolbar — scrollable */
+  .bottom-toolbar { height: auto; min-height: 54px; padding: 4px 8px; flex-wrap: wrap; gap: 1px; justify-content: flex-start; position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; overflow-x: auto; }
+  .tb-btn { width: 48px; height: 42px; font-size: 8px; }
+  .tb-btn .tb-icon svg { width: 16px; height: 16px; }
+  .tb-gen { padding: 8px 14px; font-size: 11px; margin-left: 4px; }
+  .tb-sep { height: 20px; margin: 0 2px; }
+
+  /* Slide panels full width */
+  .slide-panel { left: 0; right: 0; bottom: 54px; max-height: 50vh; border-radius: 12px 12px 0 0; padding: 14px 16px; }
+
+  /* Style/BG/Clothing grids */
+  .style-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; }
+  .style-item .s-img { height: 60px; }
+  .bg-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+  .bg-item .bg-img { height: 55px; }
+  .clothing-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; }
+  .clothing-item img { height: 90px; }
+  .text-style-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+
+  /* Toast */
+  .toast { top: auto; bottom: 64px; right: 10px; left: 10px; text-align: center; }
+
+  /* Mobile toggle buttons */
+  .mob-toggle { display: flex !important; }
+}
+
+/* Mobile panel toggle buttons — hidden on desktop */
+.mob-toggle { display: none; position: fixed; z-index: 55; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px; cursor: pointer; color: var(--muted); }
+.mob-toggle:hover, .mob-toggle.active { color: var(--accent); border-color: var(--accent); }
+.mob-toggle-left { left: 8px; top: 50px; }
+.mob-toggle-right { right: 8px; top: 50px; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <a href="/" class="back-btn" title="Назад">←</a>
+  <h1><span>Cover</span> Editor</h1>
+  <span class="project-name" id="projectName">—</span>
+  <div class="spacer"></div>
+  <div class="top-actions">
+    <button class="btn btn-outline" onclick="saveEditorState()" title="Сохранить">💾 Сохранить</button>
+    <button class="btn btn-green" onclick="downloadFullComposite()" title="Скачать обложку">⬇ Скачать PNG</button>
+    <a href="/api/logout" class="btn btn-outline" style="font-size:10px;padding:4px 8px;text-decoration:none;color:var(--muted);" title="Выйти">Выйти</a>
+  </div>
+</div>
+
+<!-- Mobile panel toggles -->
+<button class="mob-toggle mob-toggle-left" onclick="toggleMobPanel('layers')" title="Версии/Промпт">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h16"/></svg>
+</button>
+<button class="mob-toggle mob-toggle-right" onclick="toggleMobPanel('props')" title="Настройки">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+</button>
+
+<!-- Main Area -->
+<div class="main-area">
+
+  <!-- Left: Layers + Prompt -->
+  <div class="layers-panel">
+    <div class="layers-scroll">
+      <div class="panel-title">Версии <span class="title-action" onclick="el('layersHint').style.display=el('layersHint').style.display==='none'?'block':'none'" title="Подсказка">?</span></div>
+      <div class="hint-box" id="layersHint" style="margin:0 10px 6px;display:none;">
+        <b>1.</b> Справа: заполни описание, текст, иконки<br>
+        <b>2.</b> Внизу: выбери Стиль, Фон, Одежду, Шрифт<br>
+        <b>3.</b> Нажми <b>Сгенерировать</b> — AI создаст обложку<br>
+        <b>4.</b> Каждая генерация — новая версия. Переключайся между ними.
+      </div>
+      <div id="layersList"></div>
+      <div style="padding:0 10px;">
+        <button class="btn btn-outline" onclick="loadVersionsList()" style="width:100%;font-size:10px;margin-top:4px;">Обновить версии</button>
+      </div>
+    </div>
+
+    <!-- Prompt Helper -->
+    <div style="padding: 10px 12px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2);">
+      <div class="panel-title" style="padding:0 0 6px;">AI Промпт</div>
+      <textarea class="prompt-area" id="promptRu" rows="2" placeholder="Опишите обложку на русском..."></textarea>
+      <div style="display:flex;gap:4px;margin-top:5px;">
+        <button class="btn btn-blue" onclick="improvePrompt()" id="btnImprove" style="flex:1;">✨ Улучшить</button>
+        <button class="btn btn-outline" onclick="generatePromptFromLayers()" style="font-size:10px;" title="Собрать промпт из настроек">📝</button>
+      </div>
+      <textarea class="prompt-result" id="promptEn" rows="2" placeholder="English prompt (auto)..."></textarea>
+    </div>
+  </div>
+
+  <!-- Center: Canvas -->
+  <div class="canvas-area" id="canvasArea">
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <div class="layer-bg" id="layerBg"></div>
+      <div class="layer-person" id="layerPerson"></div>
+      <div id="textLayersContainer"></div>
+      <canvas id="drawingCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Right: Properties -->
+  <div class="props-panel" id="propsPanel">
+
+    <!-- Person Props (always shown) -->
+    <div class="prop-section" id="personSection">
+      <div class="panel-title" style="padding:0 0 8px;">Человек</div>
+      <div style="margin-bottom:6px;">
+        <div class="prop-label">Описание</div>
+        <textarea class="prop-input" id="personDesc" rows="2" placeholder="Орет в экран, руки за голову" oninput="updatePersonProp()"></textarea>
+      </div>
+      <div style="margin-bottom:6px;">
+        <div class="prop-label">Эмоция <b id="emotionPct">50%</b> <span id="emotionWord" style="font-size:9px;color:var(--muted);">заинтересован</span></div>
+        <input type="range" id="emotionSlider" min="0" max="100" value="50" oninput="updateEmotion(this.value)">
+        <div class="emotion-markers" id="emotionMarkers">
+          <span title="Спокойный">😐</span>
+          <span title="Любопытный">🤔</span>
+          <span title="Заинтересован" class="active-emoji">😮</span>
+          <span title="Удивлён">😱</span>
+          <span title="В шоке">🤯</span>
+        </div>
+      </div>
+      <div style="margin-bottom:6px;">
+        <div class="prop-label">Позиция</div>
+        <div class="pos-btns">
+          <button onclick="setPosition('left')" id="pos-left">← Лево</button>
+          <button onclick="setPosition('center')" id="pos-center" class="active">Центр</button>
+          <button onclick="setPosition('right')" id="pos-right">Право →</button>
+        </div>
+      </div>
+      <label style="font-size:11px;display:flex;gap:5px;align-items:center;">
+        <input type="checkbox" id="lookAtCamera" checked onchange="updatePersonProp()"> Взгляд в камеру
+      </label>
+    </div>
+
+    <!-- Texts on Cover (AI-generated, multiple) -->
+    <div class="prop-section" style="border-top:1px solid var(--border); padding-top:12px;">
+      <div class="panel-title" style="padding:0 0 6px;">Надписи на обложке
+        <span class="title-action" onclick="addCoverText()" title="Добавить надпись">+ надпись</span>
+      </div>
+      <p style="font-size:9px;color:var(--muted);margin-bottom:6px;">AI нарисует текст прямо на картинке. Стиль — кнопка "Шрифт" внизу.</p>
+      <div id="coverTextsContainer"></div>
+    </div>
+
+    <!-- Icons on Cover (AI-generated) -->
+    <div class="prop-section" style="border-top:1px solid var(--border); padding-top:12px;">
+      <div class="panel-title" style="padding:0 0 6px;">Иконки на обложке
+        <span class="title-action" onclick="addCoverIcon()" title="Добавить иконку">+ иконка</span>
+      </div>
+      <p style="font-size:9px;color:var(--muted);margin-bottom:6px;">AI нарисует логотип/иконку на картинке</p>
+      <div id="coverIconsContainer"></div>
+      <div style="margin-top:4px;">
+        <div class="prop-label">Быстрые иконки</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;">
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('Claude AI logo')">Claude</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('Telegram messenger logo')">Telegram</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('YouTube play button logo')">YouTube</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('Instagram camera logo')">Instagram</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('fire emoji flame')">Огонь</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('lightning bolt')">Молния</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('trophy cup gold')">Кубок</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('red arrow pointing down')">Стрелка</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('money dollar sign')">Деньги</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 6px;" onclick="addQuickIcon('skull danger')">Череп</button>
+        </div>
+      </div>
+      <div style="margin-top:6px;">
+        <div class="prop-label">Своя SVG-иконка</div>
+        <div style="display:flex;gap:4px;">
+          <input class="prop-input" id="customSvgDesc" placeholder="Опишите иконку, напр: лого моей компании — красный круг с буквой S" style="flex:1;">
+          <button class="btn btn-outline" style="font-size:9px;padding:3px 8px;" onclick="addCustomSvgIcon()">+</button>
+        </div>
+        <div style="margin-top:4px;">
+          <label class="btn btn-outline" style="font-size:9px;padding:3px 8px;cursor:pointer;display:inline-block;">
+            Загрузить SVG файл
+            <input type="file" accept=".svg" onchange="uploadSvgIcon(this)" style="display:none;">
+          </label>
+        </div>
+        <p style="font-size:9px;color:var(--muted);margin-top:3px;">SVG будет описан текстом для AI. Или опишите своими словами.</p>
+      </div>
+    </div>
+
+    <!-- AI Settings summary -->
+    <div class="prop-section" style="border-top:1px solid var(--border); padding-top:12px;">
+      <div class="panel-title" style="padding:0 0 6px;">AI настройки</div>
+      <div style="margin-bottom:6px;">
+        <div class="color-row">
+          <span style="font-size:10px;color:var(--muted);">Неон:</span>
+          <input type="color" id="neonColor" value="#00BFFF" oninput="editorState.neonColor=this.value">
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;" id="aiSummary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Toolbar (KUKU style) -->
+<div class="bottom-toolbar">
+  <button class="tb-btn" onclick="togglePanel('expertPanel')" id="tb-expert">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7"/></svg></span>Фото
+  </button>
+  <button class="tb-btn" onclick="togglePanel('textStylePanel')" id="tb-textstyle">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>Шрифт
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="togglePanel('formatPanel')" id="tb-format">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></span>Формат
+  </button>
+  <button class="tb-btn" onclick="togglePanel('stylePanel')" id="tb-style">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg></span>Стиль
+  </button>
+  <button class="tb-btn" onclick="togglePanel('bgPanel')" id="tb-bg">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>Фон
+  </button>
+  <button class="tb-btn" onclick="togglePanel('clothingPanel')" id="tb-clothing">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2l-5 5 3 2V20h12V9l3-2-5-5-3 2-3-2z"/></svg></span>Одежда
+  </button>
+  <button class="tb-btn" onclick="togglePanel('imagePanel')" id="tb-image">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l6-6 4 4 3-3 5 5"/></svg></span>Картинка
+  </button>
+  <button class="tb-btn" onclick="togglePanel('ytPanel')" id="tb-yt">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.5 7.5a2.5 2.5 0 00-1.8-1.8C19 5.3 12 5.3 12 5.3s-7 0-8.7.4a2.5 2.5 0 00-1.8 1.8A26 26 0 001 12a26 26 0 00.5 4.5 2.5 2.5 0 001.8 1.8c1.7.4 8.7.4 8.7.4s7 0 8.7-.4a2.5 2.5 0 001.8-1.8A26 26 0 0023 12a26 26 0 00-.5-4.5z"/><path d="M10 15.5l5.5-3.5L10 8.5z"/></svg></span>YouTube
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="toggleBrush('brush')" id="tb-brush">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.4 2.6a2.1 2.1 0 013 3L8.5 18.5l-5 1 1-5L18.4 2.6z"/></svg></span>Кисть
+  </button>
+  <button class="tb-btn" onclick="toggleBrush('eraser')" id="tb-eraser">
+    <span class="tb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16a1.4 1.4 0 010-2l10-10a1.4 1.4 0 012 0l7 7a1.4 1.4 0 010 2L16 19"/></svg></span>Ластик
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-gen" id="btnGenerate" onclick="generateCover()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+    Сгенерировать
+  </button>
+</div>
+
+<!-- ═══ Slide-up Panels ═══ -->
+
+<!-- Expert Photo Panel -->
+<div class="slide-panel" id="expertPanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>📸 Фото эксперта</h3>
+  <div id="expertStatus" class="expert-status empty">⚠ Фото не загружено</div>
+  <input type="file" id="expertFileInput" accept="image/*" style="display:none" onchange="uploadExpertPhoto()">
+  <button class="btn btn-blue" onclick="el('expertFileInput').click()" style="margin-top:8px;">Загрузить фото</button>
+  <div class="expert-hint">
+    <div class="hint-img">🧍</div>
+    <div class="hint-text">
+      <b>Требования к фото:</b><br>
+      — Человек стоит или сидит<br>
+      — Смотрит прямо в камеру<br>
+      — Белый / светлый фон<br>
+      — Без лишних предметов<br>
+      — Хорошее освещение
+    </div>
+  </div>
+</div>
+
+<!-- Format Panel -->
+<div class="slide-panel" id="formatPanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>⬜ Формат обложки</h3>
+  <div class="format-toggle">
+    <button class="active" onclick="setFormat('16:9', this)">16:9 Горизонтальная</button>
+    <button onclick="setFormat('9:16', this)">9:16 Вертикальная</button>
+    <button onclick="setFormat('1:1', this)">1:1 Квадрат</button>
+  </div>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px;">16:9 — YouTube обложки, 9:16 — Shorts/Reels, 1:1 — посты</p>
+</div>
+
+<!-- Style Panel -->
+<div class="slide-panel" id="stylePanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>🎭 Стиль обложки</h3>
+  <div class="intensity-row">
+    <label>Интенсивность стиля:</label>
+    <input type="range" id="styleIntensity" min="0" max="100" value="70" style="flex:1;" oninput="el('styleIntVal').textContent=this.value+'%'; editorState.styleIntensity=parseInt(this.value)">
+    <b id="styleIntVal">70%</b>
+  </div>
+  <div class="style-grid" id="styleGrid"></div>
+</div>
+
+<!-- Background Panel -->
+<div class="slide-panel" id="bgPanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>🌆 Фон</h3>
+  <div style="margin-bottom:10px;">
+    <input type="file" id="customBgInput" accept="image/*" style="display:none" onchange="uploadCustomBg()">
+    <button class="btn btn-outline" onclick="el('customBgInput').click()">📁 Загрузить свой фон</button>
+  </div>
+  <div class="bg-grid" id="bgGrid"></div>
+</div>
+
+<!-- Custom Image Panel -->
+<div class="slide-panel" id="imagePanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>🖼 Своя картинка</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Загрузите свою картинку (не персонажа) — она будет добавлена как фоновый слой или элемент обложки.</p>
+  <input type="file" id="customImgInput" accept="image/*" style="display:none" onchange="uploadCustomImage()">
+  <button class="btn btn-blue" onclick="el('customImgInput').click()">📁 Загрузить картинку</button>
+  <div id="customImgPreview" style="margin-top:10px;"></div>
+</div>
+
+<!-- Text Style Panel -->
+<div class="slide-panel" id="textStylePanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>Aa Стиль текста</h3>
+  <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Выберите стиль надписи — AI сгенерирует текст в этом стиле. Нажмите "Текст" чтобы добавить надпись на обложку.</p>
+  <div class="text-style-grid" id="textStyleGrid"></div>
+</div>
+
+<!-- Clothing Panel -->
+<div class="slide-panel" id="clothingPanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>👔 Одежда</h3>
+  <div class="clothing-tabs">
+    <button id="clothingTabMale" class="active" onclick="setClothingTab('male')">Мужская</button>
+    <button id="clothingTabFemale" onclick="setClothingTab('female')">Женская</button>
+  </div>
+  <div class="clothing-grid" id="clothingGrid"></div>
+</div>
+
+<!-- YouTube Thumbnail Panel -->
+<div class="slide-panel" id="ytPanel">
+  <button class="close-panel" onclick="closePanel()">&times;</button>
+  <h3>▶ Скачать обложку с YouTube</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Вставьте ссылку на YouTube-видео — обложка будет скачана и использована как референс стиля.</p>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <input class="prop-input" id="ytUrlInput" placeholder="https://youtube.com/watch?v=..." style="flex:1;">
+    <button class="btn btn-blue" id="btnYtDownload" onclick="downloadYtThumb()">Скачать</button>
+  </div>
+  <div id="ytResult" style="margin-top:12px;"></div>
+  <div id="ytHistory" style="margin-top:16px;"></div>
+</div>
+
+<!-- Brush Settings Panel -->
+<div class="slide-panel" id="brushPanel">
+  <button class="close-panel" onclick="closePanel(); deactivateDrawing()">&times;</button>
+  <h3 id="brushPanelTitle">🖌 Кисть</h3>
+  <div class="brush-mode-btns">
+    <button id="modeBrush" class="active" onclick="setBrushMode('brush')">🖌 Кисть</button>
+    <button id="modeEraser" onclick="setBrushMode('eraser')">🧹 Ластик</button>
+  </div>
+  <div class="brush-settings">
+    <div class="setting">
+      <label>Размер:</label>
+      <input type="range" id="brushSize" min="1" max="80" value="8" oninput="el('brushSizeVal').textContent=this.value; updateBrushPreview()">
+      <b id="brushSizeVal">8</b>
+    </div>
+    <div class="setting">
+      <label>Прозрачность:</label>
+      <input type="range" id="brushOpacity" min="5" max="100" value="100" oninput="el('brushOpacityVal').textContent=this.value+'%'; updateBrushPreview()">
+      <b id="brushOpacityVal">100%</b>
+    </div>
+    <div class="setting" id="brushColorSetting">
+      <label>Цвет:</label>
+      <input type="color" id="brushColor" value="#FF0000" oninput="updateBrushPreview()">
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:8px;">
+    <canvas class="brush-preview" id="brushPreview" width="60" height="60"></canvas>
+    <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
+      <button class="btn btn-outline" onclick="undoDrawing()" style="flex:1;">↩ Отменить</button>
+      <button class="btn btn-red" onclick="clearDrawing()" style="flex:1;">🗑 Очистить всё</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ CONFIG ═══
+const STYLES = [
+  { id: 'dramatic', name: 'Драматичный', ref: 'dramatic.webp', prompt: 'dramatic cinematic lighting, high contrast, intense mood' },
+  { id: 'bright', name: 'Яркий', ref: 'yarkiy.webp', prompt: 'bright vivid colors, saturated, eye-catching, pop art feel' },
+  { id: 'sport', name: 'Спорт', ref: 'sport.webp', prompt: 'sporty dynamic energy, athletic vibes, motion blur background' },
+  { id: 'glossy', name: 'Глянец', ref: 'glyanec.webp', prompt: 'glossy magazine style, polished, fashion editorial look' },
+  { id: 'confidence', name: 'Уверенность', ref: 'uverennost.webp', prompt: 'confident powerful pose, authoritative, strong leadership energy' },
+  { id: 'adrenaline', name: 'Адреналин', ref: 'adrenaline.webp', prompt: 'adrenaline rush, extreme energy, explosive effects, fire sparks' },
+  { id: 'levitation', name: 'Левитация', ref: 'levitation.webp', prompt: 'person floating/levitating, anti-gravity, surreal dreamlike' },
+  { id: 'at_work', name: 'За работой', ref: 'za_rabotoi.webp', prompt: 'working environment, professional setting, productive atmosphere' },
+  { id: 'esoteric', name: 'Эзотерика', ref: 'ezoterika.webp', prompt: 'mystical esoteric atmosphere, cosmic energy, spiritual glow, third eye' },
+  { id: 'atmospheric', name: 'Атмосферно', ref: 'athmosphere.webp', prompt: 'atmospheric moody fog, cinematic haze, depth, ambient lighting' },
+  { id: 'creative', name: 'Креатив', prompt: 'creative artistic style, paint splashes, colorful imagination' },
+  { id: 'jump', name: 'Прыжок', ref: 'prizhok.webp', prompt: 'jumping mid-air, dynamic action freeze frame, energy burst' },
+  { id: 'calm', name: 'Спокойный', ref: 'spokoiniy.webp', prompt: 'calm serene peaceful, soft pastel colors, gentle lighting' },
+  { id: 'vogue', name: 'Вог', ref: 'vogue.webp', prompt: 'vogue fashion editorial, high fashion, stylish pose, runway aesthetic' },
+  { id: 'before_after', name: 'До-После', ref: 'do_posle.webp', prompt: 'before and after transformation, split screen effect, dramatic change' },
+  { id: 'cinema', name: 'Кино', ref: 'cinematic.webp', prompt: 'cinematic movie poster style, film grain, letterbox, epic composition' },
+  { id: 'cyberpunk', name: 'Киберпанк', ref: 'cyberpunk.webp', prompt: 'cyberpunk neon city, futuristic tech, holographic, purple-cyan palette' },
+  { id: 'giant', name: 'Гигантский', ref: 'gigantskiy_masshab.webp', prompt: 'giant scale, person towering over buildings, surreal perspective' },
+  { id: 'miniature', name: 'Миниатюрный', ref: 'miniature-mir.webp', prompt: 'miniature world, tiny person in huge environment, tilt-shift' },
+  { id: 'simple', name: 'Простота', ref: 'prostota.webp', prompt: 'clean minimal simple, solid color background, focus on person and text' },
+  { id: 'podcast', name: 'Подкаст', ref: 'podcast.webp', prompt: 'podcast setup, two people talking, microphones, studio lighting' },
+  { id: 'street', name: 'На улице', ref: 'na_ulice.webp', prompt: 'urban street photography, city backdrop, natural outdoor lighting' },
+  { id: 'vulnerable', name: 'Уязвимость', ref: 'vulnerability.webp', prompt: 'vulnerable emotional, raw authentic feeling, intimate close-up' },
+  { id: 'wind', name: 'Ветер', ref: 'veter.webp', prompt: 'wind blowing hair and clothes, dramatic wind effect, dynamic movement' },
+  { id: 'neon', name: 'Неон', prompt: 'neon lights, glowing signs, vibrant neon colors, night atmosphere' },
+  { id: 'retro', name: 'Ретро', prompt: 'retro vintage 80s style, nostalgia, warm tones, old-school' },
+  { id: 'luxury', name: 'Люкс', prompt: 'luxury premium, gold accents, rich textures, opulent backdrop' },
+  { id: 'dark', name: 'Тёмный', prompt: 'dark moody, low-key lighting, shadows, mysterious atmosphere' },
+];
+
+const BACKGROUNDS = [
+  { id: 'studio', name: 'Студия', tex: 'studio.webp', prompt: 'professional photo studio with soft lighting' },
+  { id: 'room', name: 'Комната', tex: 'room.webp', prompt: 'cozy home interior, living room' },
+  { id: 'gym', name: 'Спортзал', tex: 'zal_trenir.webp', prompt: 'modern gym, fitness equipment' },
+  { id: 'kitchen', name: 'Кухня', tex: 'kitchen.webp', prompt: 'modern kitchen interior' },
+  { id: 'city', name: 'Город', tex: 'city.webp', prompt: 'city skyline, urban landscape' },
+  { id: 'garage', name: 'Гараж', tex: 'garage.webp', prompt: 'garage workshop, industrial space' },
+  { id: 'gradient', name: 'Градиент', tex: 'abstract_gradient.webp', prompt: 'abstract colorful gradient background' },
+  { id: 'library', name: 'Библиотека', tex: 'library.webp', prompt: 'library with bookshelves' },
+  { id: 'wall', name: 'Стена', tex: 'stena_seraya.webp', prompt: 'textured wall, brick or concrete' },
+  { id: 'bokeh', name: 'Боке', tex: 'bokeh.webp', prompt: 'blurred bokeh lights background' },
+  { id: 'jungle', name: 'Джунгли', tex: 'jungle.webp', prompt: 'tropical jungle, lush green vegetation' },
+  { id: 'night_city', name: 'Ночной город', tex: 'night_city.webp', prompt: 'night city with neon lights' },
+  { id: 'office', name: 'Офис', tex: 'office.webp', prompt: 'modern office, workspace' },
+  { id: 'tech', name: 'Технологии', tex: 'tech.webp', prompt: 'futuristic technology, digital screens, holographic displays' },
+  { id: 'texture', name: 'Текстура', tex: 'texture.webp', prompt: 'abstract rough texture, artistic background' },
+];
+
+const TEXT_STYLES = [
+  { id: 'brush_script', name: 'Кисть', file: 'style-1768816142101-466713071.webp', prompt: 'brush script handwritten calligraphy text' },
+  { id: 'thin_condensed', name: 'Тонкий', file: 'style-1768816153206-762612108.webp', prompt: 'thin condensed minimal modern uppercase text' },
+  { id: 'ornamental', name: 'Узорный', file: 'style-1768816159494-118114312.webp', prompt: 'ornamental decorative serif text with curls and swirls' },
+  { id: 'brush_bold', name: 'Гранж кисть', file: 'style-1768816168209-638903081.webp', prompt: 'bold brush italic grunge painted text' },
+  { id: 'distressed', name: 'Потёртый', file: 'style-1768816182938-341104974.webp', prompt: 'distressed grunge worn-out bold uppercase text' },
+  { id: 'elegant', name: 'Элегантный', file: 'style-1768816205424-63234777.webp', prompt: 'thin elegant sophisticated sans-serif text' },
+  { id: 'classic_serif', name: 'Классика', file: 'style-1768816213979-934547361.webp', prompt: 'classic serif traditional bold text' },
+  { id: '3d_white', name: '3D', file: 'style-1768816244534-622957572.webp', prompt: '3D white extruded bold text with depth and shadow' },
+  { id: 'red_banner', name: 'Баннер', file: 'style-1768816250440-995212532.webp', prompt: 'bold text on red banner/rectangle background, YouTube style' },
+  { id: 'explosion', name: 'Взрыв', file: 'style-1768816257899-75849825.webp', prompt: 'bold text with explosion dust particles smoke effect behind' },
+  { id: 'modern_bold', name: 'Современный', file: 'style-1768816626117-543134510.webp', prompt: 'modern bold italic sans-serif text' },
+  { id: 'impact', name: 'Импакт', file: 'style-1768818891859-963854237.webp', prompt: 'extra bold condensed impact uppercase text' },
+  { id: 'neon_glow', name: 'Неон', file: 'style-1768819716433-469953307.webp', prompt: 'neon glowing cursive text with blue/cyan light effect' },
+];
+
+// ═══ STATE ═══
+const params = new URLSearchParams(window.location.search);
+const projectId = params.get('project');
+
+const editorState = {
+  projectId,
+  layers: [
+    { id: 'bg', type: 'background', name: 'Фон', visible: true, locked: true },
+    { id: 'person', type: 'person', name: 'Человек', visible: true, locked: false,
+      emotion: 50, position: 'center', desc: '', lookAtCamera: true, clothingId: '' },
+  ],
+  format: '16:9',
+  canvasW: 1280, canvasH: 720,
+  neonColor: '#00BFFF',
+  selectedStyleId: '',
+  styleIntensity: 70,
+  selectedBgId: '',
+  customBgUrl: '',
+  selectedStyleId: '',
+  selectedTextStyleId: '',
+  coverTexts: [{ id: 1, text: '', pos: 'bottom', color: '#FFFFFF' }],
+  coverIcons: [],
+  nextCoverTextId: 2,
+  nextCoverIconId: 1,
+  versions: [],
+  activeVersion: -1,
+};
+
+let selectedLayerId = null;
+let canvasScale = 1;
+let openPanelId = null;
+let clothingTab = 'male';
+let clothingFiles = { male: [], female: [] };
+
+// ═══ HELPERS ═══
+function el(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg, isErr) {
+  const t = el('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'toast', 3000);
+}
+async function api(url, body) {
+  const opts = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+  const res = await fetch(url, opts);
+  if (res.status === 401) { window.location.href = '/login.html'; return {}; }
+  return res.json();
+}
+
+// ═══ PANELS ═══
+function togglePanel(id) {
+  // Deactivate drawing when switching to non-brush panel
+  if (id !== 'brushPanel' && typeof deactivateDrawing === 'function') deactivateDrawing();
+  document.querySelectorAll('.slide-panel').forEach(p => { if (p.id !== id) p.classList.remove('show'); });
+  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+  const panel = el(id);
+  const isOpen = panel.classList.contains('show');
+  if (isOpen) { panel.classList.remove('show'); openPanelId = null; }
+  else { panel.classList.add('show'); openPanelId = id; }
+}
+function closePanel() {
+  if (typeof deactivateDrawing === 'function') deactivateDrawing();
+  document.querySelectorAll('.slide-panel').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+  openPanelId = null;
+}
+
+// ═══ MOBILE PANELS ═══
+function toggleMobPanel(which) {
+  const layers = document.querySelector('.layers-panel');
+  const props = document.querySelector('.props-panel');
+  if (which === 'layers') {
+    layers.classList.toggle('mob-open');
+    props.classList.remove('mob-open');
+    document.querySelector('.mob-toggle-left').classList.toggle('active', layers.classList.contains('mob-open'));
+    document.querySelector('.mob-toggle-right').classList.remove('active');
+  } else {
+    props.classList.toggle('mob-open');
+    layers.classList.remove('mob-open');
+    document.querySelector('.mob-toggle-right').classList.toggle('active', props.classList.contains('mob-open'));
+    document.querySelector('.mob-toggle-left').classList.remove('active');
+  }
+}
+
+// ═══ CANVAS ═══
+function fitCanvas() {
+  const area = el('canvasArea');
+  const w = area.clientWidth - 40;
+  const h = area.clientHeight - 40;
+  const sx = w / editorState.canvasW;
+  const sy = h / editorState.canvasH;
+  canvasScale = Math.min(sx, sy, 1);
+  const cw = el('canvasWrapper');
+  cw.style.width = editorState.canvasW + 'px';
+  cw.style.height = editorState.canvasH + 'px';
+  cw.style.transform = `scale(${canvasScale})`;
+  // Resize drawing canvas to match
+  const dc = el('drawingCanvas');
+  if (dc && (dc.width !== editorState.canvasW || dc.height !== editorState.canvasH)) {
+    resizeDrawingCanvas();
+  }
+}
+window.addEventListener('resize', fitCanvas);
+
+// ═══ FORMAT ═══
+function setFormat(fmt, btn) {
+  editorState.format = fmt;
+  if (fmt === '16:9') { editorState.canvasW = 1280; editorState.canvasH = 720; }
+  else if (fmt === '9:16') { editorState.canvasW = 720; editorState.canvasH = 1280; }
+  else { editorState.canvasW = 1080; editorState.canvasH = 1080; }
+  document.querySelectorAll('.format-toggle button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  drawHistory = [];
+  fitCanvas();
+}
+
+// ═══ LAYERS ═══
+function renderLayers() {
+  const list = el('layersList');
+  if (!editorState.versions || editorState.versions.length === 0) {
+    list.innerHTML = '<div style="padding:10px;font-size:11px;color:var(--muted);text-align:center;">Нажмите "Сгенерировать" чтобы создать первую версию</div>';
+    return;
+  }
+  list.innerHTML = editorState.versions.slice().reverse().map((v, ri) => {
+    const i = editorState.versions.length - 1 - ri;
+    const sel = editorState.activeVersion === i ? 'selected' : '';
+    return `<div class="layer-item ${sel}" onclick="switchVersion(${i})">
+      <span class="icon">🖼</span>
+      <span class="name">Версия ${i + 1}</span>
+      <span class="layer-actions">
+        <button onclick="event.stopPropagation(); downloadVersion(${i})" title="Скачать">⬇</button>
+        ${editorState.versions.length > 1 ? `<button onclick="event.stopPropagation(); deleteVersion(${i})" title="Удалить" style="color:var(--red);">✕</button>` : ''}
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function switchVersion(i) {
+  editorState.activeVersion = i;
+  const v = editorState.versions[i];
+  if (v) el('layerBg').style.backgroundImage = `url(${v}?t=${Date.now()})`;
+  renderLayers();
+}
+
+function downloadVersion(i) {
+  const v = editorState.versions[i];
+  if (!v) return;
+  const a = document.createElement('a');
+  a.href = v;
+  a.download = `cover_v${i+1}.jpg`;
+  a.click();
+}
+
+function deleteVersion(i) {
+  editorState.versions.splice(i, 1);
+  if (editorState.activeVersion >= editorState.versions.length) {
+    editorState.activeVersion = editorState.versions.length - 1;
+  }
+  if (editorState.versions.length > 0) switchVersion(editorState.activeVersion);
+  renderLayers();
+}
+
+async function loadVersionsList() {
+  try {
+    const data = await api(`/api/project/${projectId}`);
+    if (data.ok && data.files?.thumbnails) {
+      editorState.versions = data.files.thumbnails.filter(f => f.includes('custom_'));
+      editorState.activeVersion = editorState.versions.length - 1;
+      renderLayers();
+      if (editorState.versions.length > 0) switchVersion(editorState.activeVersion);
+      toast(`${editorState.versions.length} версий`);
+    }
+  } catch(e) { toast(e.message, true); }
+}
+
+function selectLayer(id) {
+  selectedLayerId = id;
+  renderLayers();
+  showProps(id);
+  document.querySelectorAll('.text-layer').forEach(e => e.classList.remove('sel'));
+  const tlEl = document.getElementById('tl-' + id);
+  if (tlEl) tlEl.classList.add('sel');
+}
+
+function toggleVis(id) {
+  const l = editorState.layers.find(l => l.id === id);
+  if (l) l.visible = !l.visible;
+  renderLayers();
+  renderTextLayers();
+}
+
+function addTextLayer() {
+  const id = 'text_' + editorState.nextTextId++;
+  editorState.layers.push({
+    id, type: 'text', name: 'Текст', visible: true,
+    content: 'ТЕКСТ', fontFamily: 'Oswald-Bold', fontSize: 72,
+    color: '#FFFFFF', strokeColor: '#000000', strokeWidth: 3,
+    x: 200, y: 300, rotation: 0,
+  });
+  renderLayers(); renderTextLayers(); selectLayer(id);
+  closePanel();
+}
+
+function addDecoLayer() {
+  const id = 'text_' + editorState.nextTextId++;
+  editorState.layers.push({
+    id, type: 'text', name: '⚡ Декор', visible: true,
+    content: '⚡', fontFamily: 'Arial Black', fontSize: 120,
+    color: '#FFD700', strokeColor: '#000000', strokeWidth: 2,
+    x: 100, y: 100, rotation: -15,
+  });
+  renderLayers(); renderTextLayers(); selectLayer(id);
+}
+
+function deleteSelectedLayer() {
+  if (!selectedLayerId) return;
+  deleteLayer(selectedLayerId);
+}
+
+function deleteLayer(id) {
+  const l = editorState.layers.find(l => l.id === id);
+  if (!l || l.type === 'background' || l.type === 'person') { toast('Нельзя удалить', true); return; }
+  editorState.layers = editorState.layers.filter(l => l.id !== id);
+  if (selectedLayerId === id) selectedLayerId = null;
+  renderLayers(); renderTextLayers(); showProps(null);
+  toast('Слой удалён');
+}
+
+function duplicateLayer(id) {
+  const l = editorState.layers.find(l => l.id === id);
+  if (!l || l.type !== 'text') { toast('Можно дублировать только текст', true); return; }
+  const newId = 'text_' + editorState.nextTextId++;
+  const copy = { ...l, id: newId, name: l.name + ' (копия)', x: l.x + 30, y: l.y + 30 };
+  const idx = editorState.layers.indexOf(l);
+  editorState.layers.splice(idx + 1, 0, copy);
+  renderLayers(); renderTextLayers(); selectLayer(newId);
+  toast('Слой дублирован');
+}
+
+function downloadLayer(id) {
+  const l = editorState.layers.find(l => l.id === id);
+  if (!l) return;
+
+  const c = document.createElement('canvas');
+  c.width = editorState.canvasW;
+  c.height = editorState.canvasH;
+  const ctx = c.getContext('2d');
+
+  if (l.type === 'background') {
+    // Export background layer
+    const bgEl = el('layerBg');
+    const bgImg = bgEl.style.backgroundImage;
+    if (bgImg && bgImg !== 'none') {
+      const url = bgImg.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        downloadCanvas(c, 'layer-background.png');
+      };
+      img.onerror = () => {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, c.width, c.height);
+        downloadCanvas(c, 'layer-background.png');
+      };
+      img.src = url;
+    } else {
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, c.width, c.height);
+      downloadCanvas(c, 'layer-background.png');
+    }
+  } else if (l.type === 'text') {
+    // Export text layer (transparent bg)
+    ctx.save();
+    ctx.translate(l.x, l.y);
+    ctx.rotate(l.rotation * Math.PI / 180);
+    ctx.font = `900 ${l.fontSize}px '${l.fontFamily}', Impact, sans-serif`;
+    ctx.fillStyle = l.color;
+    ctx.strokeStyle = l.strokeColor;
+    ctx.lineWidth = l.strokeWidth;
+    ctx.lineJoin = 'round';
+    if (l.strokeWidth > 0) ctx.strokeText(l.content, 0, l.fontSize * 0.85);
+    ctx.fillText(l.content, 0, l.fontSize * 0.85);
+    ctx.restore();
+    downloadCanvas(c, `layer-text-${l.content.slice(0,10)}.png`);
+  } else if (l.type === 'person') {
+    toast('Слой "Человек" генерируется AI — скачайте полную обложку', true);
+    return;
+  }
+}
+
+function downloadCanvas(canvas, filename) {
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  toast('Скачано: ' + filename);
+}
+
+function downloadFullComposite() {
+  const c = document.createElement('canvas');
+  c.width = editorState.canvasW;
+  c.height = editorState.canvasH;
+  const ctx = c.getContext('2d');
+
+  // Background
+  const bgEl = el('layerBg');
+  const bgImg = bgEl.style.backgroundImage;
+
+  function drawTextLayers() {
+    editorState.layers.filter(l => l.type === 'text' && l.visible).forEach(l => {
+      ctx.save();
+      ctx.translate(l.x, l.y);
+      ctx.rotate(l.rotation * Math.PI / 180);
+      ctx.font = `900 ${l.fontSize}px '${l.fontFamily}', Impact, sans-serif`;
+      ctx.fillStyle = l.color;
+      ctx.strokeStyle = l.strokeColor;
+      ctx.lineWidth = l.strokeWidth;
+      ctx.lineJoin = 'round';
+      if (l.strokeWidth > 0) ctx.strokeText(l.content, 0, l.fontSize * 0.85);
+      ctx.fillText(l.content, 0, l.fontSize * 0.85);
+      ctx.restore();
+    });
+
+    // Drawing layer
+    const dc = el('drawingCanvas');
+    if (dc.width > 0) ctx.drawImage(dc, 0, 0);
+
+    downloadCanvas(c, 'cover-composite.png');
+  }
+
+  if (bgImg && bgImg !== 'none') {
+    const url = bgImg.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { ctx.drawImage(img, 0, 0, c.width, c.height); drawTextLayers(); };
+    img.onerror = () => { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, c.width, c.height); drawTextLayers(); };
+    img.src = url;
+  } else {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, c.width, c.height);
+    drawTextLayers();
+  }
+}
+
+function reorderLayers(fromId, toId) {
+  const layers = editorState.layers;
+  const fi = layers.findIndex(l => l.id === fromId);
+  const ti = layers.findIndex(l => l.id === toId);
+  if (fi < 0 || ti < 0 || fi === ti) return;
+  const [m] = layers.splice(fi, 1);
+  layers.splice(ti, 0, m);
+  renderLayers(); renderTextLayers();
+}
+
+// ═══ PROPERTIES ═══
+function showProps(id) {
+  const l = id ? editorState.layers.find(l => l.id === id) : null;
+  const tp = el('textPropsPanel');
+  if (l && l.type === 'text') {
+    tp.style.display = 'block';
+    el('textContent').value = l.content;
+    el('fontSelect').value = l.fontFamily;
+    el('fontSize').value = l.fontSize;
+    el('fontSizeVal').textContent = l.fontSize;
+    el('textColor').value = l.color;
+    el('strokeColor').value = l.strokeColor;
+    el('strokeWidth').value = l.strokeWidth;
+    el('rotation').value = l.rotation;
+    el('rotationVal').textContent = l.rotation + '°';
+  } else {
+    tp.style.display = 'none';
+  }
+}
+
+function updateTextContent() {
+  const l = editorState.layers.find(l => l.id === selectedLayerId);
+  if (!l || l.type !== 'text') return;
+  l.content = el('textContent').value;
+  l.name = l.content.slice(0, 12) || 'Текст';
+  renderTextLayers(); renderLayers();
+}
+
+function updateTextStyle() {
+  const l = editorState.layers.find(l => l.id === selectedLayerId);
+  if (!l || l.type !== 'text') return;
+  l.fontFamily = el('fontSelect').value;
+  l.fontSize = parseInt(el('fontSize').value);
+  l.color = el('textColor').value;
+  l.strokeColor = el('strokeColor').value;
+  l.strokeWidth = parseInt(el('strokeWidth').value);
+  l.rotation = parseInt(el('rotation').value);
+  renderTextLayers();
+}
+
+// ═══ RENDER TEXT LAYERS ═══
+function renderTextLayers() {
+  const c = el('textLayersContainer');
+  c.innerHTML = '';
+  editorState.layers.filter(l => l.type === 'text' && l.visible).forEach(l => {
+    const d = document.createElement('div');
+    d.id = 'tl-' + l.id;
+    d.className = 'text-layer' + (l.id === selectedLayerId ? ' sel' : '');
+    d.style.cssText = `left:${l.x}px;top:${l.y}px;font-family:'${l.fontFamily}',Impact,sans-serif;font-size:${l.fontSize}px;color:${l.color};-webkit-text-stroke:${l.strokeWidth}px ${l.strokeColor};paint-order:stroke fill;transform:rotate(${l.rotation}deg);`;
+    d.textContent = l.content;
+    d.innerHTML += '<div class="rh"></div><div class="rot">↻</div>';
+    d.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('rh') || e.target.classList.contains('rot')) return;
+      selectLayer(l.id); startDrag(e, l);
+    });
+    d.querySelector('.rh').addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, l); });
+    d.querySelector('.rot').addEventListener('mousedown', e => { e.stopPropagation(); startRotate(e, l, d); });
+    c.appendChild(d);
+  });
+}
+
+// ═══ DRAG / RESIZE / ROTATE ═══
+function startDrag(e, l) {
+  e.preventDefault();
+  const sx = e.clientX, sy = e.clientY, ox = l.x, oy = l.y;
+  const onM = e => { l.x = ox+(e.clientX-sx)/canvasScale; l.y = oy+(e.clientY-sy)/canvasScale; const el = document.getElementById('tl-'+l.id); if(el){el.style.left=l.x+'px';el.style.top=l.y+'px';} };
+  const onU = () => { document.removeEventListener('mousemove',onM); document.removeEventListener('mouseup',onU); };
+  document.addEventListener('mousemove',onM); document.addEventListener('mouseup',onU);
+}
+function startResize(e, l) {
+  e.preventDefault();
+  const sy = e.clientY, os = l.fontSize;
+  const onM = e => { l.fontSize = Math.max(24,Math.min(200,os+(e.clientY-sy)/canvasScale*0.5)); el('fontSize').value=Math.round(l.fontSize); el('fontSizeVal').textContent=Math.round(l.fontSize); renderTextLayers(); };
+  const onU = () => { document.removeEventListener('mousemove',onM); document.removeEventListener('mouseup',onU); };
+  document.addEventListener('mousemove',onM); document.addEventListener('mouseup',onU);
+}
+function startRotate(e, l, div) {
+  e.preventDefault();
+  const r = div.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+  const sa = Math.atan2(e.clientY-cy,e.clientX-cx), or = l.rotation;
+  const onM = e => { const a=Math.atan2(e.clientY-cy,e.clientX-cx); let d=or+(a-sa)*(180/Math.PI); d=Math.max(-45,Math.min(45,Math.round(d))); l.rotation=d; el('rotation').value=d; el('rotationVal').textContent=d+'°'; renderTextLayers(); };
+  const onU = () => { document.removeEventListener('mousemove',onM); document.removeEventListener('mouseup',onU); };
+  document.addEventListener('mousemove',onM); document.addEventListener('mouseup',onU);
+}
+
+// ═══ PERSON PROPS ═══
+function setPosition(pos) {
+  const p = editorState.layers.find(l => l.type === 'person');
+  if (p) p.position = pos;
+  document.querySelectorAll('#personSection .pos-btns button').forEach(b => b.classList.remove('active'));
+  el('pos-' + pos).classList.add('active');
+}
+function setTextPos(pos) {
+  editorState.coverTextPos = pos;
+  document.querySelectorAll('[id^="tpos-"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tpos-' + pos);
+  if (btn) btn.classList.add('active');
+}
+
+// ═══ COVER TEXTS (multiple) ═══
+const POS_OPTIONS = [
+  { val: 'top-left', label: '↖' }, { val: 'top', label: '↑ Верх' }, { val: 'top-right', label: '↗' },
+  { val: 'left', label: '← Лево' }, { val: 'center', label: 'Центр' }, { val: 'right', label: 'Право →' },
+  { val: 'bottom-left', label: '↙' }, { val: 'bottom', label: '↓ Низ' }, { val: 'bottom-right', label: '↘' },
+];
+
+function renderCoverTexts() {
+  const c = el('coverTextsContainer');
+  c.innerHTML = editorState.coverTexts.map((t, i) => `
+    <div style="background:var(--card2);border-radius:6px;padding:6px;margin-bottom:4px;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:10px;color:var(--muted);">Надпись ${i+1}</span>
+        ${editorState.coverTexts.length > 1 ? `<button onclick="removeCoverText(${t.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0 2px;" title="Удалить">✕</button>` : ''}
+      </div>
+      <input class="prop-input" value="${(t.text||'').replace(/"/g,'&quot;')}" placeholder="Текст надписи..." oninput="updateCoverText(${t.id},'text',this.value)" style="margin-bottom:4px;">
+      <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
+        <select onchange="updateCoverText(${t.id},'pos',this.value)" style="flex:1;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:10px;">
+          ${POS_OPTIONS.map(p => `<option value="${p.val}" ${t.pos===p.val?'selected':''}>${p.label}</option>`).join('')}
+        </select>
+        <input type="color" value="${t.color||'#FFFFFF'}" oninput="updateCoverText(${t.id},'color',this.value)" style="width:24px;height:20px;border:none;cursor:pointer;">
+      </div>
+    </div>
+  `).join('');
+}
+function addCoverText() {
+  const id = editorState.nextCoverTextId++;
+  editorState.coverTexts.push({ id, text: '', pos: 'top', color: '#FFFFFF' });
+  renderCoverTexts();
+}
+function removeCoverText(id) {
+  editorState.coverTexts = editorState.coverTexts.filter(t => t.id !== id);
+  renderCoverTexts();
+}
+function updateCoverText(id, key, val) {
+  const t = editorState.coverTexts.find(t => t.id === id);
+  if (t) t[key] = val;
+}
+
+// ═══ COVER ICONS ═══
+function renderCoverIcons() {
+  const c = el('coverIconsContainer');
+  c.innerHTML = editorState.coverIcons.map((ic, i) => `
+    <div style="background:var(--card2);border-radius:6px;padding:6px;margin-bottom:4px;display:flex;gap:4px;align-items:center;">
+      <input class="prop-input" value="${(ic.desc||'').replace(/"/g,'&quot;')}" placeholder="Описание иконки..." oninput="updateCoverIcon(${ic.id},'desc',this.value)" style="flex:1;">
+      <select onchange="updateCoverIcon(${ic.id},'pos',this.value)" style="width:70px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px;font-size:10px;">
+        ${POS_OPTIONS.map(p => `<option value="${p.val}" ${ic.pos===p.val?'selected':''}>${p.label}</option>`).join('')}
+      </select>
+      <button onclick="removeCoverIcon(${ic.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0 2px;">✕</button>
+    </div>
+  `).join('');
+}
+function addCoverIcon() {
+  const id = editorState.nextCoverIconId++;
+  editorState.coverIcons.push({ id, desc: '', pos: 'top-right' });
+  renderCoverIcons();
+}
+function addQuickIcon(desc) {
+  const id = editorState.nextCoverIconId++;
+  editorState.coverIcons.push({ id, desc, pos: 'top-right' });
+  renderCoverIcons();
+  toast('Иконка добавлена: ' + desc);
+}
+function removeCoverIcon(id) {
+  editorState.coverIcons = editorState.coverIcons.filter(ic => ic.id !== id);
+  renderCoverIcons();
+}
+function updateCoverIcon(id, key, val) {
+  const ic = editorState.coverIcons.find(ic => ic.id === id);
+  if (ic) ic[key] = val;
+}
+
+function addCustomSvgIcon() {
+  const desc = el('customSvgDesc').value.trim();
+  if (!desc) { toast('Опишите иконку', true); return; }
+  const id = editorState.nextCoverIconId++;
+  editorState.coverIcons.push({ id, desc, pos: 'top-right' });
+  renderCoverIcons();
+  el('customSvgDesc').value = '';
+  toast('Иконка добавлена');
+}
+
+function uploadSvgIcon(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const svgText = e.target.result;
+    // Parse SVG to extract a description for the AI prompt
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+    const svgEl = doc.querySelector('svg');
+
+    // Try to get title or desc from SVG
+    const title = doc.querySelector('title')?.textContent || '';
+    const desc = doc.querySelector('desc')?.textContent || '';
+
+    // Extract visual elements for description
+    const paths = doc.querySelectorAll('path, circle, rect, polygon, ellipse, line, polyline');
+    const colors = new Set();
+    paths.forEach(p => {
+      const fill = p.getAttribute('fill');
+      const stroke = p.getAttribute('stroke');
+      if (fill && fill !== 'none') colors.add(fill);
+      if (stroke && stroke !== 'none') colors.add(stroke);
+    });
+
+    let autoDesc = title || desc || file.name.replace('.svg', '');
+    if (colors.size > 0) autoDesc += ` (colors: ${[...colors].slice(0, 5).join(', ')})`;
+    autoDesc = `Custom SVG icon: ${autoDesc}, ${paths.length} shapes`;
+
+    const id = editorState.nextCoverIconId++;
+    editorState.coverIcons.push({ id, desc: autoDesc, pos: 'top-right' });
+    renderCoverIcons();
+    toast('SVG загружен: ' + file.name);
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+function updatePersonProp() {
+  const p = editorState.layers.find(l => l.type === 'person');
+  if (!p) return;
+  p.desc = el('personDesc').value;
+  p.emotion = parseInt(el('emotionSlider').value);
+  p.lookAtCamera = el('lookAtCamera').checked;
+}
+
+function updateEmotion(val) {
+  val = parseInt(val);
+  el('emotionPct').textContent = val + '%';
+  const words = ['спокойный', 'любопытный', 'заинтересован', 'удивлён', 'в шоке'];
+  const idx = val <= 20 ? 0 : val <= 40 ? 1 : val <= 60 ? 2 : val <= 80 ? 3 : 4;
+  el('emotionWord').textContent = words[idx];
+  // Highlight active emoji
+  el('emotionMarkers').querySelectorAll('span').forEach((s, i) => {
+    s.classList.toggle('active-emoji', i === idx);
+  });
+  updatePersonProp();
+}
+
+function emotionToKeyword(val) {
+  if (val <= 20) return 'calm, confident expression';
+  if (val <= 40) return 'slightly surprised, curious look';
+  if (val <= 60) return 'engaged, animated expression, mouth slightly open';
+  if (val <= 80) return 'very surprised, shocked, mouth wide open';
+  return 'screaming in shock, extreme emotion, hands on head';
+}
+
+// ═══ EXPERT PHOTO ═══
+async function checkExpertPhoto() {
+  try {
+    const resp = await fetch('/api/file/expert-check');
+    // Simple check — try fetching the expert photo
+  } catch(e) {}
+  // Check via known path
+  const img = new Image();
+  img.onload = () => {
+    el('expertStatus').className = 'expert-status loaded';
+    el('expertStatus').innerHTML = '✅ Фото загружено';
+  };
+  img.onerror = () => {
+    el('expertStatus').className = 'expert-status empty';
+    el('expertStatus').innerHTML = '⚠ Фото не загружено — загрузите фото эксперта';
+  };
+  // Try to load from assets
+  img.src = '/api/styles/../expert.jpg?' + Date.now(); // won't work, use upload-expert endpoint
+}
+
+async function uploadExpertPhoto() {
+  const input = el('expertFileInput');
+  if (!input.files.length) return;
+  const fd = new FormData();
+  fd.append('photo', input.files[0]);
+  try {
+    toast('Загружаю фото...');
+    const resp = await fetch('/api/upload-expert', { method: 'POST', body: fd });
+    const r = await resp.json();
+    if (r.ok) {
+      toast('Фото загружено!');
+      el('expertStatus').className = 'expert-status loaded';
+      el('expertStatus').innerHTML = '✅ Фото загружено (' + Math.round(r.size/1024) + ' KB)';
+    } else toast(r.error, true);
+  } catch(e) { toast(e.message, true); }
+  input.value = '';
+}
+
+// ═══ STYLES ═══
+function renderStyles() {
+  el('styleGrid').innerHTML = STYLES.map(s => {
+    const img = s.ref ? `<img class="s-img" src="/api/assets/references/${s.ref}" loading="lazy">` : `<div class="s-noimg">${s.id[0].toUpperCase()}</div>`;
+    return `<div class="style-item ${s.id === editorState.selectedStyleId ? 'selected' : ''}" onclick="selectStyle('${s.id}')">
+      ${img}<div class="s-name">${s.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectStyle(id) {
+  editorState.selectedStyleId = editorState.selectedStyleId === id ? '' : id;
+  renderStyles();
+  updateAiSummary();
+}
+
+// ═══ BACKGROUNDS ═══
+function renderBackgrounds() {
+  el('bgGrid').innerHTML = BACKGROUNDS.map(b => {
+    const img = b.tex ? `<img class="bg-img" src="/api/assets/textures/${b.tex}" loading="lazy">` : `<div class="bg-noimg">?</div>`;
+    return `<div class="bg-item ${b.id === editorState.selectedBgId ? 'selected' : ''}" onclick="selectBg('${b.id}')">
+      ${img}<div class="bg-name">${b.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectBg(id) {
+  editorState.selectedBgId = editorState.selectedBgId === id ? '' : id;
+  editorState.customBgUrl = '';
+  // Apply texture as preview background
+  const bg = BACKGROUNDS.find(b => b.id === id);
+  if (bg && bg.tex && editorState.selectedBgId) {
+    el('layerBg').style.backgroundImage = `url(/api/assets/textures/${bg.tex})`;
+  } else {
+    el('layerBg').style.backgroundImage = '';
+  }
+  renderBackgrounds();
+  updateAiSummary();
+}
+
+function uploadCustomBg() {
+  const input = el('customBgInput');
+  if (!input.files.length) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    editorState.customBgUrl = e.target.result;
+    editorState.selectedBgId = 'custom';
+    el('layerBg').style.backgroundImage = `url(${e.target.result})`;
+    toast('Фон загружен!');
+    renderBackgrounds();
+  };
+  reader.readAsDataURL(input.files[0]);
+  input.value = '';
+}
+
+// ═══ AI SUMMARY ═══
+function updateAiSummary() {
+  const parts = [];
+  const style = STYLES.find(s => s.id === editorState.selectedStyleId);
+  if (style) parts.push(`Стиль: <b>${style.name}</b>`);
+  const bg = BACKGROUNDS.find(b => b.id === editorState.selectedBgId);
+  if (bg) parts.push(`Фон: <b>${bg.name}</b>`);
+  const ts = TEXT_STYLES.find(t => t.id === editorState.selectedTextStyleId);
+  if (ts) parts.push(`Шрифт AI: <b>${ts.name}</b>`);
+  const person = editorState.layers.find(l => l.type === 'person');
+  if (person && person.clothingId) parts.push(`Одежда: <b>выбрана</b>`);
+  el('aiSummary').innerHTML = parts.length ? parts.join('<br>') : '<span style="opacity:0.5">Выберите стиль, фон, шрифт внизу</span>';
+}
+
+// ═══ TEXT STYLES ═══
+function renderTextStyles() {
+  el('textStyleGrid').innerHTML = TEXT_STYLES.map(ts => {
+    const sel = ts.id === editorState.selectedTextStyleId ? 'selected' : '';
+    return `<div class="text-style-item ${sel}" onclick="selectTextStyle('${ts.id}')">
+      <img src="/api/assets/font-previews/${ts.file}" loading="lazy">
+      <div class="ts-name">${ts.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectTextStyle(id) {
+  editorState.selectedTextStyleId = editorState.selectedTextStyleId === id ? '' : id;
+  renderTextStyles();
+  updateAiSummary();
+  const ts = TEXT_STYLES.find(t => t.id === id);
+  toast(editorState.selectedTextStyleId ? `Стиль текста: ${ts.name}` : 'Стиль текста снят');
+}
+
+// ═══ CLOTHING ═══
+async function loadClothingFiles() {
+  try {
+    const [m, f] = await Promise.all([
+      api('/api/assets-list/clothing-male'),
+      api('/api/assets-list/clothing-female'),
+    ]);
+    if (m.ok) clothingFiles.male = m.files;
+    if (f.ok) clothingFiles.female = f.files;
+    renderClothing();
+  } catch (e) { console.error('clothing load:', e); }
+}
+
+function setClothingTab(tab) {
+  clothingTab = tab;
+  el('clothingTabMale').classList.toggle('active', tab === 'male');
+  el('clothingTabFemale').classList.toggle('active', tab === 'female');
+  renderClothing();
+}
+
+function renderClothing() {
+  const files = clothingFiles[clothingTab] || [];
+  const person = editorState.layers.find(l => l.type === 'person');
+  const selectedId = person ? person.clothingId : '';
+  el('clothingGrid').innerHTML = files.map(f => {
+    const assetType = clothingTab === 'male' ? 'clothing-male' : 'clothing-female';
+    const id = clothingTab + ':' + f;
+    const sel = id === selectedId ? 'selected' : '';
+    return `<div class="clothing-item ${sel}" onclick="selectClothing('${id}', '${assetType}', '${f}')">
+      <img src="/api/assets/${assetType}/${f}" loading="lazy">
+    </div>`;
+  }).join('') || '<p style="color:var(--muted);font-size:12px;">Нет файлов</p>';
+}
+
+function selectClothing(id, assetType, file) {
+  const person = editorState.layers.find(l => l.type === 'person');
+  if (!person) return;
+  person.clothingId = person.clothingId === id ? '' : id;
+  person.clothingUrl = person.clothingId ? `/api/assets/${assetType}/${file}` : '';
+  renderClothing();
+  updateAiSummary();
+  toast(person.clothingId ? 'Одежда выбрана!' : 'Одежда снята');
+}
+
+// ═══ CUSTOM IMAGE ═══
+function uploadCustomImage() {
+  const input = el('customImgInput');
+  if (!input.files.length) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    el('layerBg').style.backgroundImage = `url(${e.target.result})`;
+    editorState.customBgUrl = e.target.result;
+    toast('Картинка добавлена как фон!');
+    el('customImgPreview').innerHTML = `<img src="${e.target.result}" style="max-width:200px;border-radius:6px;border:1px solid var(--border);">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+  input.value = '';
+}
+
+// ═══ PROMPT HELPER ═══
+async function improvePrompt() {
+  const text = el('promptRu').value.trim();
+  if (!text) { toast('Напишите описание', true); return; }
+  const btn = el('btnImprove');
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span>';
+  try {
+    const data = await api('/api/improve-prompt', { text });
+    if (data.ok) { el('promptEn').value = data.prompt; toast('Готово!'); }
+    else toast(data.error, true);
+  } catch(e) { toast(e.message, true); }
+  btn.disabled = false; btn.textContent = '✨ Улучшить';
+}
+
+function generatePromptFromLayers() {
+  const person = editorState.layers.find(l => l.type === 'person');
+  const texts = editorState.layers.filter(l => l.type === 'text' && l.visible);
+  let parts = [];
+
+  // Style
+  const style = STYLES.find(s => s.id === editorState.selectedStyleId);
+  if (style) {
+    const intensity = editorState.styleIntensity || 70;
+    if (intensity >= 50) parts.push(style.prompt);
+    else parts.push(style.prompt.split(',').slice(0, 2).join(','));
+  }
+
+  // Background
+  const bg = BACKGROUNDS.find(b => b.id === editorState.selectedBgId);
+  if (bg) parts.push('Background: ' + bg.prompt);
+
+  // Person — make action/pose description FIRST and prominent
+  if (person) {
+    const emotion = emotionToKeyword(person.emotion);
+    const posMap = {
+      left: 'positioned on the LEFT side of the frame',
+      center: 'positioned in the CENTER of the frame',
+      right: 'positioned on the RIGHT side of the frame'
+    };
+    const pos = posMap[person.position] || posMap.center;
+    const look = person.lookAtCamera ? ', looking directly at camera' : ', looking away from camera';
+
+    if (person.desc) {
+      // Put action description FIRST — it's the most important directive
+      parts.unshift(`CRITICAL: The person must be ${person.desc}`);
+    }
+    parts.push(`The person is ${pos}, with ${emotion}${look}`);
+  }
+
+  // Neon
+  parts.push(`Dramatic neon ${editorState.neonColor} glow behind the person`);
+
+  // Cover texts — AI draws text on the image (multiple)
+  const posNames = {
+    'top-left': 'in the top-left corner', 'top': 'at the top center', 'top-right': 'in the top-right corner',
+    'left': 'on the left side', 'center': 'in the center', 'right': 'on the right side',
+    'bottom-left': 'in the bottom-left corner', 'bottom': 'at the bottom center', 'bottom-right': 'in the bottom-right corner',
+  };
+  (editorState.coverTexts || []).forEach((t, i) => {
+    if (t.text) {
+      const tPos = posNames[t.pos] || 'at the bottom center';
+      parts.push(`Text #${i+1}: Large bold text ${tPos} saying "${t.text}" in ${t.color || '#FFFFFF'} color`);
+    }
+  });
+
+  // Cover icons — AI draws icons/logos on the image
+  (editorState.coverIcons || []).forEach((ic, i) => {
+    if (ic.desc) {
+      const iPos = posNames[ic.pos] || 'in the top-right corner';
+      parts.push(`Icon #${i+1}: Draw a ${ic.desc} icon/logo ${iPos}`);
+    }
+  });
+
+  // Format
+  const fmtMap = { '16:9': '16:9 landscape', '9:16': '9:16 vertical portrait', '1:1': 'square 1:1' };
+  parts.push(`YouTube thumbnail style, vibrant colors, ${fmtMap[editorState.format] || '16:9 landscape'}`);
+
+  el('promptEn').value = parts.join('. ') + '.';
+  toast('Промпт собран!');
+}
+
+// ═══ GENERATE ═══
+async function generateCover() {
+  // Always rebuild prompt from current settings (desc, emotion, style, etc.)
+  generatePromptFromLayers();
+  let prompt = el('promptEn').value.trim();
+  if (!prompt) { toast('Создайте промпт', true); return; }
+
+  const btn = el('btnGenerate');
+  btn.disabled = true; btn.innerHTML = '<span class="loading" style="border-top-color:#fff;"></span> Генерирую...';
+
+  const texts = editorState.layers.filter(l => l.type === 'text' && l.visible).map(l => ({
+    content: l.content, x: l.x, y: l.y, fontSize: l.fontSize, color: l.color,
+  }));
+  const person = editorState.layers.find(l => l.type === 'person') || {};
+
+  try {
+    const data = await api('/api/generate-cover-editor', {
+      project_id: projectId,
+      prompt,
+      neon_color: editorState.neonColor,
+      style_id: editorState.selectedStyleId,
+      text_style_id: editorState.selectedTextStyleId,
+      person: {
+        emotion: person.emotion || 50,
+        position: person.position || 'center',
+        desc: person.desc || '',
+        clothing_id: person.clothingId || '',
+        clothing_url: person.clothingUrl || '',
+      },
+      text_layers: texts,
+    });
+    if (data.ok) {
+      toast('Обложка сгенерирована!');
+      if (data.image_url) {
+        const imgUrl = data.image_url;
+        el('layerBg').style.backgroundImage = `url(${imgUrl}?t=${Date.now()})`;
+        // Add to versions
+        if (!editorState.versions.includes(imgUrl)) editorState.versions.push(imgUrl);
+        editorState.activeVersion = editorState.versions.length - 1;
+        renderLayers();
+      }
+    } else toast(data.error || 'Ошибка', true);
+  } catch(e) { toast(e.message, true); }
+  btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg> Сгенерировать';
+}
+
+// ═══ SAVE/LOAD ═══
+async function saveEditorState() {
+  try {
+    const state = { ...editorState, promptRu: el('promptRu').value, promptEn: el('promptEn').value };
+    const data = await api('/api/editor-state/' + projectId, { state });
+    if (data.ok) toast('Сохранено!'); else toast(data.error, true);
+  } catch(e) { toast(e.message, true); }
+}
+
+// ═══ YOUTUBE THUMBNAIL ═══
+async function downloadYtThumb() {
+  const url = el('ytUrlInput').value.trim();
+  if (!url) { toast('Вставьте ссылку на YouTube', true); return; }
+
+  const btn = el('btnYtDownload');
+  btn.disabled = true; btn.innerHTML = '<span class="loading"></span>';
+
+  try {
+    const data = await api('/api/download-yt-thumb', { url });
+    if (data.ok) {
+      toast('Обложка скачана!');
+      // Show preview
+      el('ytResult').innerHTML = `
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <img src="${data.image_url}" style="width:240px;border-radius:6px;border:1px solid var(--border);">
+          <div>
+            <p style="font-size:12px;margin-bottom:6px;">Video ID: <b>${data.video_id}</b></p>
+            <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Сохранена как стиль-референс</p>
+            <button class="btn btn-magenta" onclick="useYtAsStyle('${data.id}')">Использовать как стиль</button>
+            <button class="btn btn-outline" style="margin-left:4px;" onclick="useYtAsBg('${data.image_url}')">Как фон</button>
+          </div>
+        </div>
+      `;
+      // Auto-select as style
+      editorState.selectedStyleId = data.id;
+      renderStyles();
+    } else {
+      toast(data.error || 'Ошибка', true);
+      el('ytResult').innerHTML = `<p style="color:var(--red);font-size:12px;">${esc(data.error || 'Ошибка')}</p>`;
+    }
+  } catch (e) { toast(e.message, true); }
+
+  btn.disabled = false; btn.textContent = 'Скачать';
+}
+
+function useYtAsStyle(styleId) {
+  editorState.selectedStyleId = styleId;
+  renderStyles();
+  toast('Стиль выбран!');
+}
+
+function useYtAsBg(imageUrl) {
+  el('layerBg').style.backgroundImage = `url(${imageUrl})`;
+  editorState.customBgUrl = imageUrl;
+  toast('Фон установлен!');
+}
+
+// ═══ DRAWING (BRUSH / ERASER) ═══
+let drawingMode = null; // null | 'brush' | 'eraser'
+let isDrawing = false;
+let drawHistory = []; // saved canvas states for undo
+
+function getDrawCtx() {
+  return el('drawingCanvas').getContext('2d');
+}
+
+function resizeDrawingCanvas() {
+  const c = el('drawingCanvas');
+  c.width = editorState.canvasW;
+  c.height = editorState.canvasH;
+  // Restore drawing after resize
+  if (drawHistory.length > 0) {
+    const img = new Image();
+    img.onload = () => { getDrawCtx().drawImage(img, 0, 0); };
+    img.src = drawHistory[drawHistory.length - 1];
+  }
+}
+
+function toggleBrush(mode) {
+  if (drawingMode === mode) {
+    deactivateDrawing();
+    return;
+  }
+  drawingMode = mode;
+  const c = el('drawingCanvas');
+  c.classList.add('active');
+  // Show panel
+  togglePanel('brushPanel');
+  setBrushMode(mode);
+  // Highlight toolbar button
+  el('tb-brush').classList.toggle('tool-active', mode === 'brush');
+  el('tb-eraser').classList.toggle('tool-active', mode === 'eraser');
+}
+
+function deactivateDrawing() {
+  drawingMode = null;
+  el('drawingCanvas').classList.remove('active');
+  el('tb-brush').classList.remove('tool-active');
+  el('tb-eraser').classList.remove('tool-active');
+}
+
+function setBrushMode(mode) {
+  drawingMode = mode;
+  el('modeBrush').classList.toggle('active', mode === 'brush');
+  el('modeEraser').classList.toggle('active', mode === 'eraser');
+  el('tb-brush').classList.toggle('tool-active', mode === 'brush');
+  el('tb-eraser').classList.toggle('tool-active', mode === 'eraser');
+  el('brushColorSetting').style.display = mode === 'eraser' ? 'none' : 'flex';
+  el('brushPanelTitle').textContent = mode === 'eraser' ? '🧹 Ластик' : '🖌 Кисть';
+  el('drawingCanvas').classList.add('active');
+  el('drawingCanvas').style.cursor = mode === 'eraser' ? 'cell' : 'crosshair';
+  updateBrushPreview();
+}
+
+function updateBrushPreview() {
+  const pc = el('brushPreview');
+  const ctx = pc.getContext('2d');
+  ctx.clearRect(0, 0, 60, 60);
+  const size = parseInt(el('brushSize').value);
+  const opacity = parseInt(el('brushOpacity').value) / 100;
+  const color = el('brushColor').value;
+  const r = Math.min(size / 2, 25);
+
+  if (drawingMode === 'eraser') {
+    // Checkerboard for eraser
+    for (let x = 0; x < 60; x += 6) for (let y = 0; y < 60; y += 6)
+      ctx.fillStyle = (x + y) % 12 === 0 ? '#333' : '#222';
+    ctx.fillRect(0, 0, 60, 60);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(30, 30, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(30, 30, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function saveDrawState() {
+  const c = el('drawingCanvas');
+  drawHistory.push(c.toDataURL());
+  if (drawHistory.length > 30) drawHistory.shift();
+}
+
+function undoDrawing() {
+  if (drawHistory.length === 0) { toast('Нечего отменять', true); return; }
+  drawHistory.pop();
+  const ctx = getDrawCtx();
+  const c = el('drawingCanvas');
+  ctx.clearRect(0, 0, c.width, c.height);
+  if (drawHistory.length > 0) {
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0); };
+    img.src = drawHistory[drawHistory.length - 1];
+  }
+  toast('Отменено');
+}
+
+function clearDrawing() {
+  const c = el('drawingCanvas');
+  getDrawCtx().clearRect(0, 0, c.width, c.height);
+  drawHistory = [];
+  toast('Рисунок очищен');
+}
+
+// Drawing event handlers
+(function initDrawing() {
+  const c = el('drawingCanvas');
+  const getPos = (e) => {
+    const rect = c.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (c.width / rect.width),
+      y: (e.clientY - rect.top) * (c.height / rect.height),
+    };
+  };
+
+  c.addEventListener('mousedown', (e) => {
+    if (!drawingMode) return;
+    e.preventDefault();
+    isDrawing = true;
+    saveDrawState();
+    const ctx = getDrawCtx();
+    const pos = getPos(e);
+    const size = parseInt(el('brushSize').value);
+    const opacity = parseInt(el('brushOpacity').value) / 100;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = size;
+
+    if (drawingMode === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = opacity;
+      ctx.strokeStyle = el('brushColor').value;
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    // Draw a dot on click
+    ctx.lineTo(pos.x + 0.1, pos.y + 0.1);
+    ctx.stroke();
+  });
+
+  c.addEventListener('mousemove', (e) => {
+    if (!isDrawing || !drawingMode) return;
+    e.preventDefault();
+    const ctx = getDrawCtx();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  });
+
+  const stopDrawing = () => {
+    if (isDrawing) {
+      const ctx = getDrawCtx();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      isDrawing = false;
+    }
+  };
+  c.addEventListener('mouseup', stopDrawing);
+  c.addEventListener('mouseleave', stopDrawing);
+
+  // Touch support
+  c.addEventListener('touchstart', (e) => {
+    if (!drawingMode) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    c.dispatchEvent(new MouseEvent('mousedown', { clientX: touch.clientX, clientY: touch.clientY }));
+  }, { passive: false });
+  c.addEventListener('touchmove', (e) => {
+    if (!drawingMode) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    c.dispatchEvent(new MouseEvent('mousemove', { clientX: touch.clientX, clientY: touch.clientY }));
+  }, { passive: false });
+  c.addEventListener('touchend', () => { stopDrawing(); });
+})();
+
+// ═══ DESELECT ═══
+el('canvasWrapper').addEventListener('mousedown', e => {
+  if (e.target === el('canvasWrapper') || e.target === el('layerBg') || e.target === el('textLayersContainer')) {
+    selectedLayerId = null; renderLayers(); renderTextLayers(); showProps(null);
+  }
+});
+
+// ═══ INIT ═══
+async function init() {
+  if (!projectId) { toast('Не указан проект', true); return; }
+  try {
+    const data = await api(`/api/project/${projectId}`);
+    if (data.ok) el('projectName').textContent = data.state.topic;
+  } catch(e) {}
+
+  fitCanvas();
+  resizeDrawingCanvas();
+  renderLayers(); renderTextLayers();
+  renderStyles(); renderBackgrounds(); renderTextStyles();
+  renderCoverTexts(); renderCoverIcons();
+  loadClothingFiles(); loadVersionsList();
+  updateAiSummary();
+
+  // Load saved state
+  try {
+    const data = await api('/api/editor-state/' + projectId);
+    if (data.ok && data.state && data.state.layers) {
+      Object.assign(editorState, data.state);
+      const person = editorState.layers.find(l => l.type === 'person');
+      if (person) {
+        el('personDesc').value = person.desc || '';
+        el('emotionSlider').value = person.emotion || 50;
+        el('emotionPct').textContent = (person.emotion||50) + '%';
+        setPosition(person.position || 'center');
+        el('lookAtCamera').checked = person.lookAtCamera !== false;
+      }
+      if (data.state.promptRu) el('promptRu').value = data.state.promptRu;
+      if (data.state.promptEn) el('promptEn').value = data.state.promptEn;
+      el('neonColor').value = editorState.neonColor || '#00BFFF';
+      el('styleIntensity').value = editorState.styleIntensity || 70;
+      el('styleIntVal').textContent = (editorState.styleIntensity||70) + '%';
+      renderLayers(); renderTextLayers(); renderStyles(); renderBackgrounds(); renderTextStyles(); renderCoverTexts(); renderCoverIcons();
+      if (editorState.customBgUrl) el('layerBg').style.backgroundImage = `url(${editorState.customBgUrl})`;
+      // Restore bg texture preview
+      if (editorState.selectedBgId && editorState.selectedBgId !== 'custom') {
+        const bg = BACKGROUNDS.find(b => b.id === editorState.selectedBgId);
+        if (bg && bg.tex) el('layerBg').style.backgroundImage = `url(/api/assets/textures/${bg.tex})`;
+      }
+    }
+  } catch(e) {}
+
+  // Drag reorder setup (delegate)
+  el('layersList').addEventListener('dragstart', e => {
+    const item = e.target.closest('.layer-item');
+    if (item) e.dataTransfer.setData('text/plain', item.dataset.id);
+  });
+  el('layersList').addEventListener('dragover', e => e.preventDefault());
+  el('layersList').addEventListener('drop', e => {
+    e.preventDefault();
+    const item = e.target.closest('.layer-item');
+    if (item) reorderLayers(e.dataTransfer.getData('text/plain'), item.dataset.id);
+  });
+}
+init();
+</script>
+</body>
+</html>

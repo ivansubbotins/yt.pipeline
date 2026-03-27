@@ -181,6 +181,48 @@ def _format_description_file(result: dict) -> str:
 class DescriptionStep(BaseStep):
     step_name = "description"
 
+    def _build_links_instructions(self) -> str:
+        """Build link/CTA instructions from channel context."""
+        ctx = self.get_channel_context()
+        if not ctx:
+            return ""
+
+        lines = []
+        channel = ctx.get("channel", {})
+        if channel.get("telegram_url"):
+            lines.append(f"📌 Telegram: {channel['telegram_url']}")
+        if channel.get("telegram_group"):
+            lines.append(f"📌 Telegram-группа: {channel['telegram_group']}")
+        if channel.get("website"):
+            lines.append(f"📌 Сайт: {channel['website']}")
+        for key, url in channel.get("social_links", {}).items():
+            if url:
+                lines.append(f"📌 {key}: {url}")
+
+        for link in ctx.get("description_links", []):
+            if link.get("url") and link.get("label"):
+                emoji = link.get("emoji", "📌")
+                lines.append(f"{emoji} {link['label']}: {link['url']}")
+
+        cta = ctx.get("cta", {})
+        lead = cta.get("lead_magnet", {})
+        if lead.get("enabled") and lead.get("url"):
+            lines.append(f"🎁 {lead.get('text', 'Бонус')}: {lead['url']}")
+
+        always_ht = ctx.get("hashtags_always", [])
+        always_tags = ctx.get("tags_always", [])
+
+        parts = []
+        if lines:
+            parts.append("\nСсылки для описания (ОБЯЗАТЕЛЬНО включить):\n" + "\n".join(lines))
+        if always_ht:
+            ht_str = " ".join(f"#{h}" if not h.startswith("#") else h for h in always_ht)
+            parts.append(f"\nОбязательные хэштеги (добавить к остальным): {ht_str}")
+        if always_tags:
+            parts.append(f"\nОбязательные теги (добавить к остальным): {', '.join(always_tags)}")
+
+        return "\n".join(parts)
+
     def execute(self) -> dict:
         content_plan = self.get_previous_step_data("content_plan")
         research = self.get_previous_step_data("research")
@@ -254,9 +296,9 @@ SEO-ключевые слова из исследования:
 4. 15-25 тегов (от широких к узким)
 5. 3-5 хэштегов (первые 3 появятся НАД заголовком)
 6. Призыв к действию: подписка, лайк, вопрос для комментариев
-7. Ссылки-заглушки (Telegram, соцсети, ресурсы)
-8. ЕДИНЫЙ формат — этот шаблон будет использоваться для ВСЕХ видео канала
-9. Язык: русский"""
+7. ЕДИНЫЙ формат — этот шаблон будет использоваться для ВСЕХ видео канала
+8. Язык: русский
+{self._build_links_instructions()}"""
 
         response = self.ask_claude(SYSTEM_PROMPT, prompt)
 

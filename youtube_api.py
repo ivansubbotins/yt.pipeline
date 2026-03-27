@@ -56,7 +56,8 @@ class YouTubeAPI:
                 }
             }
             flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-            creds = flow.run_local_server(port=8080)
+            flow.redirect_uri = YOUTUBE_REDIRECT_URI
+            creds = self._manual_auth_flow(flow)
 
         # Save token
         with open(YOUTUBE_TOKEN_FILE, "w") as f:
@@ -65,6 +66,29 @@ class YouTubeAPI:
         self._credentials = creds
         self._service = build("youtube", "v3", credentials=creds)
         logger.info("YouTube API authenticated successfully")
+
+    def _manual_auth_flow(self, flow):
+        """Manual OAuth2 flow for headless/SSH environments."""
+        auth_url, _ = flow.authorization_url(prompt='consent')
+        print("\n" + "=" * 60)
+        print("YouTube OAuth2 Authorization")
+        print("=" * 60)
+        print("\n1. Откройте эту ссылку в браузере на своём компьютере:\n")
+        print(auth_url)
+        print("\n2. Авторизуйтесь в Google и дайте доступ.")
+        print("3. После редиректа скопируйте ВЕСЬ URL из адресной строки")
+        print("   (он начнётся с http://localhost...)")
+        print("\n" + "=" * 60)
+        redirect_url = input("\nВставьте URL сюда: ").strip()
+        # Extract the authorization code from the redirect URL
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(redirect_url)
+        code = parse_qs(parsed.query).get('code', [None])[0]
+        if not code:
+            raise ValueError("Не удалось извлечь код авторизации из URL")
+        flow.fetch_token(code=code)
+        print("\nАвторизация успешна!")
+        return flow.credentials
 
     @property
     def service(self):
@@ -225,6 +249,23 @@ class YouTubeAPI:
                 "url": f"https://www.youtube.com/channel/{channel['id']}",
             }
         return {}
+
+    def get_video_stats(self, video_id: str) -> dict:
+        """Get video statistics (views, likes, comments)."""
+        result = self.service.videos().list(
+            part="statistics,snippet",
+            id=video_id,
+        ).execute()
+        if not result.get("items"):
+            return {}
+        item = result["items"][0]
+        stats = item.get("statistics", {})
+        return {
+            "views": int(stats.get("viewCount", 0)),
+            "likes": int(stats.get("likeCount", 0)),
+            "comments": int(stats.get("commentCount", 0)),
+            "title": item["snippet"]["title"],
+        }
 
     def search_videos(self, query: str, max_results: int = 10, order: str = "relevance") -> list[dict]:
         """Search YouTube videos for research purposes."""
