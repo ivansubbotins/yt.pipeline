@@ -299,6 +299,36 @@ select.ctx-input { appearance: none; }
     </div>
   </div>
 
+  <!-- Personas for thumbnails -->
+  <div class="settings-section">
+    <h3>Персоны для обложек</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Добавьте лица людей, которые могут появиться на обложках: эксперт, известные личности, спикеры. При генерации обложки вы выберете кого разместить.</p>
+
+    <div id="personasList" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
+
+    <div style="background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:14px;">
+      <div class="settings-row">
+        <div class="settings-field">
+          <label>Имя</label>
+          <input class="ctx-input" id="personaName" placeholder="Сергей Галицкий">
+        </div>
+        <div class="settings-field">
+          <label>Роль / кто это</label>
+          <input class="ctx-input" id="personaRole" placeholder="Основатель Магнита">
+        </div>
+        <div class="settings-field">
+          <label>Фото</label>
+          <input type="file" id="personaPhoto" accept="image/*" style="margin-top:4px;">
+        </div>
+      </div>
+      <div class="settings-field" style="margin-top:8px;">
+        <label>Описание для AI (как выглядит, что носит)</label>
+        <input class="ctx-input" id="personaDesc" placeholder="Мужчина ~55 лет, короткая стрижка, в деловом костюме">
+      </div>
+      <button class="btn btn-blue btn-sm" onclick="addPersona()" style="margin-top:10px;">+ Добавить персону</button>
+    </div>
+  </div>
+
   <!-- Expert Photo & Styles -->
   <div class="settings-section">
     <h3>Фото и стили обложек</h3>
@@ -359,6 +389,9 @@ select.ctx-input { appearance: none; }
 <div class="modal-overlay" id="coverModal">
   <div class="cover-modal">
     <h2>🎨 Кастомная обложка</h2>
+
+    <label>Персоны на обложке</label>
+    <div id="coverPersonasSelect" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
 
     <label>Стиль-референс</label>
     <div id="coverStyleSelect" class="styles-grid" style="margin-bottom:0;"></div>
@@ -1637,9 +1670,40 @@ async function deleteStyle(id) {
 }
 
 // ── Custom Cover Modal ──
+let selectedPersonaIds = [];
+
 function showCoverModal() {
   renderCoverStyleSelect();
+  renderCoverPersonas();
   document.getElementById('coverModal').classList.add('show');
+}
+
+async function renderCoverPersonas() {
+  const data = await api('/api/personas');
+  const container = document.getElementById('coverPersonasSelect');
+  if (!container) return;
+  const personas = data.personas || [];
+
+  if (personas.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--muted);">Нет персон. Добавьте в Настройках.</span>';
+    return;
+  }
+
+  container.innerHTML = personas.map(p => {
+    const isSelected = selectedPersonaIds.includes(p.id);
+    return `
+      <div onclick="toggleCoverPersona('${p.id}')" style="cursor:pointer;text-align:center;width:80px;border:2px solid ${isSelected ? 'var(--green)' : 'var(--border)'};border-radius:8px;padding:6px;${isSelected ? 'background:rgba(34,197,94,0.06);' : ''}">
+        ${p.photo ? `<img src="/api/personas/${p.id}/photo" style="width:50px;height:50px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px;">` : '<div style="width:50px;height:50px;border-radius:50%;background:var(--card);margin:0 auto 4px;display:flex;align-items:center;justify-content:center;">👤</div>'}
+        <div style="font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.name)}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleCoverPersona(id) {
+  const idx = selectedPersonaIds.indexOf(id);
+  if (idx >= 0) selectedPersonaIds.splice(idx, 1);
+  else selectedPersonaIds.push(id);
+  renderCoverPersonas();
 }
 
 function hideCoverModal() {
@@ -2327,6 +2391,65 @@ loadProjects = async function() {
   // We need to re-read projects to get channel_id — handled in the card render
 };
 
+// ── Personas Management ──
+async function loadPersonas() {
+  const data = await api('/api/personas');
+  const list = document.getElementById('personasList');
+  if (!list) return;
+  const personas = data.personas || [];
+
+  if (personas.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);">Нет добавленных персон. Добавьте эксперта или известную личность.</div>';
+    return;
+  }
+
+  list.innerHTML = personas.map(p => `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;width:140px;text-align:center;position:relative;">
+      ${p.photo ? `<img src="/api/personas/${p.id}/photo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:6px;" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:28px;border:2px solid var(--border);">👤</div>'}
+      <div style="font-size:12px;font-weight:600;">${esc(p.name)}</div>
+      <div style="font-size:10px;color:var(--muted);">${esc(p.role || '')}</div>
+      <button onclick="removePersona('${p.id}')" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;" title="Удалить">✕</button>
+    </div>
+  `).join('');
+}
+
+async function addPersona() {
+  const name = document.getElementById('personaName').value.trim();
+  const role = document.getElementById('personaRole').value.trim();
+  const desc = document.getElementById('personaDesc').value.trim();
+  const fileInput = document.getElementById('personaPhoto');
+
+  if (!name) { toast('Введите имя', true); return; }
+
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('role', role);
+  fd.append('description', desc);
+  if (fileInput.files.length) fd.append('photo', fileInput.files[0]);
+
+  try {
+    const res = await fetch('/api/personas', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`Персона "${name}" добавлена!`);
+      document.getElementById('personaName').value = '';
+      document.getElementById('personaRole').value = '';
+      document.getElementById('personaDesc').value = '';
+      fileInput.value = '';
+      loadPersonas();
+    } else {
+      toast(data.error || 'Ошибка', true);
+    }
+  } catch(e) { toast(e.message, true); }
+}
+
+async function removePersona(id) {
+  if (!confirm('Удалить эту персону?')) return;
+  await fetch(`/api/personas/${id}`, { method: 'DELETE' });
+  toast('Персона удалена');
+  loadPersonas();
+}
+
 // ── 2FA Management ──
 let totpSetupSecret = '';
 
@@ -2389,6 +2512,7 @@ const _origShowSettings2 = showSettings;
 showSettings = function() {
   _origShowSettings2();
   loadChannels();
+  loadPersonas();
   load2FAStatus();
 };
 

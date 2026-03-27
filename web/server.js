@@ -811,6 +811,129 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // ── Personas Management ──
+
+  // GET /api/personas — List all personas
+  if (pathname === '/api/personas' && req.method === 'GET') {
+    const personasFile = path.join(PIPELINE_DIR, 'assets', 'personas', 'personas.json');
+    const personas = fs.existsSync(personasFile) ? JSON.parse(fs.readFileSync(personasFile, 'utf8')) : [];
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, personas }));
+    return;
+  }
+
+  // POST /api/personas — Add persona (multipart: photo + name + description)
+  if (pathname === '/api/personas' && req.method === 'POST') {
+    try {
+      const personasDir = path.join(PIPELINE_DIR, 'assets', 'personas');
+      fs.mkdirSync(personasDir, { recursive: true });
+
+      // Parse multipart
+      const contentType = req.headers['content-type'] || '';
+      let name = '', description = '', role = '';
+
+      if (contentType.includes('multipart/form-data')) {
+        const boundary = contentType.split('boundary=')[1];
+        const rawBody = await new Promise((resolve) => {
+          const chunks = []; req.on('data', c => chunks.push(c)); req.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+        const parts = rawBody.toString('binary').split('--' + boundary);
+        let photoData = null, photoExt = 'jpg';
+
+        for (const part of parts) {
+          if (part.includes('name="name"')) {
+            name = Buffer.from(part.split('\r\n\r\n')[1].split('\r\n')[0], 'binary').toString('utf8').trim();
+          } else if (part.includes('name="description"')) {
+            description = Buffer.from(part.split('\r\n\r\n')[1].split('\r\n')[0], 'binary').toString('utf8').trim();
+          } else if (part.includes('name="role"')) {
+            role = Buffer.from(part.split('\r\n\r\n')[1].split('\r\n')[0], 'binary').toString('utf8').trim();
+          } else if (part.includes('name="photo"')) {
+            const dataStart = part.indexOf('\r\n\r\n') + 4;
+            const dataEnd = part.lastIndexOf('\r\n');
+            photoData = Buffer.from(part.substring(dataStart, dataEnd), 'binary');
+            if (part.includes('.png')) photoExt = 'png';
+          }
+        }
+
+        if (!name) throw new Error('Name required');
+
+        const id = Date.now().toString();
+        // Save photo
+        let photoPath = '';
+        if (photoData && photoData.length > 100) {
+          const filename = `${id}.${photoExt}`;
+          fs.writeFileSync(path.join(personasDir, filename), photoData);
+          photoPath = filename;
+        }
+
+        // Update personas.json
+        const personasFile = path.join(personasDir, 'personas.json');
+        const personas = fs.existsSync(personasFile) ? JSON.parse(fs.readFileSync(personasFile, 'utf8')) : [];
+        const persona = { id, name, description, role, photo: photoPath, created_at: new Date().toISOString() };
+        personas.push(persona);
+        fs.writeFileSync(personasFile, JSON.stringify(personas, null, 2));
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, persona }));
+      } else {
+        throw new Error('Multipart form data required');
+      }
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // DELETE /api/personas/:id — Remove persona
+  if (pathname.match(/^\/api\/personas\/[^/]+$/) && req.method === 'DELETE') {
+    try {
+      const personaId = pathname.split('/')[3];
+      const personasDir = path.join(PIPELINE_DIR, 'assets', 'personas');
+      const personasFile = path.join(personasDir, 'personas.json');
+      if (fs.existsSync(personasFile)) {
+        let personas = JSON.parse(fs.readFileSync(personasFile, 'utf8'));
+        const persona = personas.find(p => p.id === personaId);
+        // Delete photo file
+        if (persona && persona.photo) {
+          const photoPath = path.join(personasDir, persona.photo);
+          if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath);
+        }
+        personas = personas.filter(p => p.id !== personaId);
+        fs.writeFileSync(personasFile, JSON.stringify(personas, null, 2));
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/personas/:id/photo — Serve persona photo
+  if (pathname.match(/^\/api\/personas\/[^/]+\/photo$/) && req.method === 'GET') {
+    const personaId = pathname.split('/')[3];
+    const personasDir = path.join(PIPELINE_DIR, 'assets', 'personas');
+    const personasFile = path.join(personasDir, 'personas.json');
+    if (fs.existsSync(personasFile)) {
+      const personas = JSON.parse(fs.readFileSync(personasFile, 'utf8'));
+      const persona = personas.find(p => p.id === personaId);
+      if (persona && persona.photo) {
+        const photoPath = path.join(personasDir, persona.photo);
+        if (fs.existsSync(photoPath)) {
+          const ext = path.extname(photoPath).toLowerCase();
+          const mime = ext === '.png' ? 'image/png' : 'image/jpeg';
+          res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': 'public, max-age=86400' });
+          fs.createReadStream(photoPath).pipe(res);
+          return;
+        }
+      }
+    }
+    res.writeHead(404); res.end('Not found');
+    return;
+  }
+
   // ── Sources Management ──
 
   // GET /api/project/:id/sources — List project sources (auto-populate from research)
