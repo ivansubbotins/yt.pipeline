@@ -527,6 +527,10 @@ async function refreshDetail() {
       const totalVideos = rd._total_unique || 0;
       const avgDuration = rd._avg_duration_minutes || 0;
       const recDuration = rd._recommended_duration_minutes || 0;
+      const topVideosRaw = rd._top_videos || [];
+      // Build lookup: video_id → subscriber count (from raw data, not Claude)
+      const subsLookup = {};
+      topVideosRaw.forEach(v => { if (v.video_id) subsLookup[v.video_id] = v.subscribers || 0; });
 
       researchPanel = `
         <div id="researchPanel" style="margin-top:12px;">
@@ -568,6 +572,10 @@ async function refreshDetail() {
               <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Самое залетевшее видео</div>
               <a href="https://youtube.com/watch?v=${esc(bestVideo.video_id || '')}" target="_blank" style="font-size:16px;font-weight:700;color:var(--text);text-decoration:none;">${esc(bestVideo.title)}</a>
               ${bestVideo.views ? `<div style="font-size:14px;color:var(--green);margin-top:6px;font-weight:700;">${bestVideo.views >= 1000000 ? (bestVideo.views/1000000).toFixed(1) + 'M' : (bestVideo.views/1000).toFixed(0) + 'K'} просмотров</div>` : ''}
+              ${(() => {
+                const bsubs = bestVideo.subscribers || subsLookup[bestVideo.video_id] || 0;
+                return bsubs ? '<div style="font-size:12px;color:var(--text2);margin-top:2px;">' + (bsubs >= 1000000 ? (bsubs/1000000).toFixed(1) + 'M' : (bsubs/1000).toFixed(1) + 'K') + ' подписчиков на канале</div>' : '';
+              })()}
               <div style="font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5;">${esc(bestVideo.why_it_works || '')}</div>
             </div>
           </div>
@@ -623,10 +631,11 @@ async function refreshDetail() {
                 </a>
                 <div style="padding:10px;">
                   <a href="https://youtube.com/watch?v=${esc(c.video_id || '')}" target="_blank" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;display:block;line-height:1.3;">${esc(c.video_title || '')}</a>
-                  <div style="display:flex;justify-content:space-between;margin-top:3px;">
-                    <span style="font-size:11px;color:var(--muted);">${esc(c.channel || '')}</span>
-                    ${c.subscribers ? `<span style="font-size:11px;color:var(--text2);">${c.subscribers >= 1000000 ? (c.subscribers/1000000).toFixed(1) + 'M' : (c.subscribers/1000).toFixed(1) + 'K'} подп.</span>` : ''}
-                  </div>
+                  ${(() => {
+                    const subs = c.subscribers || subsLookup[c.video_id] || 0;
+                    const subsText = subs ? (subs >= 1000000 ? (subs/1000000).toFixed(1) + 'M' : (subs/1000).toFixed(1) + 'K') + ' подп.' : '';
+                    return '<div style="display:flex;justify-content:space-between;margin-top:3px;"><span style="font-size:11px;color:var(--muted);">' + esc(c.channel || '') + '</span>' + (subsText ? '<span style="font-size:11px;color:var(--text2);">' + subsText + '</span>' : '') + '</div>';
+                  })()}
                   <div style="font-size:10px;margin-top:6px;">
                     <span style="color:var(--green);">+ ${esc(c.strengths || '')}</span>
                   </div>

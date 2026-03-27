@@ -541,6 +541,18 @@ breakthrough_score = просмотры / подписчики (чем выше 
         result["_best_video_duration_minutes"] = best_dur_min
         result["_recommended_duration_minutes"] = round(avg_duration_min * 1.2, 0)  # 20% longer than average
 
+        # Attach top videos with subscriber data (for UI to use independently of Claude)
+        result["_top_videos"] = [{
+            "video_id": v["video_id"],
+            "title": v["title"],
+            "channel": v["channel_title"],
+            "views": v.get("view_count", 0),
+            "subscribers": v.get("subscriber_count", 0),
+            "breakthrough_score": v.get("breakthrough_score", 0),
+            "days_since_publish": v.get("days_since_publish", 0),
+            "views_per_day": v.get("views_per_day", 0),
+        } for v in sorted_all[:20]]
+
         # Attach breakthroughs to result
         result["_breakthroughs"] = [{
             "video_id": v["video_id"],
