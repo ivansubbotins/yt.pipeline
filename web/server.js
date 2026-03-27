@@ -738,11 +738,19 @@ http.createServer(async (req, res) => {
       }
       // Fetch fresh
       const output = await runAgent(['channel-videos', isDefault ? '' : channelId]);
+      console.log('channel-videos output length:', output.length, 'first 200:', output.substring(0, 200));
       let videos = [];
       try {
-        // Output may contain Python log lines before JSON — find the array
-        const jsonMatch = output.match(/\[[\s\S]*\]/);
-        if (jsonMatch) videos = JSON.parse(jsonMatch[0]);
+        // Output may contain Python log lines before JSON — find the JSON array starting with [\n  {
+        const jsonStart = output.indexOf('[\n');
+        if (jsonStart === -1) {
+          // Try compact format [{"
+          const compactStart = output.indexOf('[{');
+          if (compactStart >= 0) videos = JSON.parse(output.substring(compactStart));
+          else console.error('channel-videos: no JSON array found');
+        } else {
+          videos = JSON.parse(output.substring(jsonStart));
+        }
       } catch(e) { console.error('channel-videos parse error:', e.message); }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, videos }));
