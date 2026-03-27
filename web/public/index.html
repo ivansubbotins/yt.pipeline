@@ -300,7 +300,14 @@ select.ctx-input { appearance: none; }
           <div id="wizBannerText" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Промпт для генерации:</div>
           <div id="wizBannerPrompt" style="font-size:11px;color:var(--text2);background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;white-space:pre-wrap;"></div>
-          <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizBannerPrompt').textContent)" style="margin-top:6px;">📋 Скопировать промпт</button>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizBannerPrompt').textContent)">📋 Скопировать промпт</button>
+            <button class="btn btn-blue btn-xs" onclick="generateWizardImage('banner')" id="btnGenBanner">🎨 Сгенерировать баннер</button>
+          </div>
+          <div id="wizBannerImage" style="display:none;margin-top:10px;">
+            <img id="wizBannerImg" style="width:100%;border-radius:8px;border:1px solid var(--border);">
+            <a id="wizBannerDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;" download="banner.jpg">⬇ Скачать баннер</a>
+          </div>
         </div>
       </div>
 
@@ -312,7 +319,14 @@ select.ctx-input { appearance: none; }
           <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizAvatarColors"></div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Промпт для генерации:</div>
           <div id="wizAvatarPrompt" style="font-size:11px;color:var(--text2);background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;white-space:pre-wrap;"></div>
-          <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizAvatarPrompt').textContent)" style="margin-top:6px;">📋 Скопировать промпт</button>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizAvatarPrompt').textContent)">📋 Скопировать промпт</button>
+            <button class="btn btn-purple btn-xs" onclick="generateWizardImage('avatar')" id="btnGenAvatar" style="background:var(--purple);">🎨 Сгенерировать аватар</button>
+          </div>
+          <div id="wizAvatarImage" style="display:none;margin-top:10px;">
+            <img id="wizAvatarImg" style="width:200px;height:200px;border-radius:50%;border:3px solid var(--border);object-fit:cover;">
+            <a id="wizAvatarDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;display:block;" download="avatar.jpg">⬇ Скачать аватар</a>
+          </div>
         </div>
       </div>
 
@@ -2650,6 +2664,42 @@ async function runWizard(mode) {
   btn.disabled = false;
   btn.textContent = 'Сгенерировать всё';
   toast('Готово!');
+}
+
+async function generateWizardImage(type) {
+  const prompt = type === 'banner' ? el('wizBannerPrompt').textContent : el('wizAvatarPrompt').textContent;
+  if (!prompt) { toast('Сначала сгенерируйте промпт', true); return; }
+
+  const btnId = type === 'banner' ? 'btnGenBanner' : 'btnGenAvatar';
+  const btn = el(btnId);
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Генерирую...';
+  toast(`Генерирую ${type === 'banner' ? 'баннер' : 'аватар'}... Это может занять 30-60 сек`);
+
+  const width = type === 'banner' ? 2560 : 800;
+  const height = type === 'banner' ? 1440 : 800;
+  const filename = type === 'banner' ? `banner_${Date.now()}.jpg` : `avatar_${Date.now()}.jpg`;
+
+  try {
+    const data = await api('/api/generate-image', { prompt, width, height, filename });
+    if (data.ok && data.url) {
+      if (type === 'banner') {
+        el('wizBannerImg').src = data.url + '?t=' + Date.now();
+        el('wizBannerDownload').href = data.url;
+        el('wizBannerImage').style.display = '';
+      } else {
+        el('wizAvatarImg').src = data.url + '?t=' + Date.now();
+        el('wizAvatarDownload').href = data.url;
+        el('wizAvatarImage').style.display = '';
+      }
+      toast(`${type === 'banner' ? 'Баннер' : 'Аватар'} сгенерирован!`);
+    } else {
+      toast(data.error || 'Ошибка генерации', true);
+    }
+  } catch(e) { toast(e.message, true); }
+
+  btn.disabled = false;
+  btn.textContent = type === 'banner' ? '🎨 Сгенерировать баннер' : '🎨 Сгенерировать аватар';
 }
 
 function copyWizDesc() {

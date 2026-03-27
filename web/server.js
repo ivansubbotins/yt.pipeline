@@ -1066,6 +1066,133 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // POST /api/generate-image — Generate image via Recraft API
+  if (pathname === '/api/generate-image' && req.method === 'POST') {
+    if (!isAuthenticated(req)) { res.writeHead(401); res.end('Unauthorized'); return; }
+    try {
+      const body = JSON.parse(await readBody(req));
+      const { prompt, width, height, filename } = body;
+      if (!prompt) throw new Error('Prompt required');
+
+      // Use Python to generate via Recraft
+      const script = `
+import os, sys, requests, json
+from PIL import Image
+import io
+
+RECRAFT_API_KEY = os.getenv('RECRAFT_API_KEY', '')
+FAL_KEY = os.getenv('FAL_KEY', '')
+
+prompt = ${JSON.stringify(prompt)}
+width = ${width || 1280}
+height = ${height || 720}
+filename = ${JSON.stringify(filename || 'generated.jpg')}
+
+output_dir = os.path.join(os.path.dirname(__file__), 'assets', 'generated')
+os.makedirs(output_dir, exist_ok=True)
+output_path = os.path.join(output_dir, filename)
+
+# Try Recraft first
+if RECRAFT_API_KEY:
+    try:
+        # Recraft supports specific sizes
+        size_map = {
+            (2560, 1440): '1820x1024',
+            (800, 800): '1024x1024',
+            (1280, 720): '1820x1024',
+        }
+        recraft_size = size_map.get((width, height), '1024x1024')
+        resp = requests.post('https://external.api.recraft.ai/v1/images/generations', headers={
+            'Authorization': f'Bearer {RECRAFT_API_KEY}',
+            'Content-Type': 'application/json',
+        }, json={
+            'prompt': prompt,
+            'style': 'digital_illustration',
+            'size': recraft_size,
+            'response_format': 'url',
+        }, timeout=120)
+        resp.raise_for_status()
+        image_url = resp.json()['data'][0]['url']
+        img_resp = requests.get(image_url, timeout=60)
+        img = Image.open(io.BytesIO(img_resp.content))
+        img = img.resize((width, height), Image.LANCZOS)
+        img.save(output_path, 'JPEG', quality=95)
+        print(json.dumps({'ok': True, 'path': output_path, 'url': '/api/assets/generated/' + filename}))
+        sys.exit(0)
+    except Exception as e:
+        print(json.dumps({'ok': False, 'error': f'Recraft: {e}'}), file=sys.stderr)
+
+# Try fal.ai
+if FAL_KEY:
+    try:
+        import fal_client
+        os.environ['FAL_KEY'] = FAL_KEY
+        ar = f'{width}:{height}'
+        if width > height: ar = '16:9'
+        elif width == height: ar = '1:1'
+        result = fal_client.subscribe('fal-ai/flux/schnell', arguments={
+            'prompt': prompt,
+            'image_size': {'width': width, 'height': height},
+            'num_images': 1,
+        })
+        image_url = result['images'][0]['url']
+        img_resp = requests.get(image_url, timeout=60)
+        img = Image.open(io.BytesIO(img_resp.content))
+        img = img.resize((width, height), Image.LANCZOS)
+        img.save(output_path, 'JPEG', quality=95)
+        print(json.dumps({'ok': True, 'path': output_path, 'url': '/api/assets/generated/' + filename}))
+        sys.exit(0)
+    except Exception as e:
+        print(json.dumps({'ok': False, 'error': f'fal.ai: {e}'}), file=sys.stderr)
+
+print(json.dumps({'ok': False, 'error': 'No image generation API available'}))
+`;
+      const scriptPath = path.join(PIPELINE_DIR, '_gen_image.py');
+      fs.writeFileSync(scriptPath, script);
+
+      // Run Python directly (not through agent.py)
+      const output = await new Promise((resolve, reject) => {
+        const venvUnix = path.join(PIPELINE_DIR, '.venv', 'bin', 'python3');
+        const venvWin = path.join(PIPELINE_DIR, '.venv', 'Scripts', 'python.exe');
+        const python = fs.existsSync(venvUnix) ? venvUnix : fs.existsSync(venvWin) ? venvWin : (process.platform === 'win32' ? 'python' : 'python3');
+        const proc = spawn(python, [scriptPath], { cwd: PIPELINE_DIR, env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' } });
+        let stdout = '', stderr = '';
+        proc.stdout.on('data', d => stdout += d);
+        proc.stderr.on('data', d => stderr += d);
+        proc.on('close', code => { if (code === 0) resolve(stdout.trim()); else reject(new Error(stderr || stdout || `Exit ${code}`)); });
+        proc.on('error', reject);
+      });
+      // Clean up
+      try { fs.unlinkSync(scriptPath); } catch(e) {}
+
+      let result = { ok: false };
+      try {
+        const jsonMatch = output.match(/\{[\s\S]*\}/);
+        if (jsonMatch) result = JSON.parse(jsonMatch[0]);
+      } catch(e) {}
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // Serve generated assets
+  if (pathname.startsWith('/api/assets/generated/') && req.method === 'GET') {
+    const file = pathname.replace('/api/assets/generated/', '');
+    const filePath = path.join(PIPELINE_DIR, 'assets', 'generated', file);
+    if (fs.existsSync(filePath)) {
+      res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' });
+      fs.createReadStream(filePath).pipe(res);
+    } else {
+      res.writeHead(404); res.end('Not found');
+    }
+    return;
+  }
+
   // ── Sources Management ──
 
   // GET /api/project/:id/sources — List project sources (auto-populate from research)
