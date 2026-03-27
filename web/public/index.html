@@ -193,9 +193,15 @@ select.ctx-input { appearance: none; }
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
       <div style="flex-shrink:0;font-size:12px;color:var(--muted);font-weight:500;">Текущий канал</div>
       <select id="channelSelect" style="flex:1;padding:10px 14px;font-size:13px;" onchange="loadChannelContext()">
-        <option value="">Канал по умолчанию</option>
       </select>
       <button class="btn btn-blue" onclick="showAddChannelModal()">+ Добавить канал</button>
+    </div>
+    <div id="channelCurrentInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid var(--accent);">📺</div>
+      <div>
+        <div id="channelDisplayName" style="font-size:14px;font-weight:600;">—</div>
+        <div id="channelDisplayNiche" style="font-size:11px;color:var(--muted);">Выберите или создайте канал</div>
+      </div>
     </div>
     <div id="channelNicheInfo" style="font-size:12px;color:var(--muted);display:none;margin-bottom:8px;"></div>
     <div id="channelMetaFields" style="display:none;">
@@ -2271,26 +2277,53 @@ let currentChannelId = '';
 async function loadChannels() {
   const data = await api('/api/channels');
   allChannels = data.channels || [];
+
+  // Get default channel name from context
+  const ctxData = await api('/api/context');
+  const defaultName = ctxData.context?.channel?.name || ctxData.context?.author?.name || 'Основной канал';
+
   // Populate both selectors
   const selectors = ['channelSelect', 'channelSelectNew'];
   selectors.forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const val = sel.value;
-    sel.innerHTML = '<option value="">— Канал по умолчанию —</option>';
+    sel.innerHTML = `<option value="">${esc(defaultName)}</option>`;
     allChannels.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
-      opt.textContent = `${c.name}${c.niche ? ' (' + c.niche + ')' : ''}`;
+      opt.textContent = c.name;
       sel.appendChild(opt);
     });
     sel.value = val;
   });
+
+  // Update display info
+  updateChannelDisplay();
+}
+
+function updateChannelDisplay() {
+  const sel = document.getElementById('channelSelect');
+  const nameEl = document.getElementById('channelDisplayName');
+  const nicheEl = document.getElementById('channelDisplayNiche');
+  if (!sel || !nameEl) return;
+
+  if (sel.value) {
+    const ch = allChannels.find(c => c.id === sel.value);
+    if (ch) {
+      nameEl.textContent = ch.name;
+      nicheEl.textContent = ch.niche || 'Ниша не указана';
+    }
+  } else {
+    nameEl.textContent = sel.options[0]?.textContent || 'Основной канал';
+    nicheEl.textContent = 'Канал по умолчанию';
+  }
 }
 
 async function loadChannelContext() {
   const sel = document.getElementById('channelSelect');
   currentChannelId = sel.value;
+  updateChannelDisplay();
   const metaFields = document.getElementById('channelMetaFields');
   const analyticsBtn = document.getElementById('channelAnalyticsBtn');
   const nicheInfo = document.getElementById('channelNicheInfo');
@@ -2343,10 +2376,10 @@ async function loadChannelContext() {
 }
 
 function showAddChannelModal() {
-  const name = prompt('Название канала:');
+  const name = prompt('Название канала (будет отображаться в списке):');
   if (!name) return;
   const niche = prompt('Ниша канала (например: бизнес, маркетинг, AI):') || '';
-  const audience = prompt('Целевая аудитория:') || '';
+  const audience = prompt('Целевая аудитория (например: предприниматели 25-45):') || '';
   const url = prompt('YouTube URL канала (необязательно):') || '';
   createChannel(name, niche, url, audience);
 }
