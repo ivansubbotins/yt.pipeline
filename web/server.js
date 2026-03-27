@@ -1079,6 +1079,8 @@ http.createServer(async (req, res) => {
 import os, sys, requests, json
 from PIL import Image
 import io
+from dotenv import load_dotenv
+load_dotenv()
 
 RECRAFT_API_KEY = os.getenv('RECRAFT_API_KEY', '')
 FAL_KEY = os.getenv('FAL_KEY', '')
