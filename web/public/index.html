@@ -4,48 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YouTube Pipeline — Админка</title>
+<link rel="stylesheet" href="/shared.css">
 <style>
-:root {
-  --bg: #0f0f0f;
-  --card: #1a1a1a;
-  --border: #2a2a2a;
-  --text: #e0e0e0;
-  --muted: #888;
-  --red: #ff4444;
-  --green: #4caf50;
-  --blue: #2196f3;
-  --orange: #ff9800;
-  --yellow: #ffc107;
-  --purple: #9c27b0;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-/* ── Header ── */
+/* ── Header (index-specific) ── */
 .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
 .header h1 { font-size: 20px; font-weight: 600; }
 .header h1 span { color: var(--red); }
 .header .btn-new { margin-left: auto; }
 
-/* ── Buttons ── */
-.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-red { background: var(--red); color: #fff; }
-.btn-red:hover:not(:disabled) { background: #e03030; }
-.btn-blue { background: var(--blue); color: #fff; }
-.btn-blue:hover:not(:disabled) { background: #1976d2; }
-.btn-green { background: var(--green); color: #fff; }
-.btn-green:hover:not(:disabled) { background: #388e3c; }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-.btn-outline:hover:not(:disabled) { border-color: var(--muted); }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
-
-/* ── Layout ── */
-.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-
 /* ── Projects List ── */
 .projects-grid { display: grid; gap: 12px; margin-top: 20px; }
-.project-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; cursor: pointer; transition: border-color 0.2s; }
+.project-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; cursor: pointer; transition: border-color 0.2s; }
 .project-card:hover { border-color: var(--muted); }
 .project-card .topic { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
 .project-card .meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
@@ -56,16 +25,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .step-dot.waiting { background: var(--orange); }
 .step-dot.failed { background: var(--red); }
 .step-dot.approved { background: var(--purple); }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-/* ── New Project Modal ── */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
-.modal-overlay.show { display: flex; }
-.modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: 460px; max-width: 90vw; }
-.modal h2 { font-size: 18px; margin-bottom: 16px; }
-.modal input { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; outline: none; }
-.modal input:focus { border-color: var(--blue); }
-.modal .actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
 
 /* ── Project Detail ── */
 .detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
@@ -74,8 +33,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .detail-header h2 { font-size: 22px; flex: 1; }
 
 .steps-timeline { display: grid; gap: 10px; }
-.step-row { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
-.step-row .num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.step-row { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+.step-row .num { width: 32px; height: 32px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
 .step-row .num.pending { background: var(--border); color: var(--muted); }
 .step-row .num.completed { background: var(--green); color: #fff; }
 .step-row .num.in_progress { background: var(--blue); color: #fff; animation: pulse 1.5s infinite; }
@@ -88,50 +47,43 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .step-row .status-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 
 /* ── Step Data Panel ── */
-.step-data { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px; max-height: 400px; overflow-y: auto; }
+.step-data { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; max-height: 400px; overflow-y: auto; }
 .step-data pre { font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--muted); }
 
 /* ── Thumbnails ── */
 .thumbs-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-.thumbs-grid img { width: 280px; border-radius: 8px; border: 1px solid var(--border); }
+.thumbs-grid img { width: 280px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
 
 /* ── Text Output ── */
-.text-output { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-top: 12px; max-height: 300px; overflow-y: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: var(--text); }
-
-/* ── Loading ── */
-.loading { display: inline-block; width: 16px; height: 16px; border: 2px solid transparent; border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.text-output { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; max-height: 300px; overflow-y: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: var(--text); }
 
 /* ── Styles Gallery ── */
 .styles-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-.style-card { position: relative; width: 200px; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
-.style-card.selected { border-color: var(--blue); box-shadow: 0 0 8px rgba(33,150,243,0.4); }
+.style-card { position: relative; width: 200px; border: 2px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+.style-card.selected { border-color: var(--blue); box-shadow: 0 0 8px rgba(59,130,246,0.4); }
 .style-card:hover { border-color: var(--muted); }
 .style-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
 .style-card .style-name { padding: 6px 8px; font-size: 12px; font-weight: 600; background: var(--card); }
 .style-card .style-prompt { padding: 2px 8px 6px; font-size: 11px; color: var(--muted); background: var(--card); }
-.style-card .style-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; border: none; font-size: 12px; cursor: pointer; display: none; }
+.style-card .style-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: var(--radius-full); background: rgba(0,0,0,0.6); color: #fff; border: none; font-size: 12px; cursor: pointer; display: none; }
 .style-card:hover .style-delete { display: block; }
 
 /* ── Custom Cover Modal ── */
-.cover-modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+.cover-modal { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-2xl); padding: 24px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
 .cover-modal h2 { margin-bottom: 16px; font-size: 18px; }
 .cover-modal label { display: block; font-size: 12px; color: var(--muted); margin-top: 12px; margin-bottom: 4px; }
-.cover-modal textarea { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; resize: vertical; min-height: 80px; outline: none; font-family: inherit; }
-.cover-modal textarea:focus { border-color: var(--blue); }
 .cover-modal .actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
 
-/* ── Toast ── */
-.toast { position: fixed; bottom: 24px; right: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; font-size: 13px; z-index: 200; display: none; }
-.toast.show { display: block; animation: fadeIn 0.3s; }
-.toast.error { border-color: var(--red); }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+/* ── Collapsible panels ── */
+.collapse-icon { user-select: none; }
+.step-row[onclick] .info .name::after { content: ''; }
+.step-row[onclick]:hover { border-color: var(--muted); }
 
 .run-all-bar { display: flex; gap: 8px; margin-bottom: 16px; }
 
 /* ── Settings ── */
-.ctx-input { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none; margin-top: 4px; }
-.ctx-input:focus { border-color: var(--blue); }
+.ctx-input { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 13px; outline: none; margin-top: 4px; }
+.ctx-input:focus { border-color: var(--accent); }
 select.ctx-input { appearance: none; }
 
 /* ═══ MOBILE ═══ */
@@ -140,30 +92,17 @@ select.ctx-input { appearance: none; }
   .header h1 { font-size: 16px; }
   .header .btn { font-size: 11px; padding: 6px 10px; }
   .header .btn-new { margin-left: 0; }
-
-  .container { padding: 14px; }
-
   .project-card { padding: 14px; }
   .project-card .topic { font-size: 14px; }
-
-  .modal { width: 95vw; padding: 20px; }
   .cover-modal { width: 95vw; padding: 16px; }
-
   .detail-header { flex-wrap: wrap; gap: 8px; }
   .detail-header h2 { font-size: 18px; }
-
   .step-row { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
   .step-row .info .name { font-size: 13px; }
-
   .thumbs-grid img { width: 100%; max-width: 280px; }
-
   .styles-grid { gap: 8px; }
   .style-card { width: 140px; }
-  .style-card img { height: auto; }
-
   .run-all-bar { flex-wrap: wrap; }
-
-  .toast { bottom: 12px; right: 12px; left: 12px; text-align: center; }
 }
 </style>
 </head>
@@ -191,7 +130,7 @@ select.ctx-input { appearance: none; }
     <span id="detailMeta" style="color:var(--muted); font-size:12px;"></span>
   </div>
   <div class="run-all-bar">
-    <button class="btn btn-blue" id="btnRunAll" onclick="runAll()">▶ Запустить все авто-шаги</button>
+    <button class="btn btn-outline" id="btnRunAll" onclick="runAll()" title="Запускает шаги по порядку, но требует одобрения между этапами" style="opacity:0.6;">▶ Запустить все авто-шаги</button>
     <button class="btn btn-outline btn-sm" onclick="showCoverModal()">🎨 Кастомная обложка</button>
     <button class="btn btn-outline btn-sm" onclick="openEditor()">🖼 Cover Editor</button>
     <button class="btn btn-outline btn-sm" onclick="refreshDetail()">↻ Обновить</button>
@@ -205,7 +144,16 @@ select.ctx-input { appearance: none; }
 <div class="modal-overlay" id="newModal">
   <div class="modal">
     <h2>Новый видео-проект</h2>
-    <input type="text" id="topicInput" placeholder="Тема видео..." autofocus>
+    <div style="margin-bottom:10px;">
+      <label>Канал</label>
+      <select id="channelSelectNew" style="padding:8px 10px;">
+        <option value="">— Канал по умолчанию —</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px;">
+      <input type="text" id="topicInput" placeholder="Тема видео..." autofocus>
+    </div>
+    <div id="audienceFitAlert" style="display:none;border-radius:6px;padding:10px;font-size:12px;margin-bottom:10px;line-height:1.4;"></div>
     <div class="actions">
       <button class="btn btn-outline" onclick="hideModal()">Отмена</button>
       <button class="btn btn-red" id="btnCreate" onclick="createProject()">Создать</button>
@@ -221,6 +169,44 @@ select.ctx-input { appearance: none; }
   </div>
 
   <div style="display:grid; gap:20px;">
+    <!-- Channel selector -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">📺 Каналы</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="channelSelect" class="ctx-input" style="flex:1;min-width:200px;margin-top:0;" onchange="loadChannelContext()">
+          <option value="">Канал по умолчанию</option>
+        </select>
+        <button class="btn btn-blue btn-sm" onclick="showAddChannelModal()">+ Добавить канал</button>
+      </div>
+      <div id="channelNicheInfo" style="margin-top:8px;font-size:12px;color:var(--muted);display:none;"></div>
+
+      <!-- Channel niche & audience (shown when channel selected) -->
+      <div id="channelMetaFields" style="display:none;margin-top:12px;">
+        <div style="display:grid;gap:10px;">
+          <div><label style="font-size:12px;color:var(--muted);">Ниша канала</label><input class="ctx-input" id="ctx-niche" placeholder="Бизнес, маркетинг, AI"></div>
+          <div><label style="font-size:12px;color:var(--muted);">Целевая аудитория</label><input class="ctx-input" id="ctx-target-audience" placeholder="Предприниматели, маркетологи, 25-45 лет"></div>
+        </div>
+      </div>
+
+      <!-- Video analytics button -->
+      <div id="channelAnalyticsBtn" style="display:none;margin-top:10px;">
+        <button class="btn btn-outline btn-sm" onclick="loadChannelVideos()">📊 Загрузить видео канала</button>
+        <button class="btn btn-outline btn-sm" onclick="loadRecommendations()">💡 Рекомендации тем</button>
+      </div>
+    </div>
+
+    <!-- Video analytics (shown when loaded) -->
+    <div class="project-card" id="channelVideosSection" style="display:none;">
+      <h3 style="margin-bottom:12px;">📊 Видео канала</h3>
+      <div id="channelVideosList"></div>
+    </div>
+
+    <!-- Topic recommendations (shown when loaded) -->
+    <div class="project-card" id="channelRecsSection" style="display:none;">
+      <h3 style="margin-bottom:12px;">💡 Рекомендации тем</h3>
+      <div id="channelRecsList"></div>
+    </div>
+
     <!-- Author -->
     <div class="project-card">
       <h3 style="margin-bottom:12px;">👤 Автор</h3>
@@ -320,6 +306,32 @@ select.ctx-input { appearance: none; }
       </div>
     </div>
 
+    <!-- 2FA Settings -->
+    <div class="project-card">
+      <h3 style="margin-bottom:12px;">🔒 Двухфакторная аутентификация (2FA)</h3>
+      <div id="twoFaStatus"></div>
+      <div id="twoFaSetup" style="display:none;">
+        <div style="margin-bottom:10px;">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">Отсканируйте QR-код в Google Authenticator (или Authy):</p>
+          <div style="background:#fff;display:inline-block;padding:16px;border-radius:8px;margin-bottom:10px;">
+            <div id="qrCode" style="font-size:11px;word-break:break-all;color:#000;"></div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:4px;">Или введите секрет вручную:</p>
+          <code id="totpSecretDisplay" style="background:var(--bg);padding:6px 10px;border-radius:4px;font-size:14px;letter-spacing:2px;user-select:all;"></code>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+          <input id="verifyTotpCode" placeholder="Введите 6-значный код" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
+          <button class="btn btn-green btn-sm" onclick="verifyAndEnable2FA()">Подтвердить и включить</button>
+        </div>
+      </div>
+      <div id="twoFaDisable" style="display:none;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="disableTotpCode" placeholder="Код 2FA для отключения" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
+          <button class="btn btn-red btn-sm" onclick="disable2FA()">Отключить 2FA</button>
+        </div>
+      </div>
+    </div>
+
     <button class="btn btn-green" onclick="saveContext()" style="width:fit-content;">💾 Сохранить настройки</button>
   </div>
 </div>
@@ -356,6 +368,7 @@ select.ctx-input { appearance: none; }
 <script>
 const STEPS = [
   { key: 'research', name: 'Исследование', desc: 'Анализ темы, ключевые слова, конкуренты', auto: true },
+  { key: 'sources', name: 'Источники', desc: 'Статьи, факты, цитаты для контента', auto: true },
   { key: 'content_plan', name: 'Контент-план', desc: 'Структура видео, хук, CTA', auto: true },
   { key: 'references', name: 'Референсы', desc: 'Анализ конкурентов, скачивание обложек', auto: true },
   { key: 'script', name: 'Сценарий', desc: 'Блоки сценария с таймкодами', auto: true },
@@ -432,9 +445,12 @@ async function loadProjects() {
       return `<div class="step-dot ${status}"></div>`;
     }).join('');
     const date = new Date(p.created_at).toLocaleDateString('ru-RU');
+    const chId = p.channel_id || '';
+    const ch = chId ? allChannels.find(c => c.id === chId) : null;
+    const channelBadge = ch ? `<span style="background:rgba(59,130,246,0.12);color:var(--blue);padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600;margin-left:6px;">${esc(ch.name)}</span>` : '';
     return `
       <div class="project-card" onclick="openProject('${p.id}')">
-        <div class="topic">${esc(p.topic)}</div>
+        <div class="topic">${esc(p.topic)}${channelBadge}</div>
         <div class="meta">${p.id} • ${date} • Текущий шаг: ${p.current_step}</div>
         <div class="steps-bar">${stepsHtml}</div>
       </div>`;
@@ -467,15 +483,27 @@ async function refreshDetail() {
     const statusLabels = { pending: '⬜ Ожидает', in_progress: '🔄 Выполняется', completed: '✅ Готово', waiting: '⏳ Ожидание', failed: '❌ Ошибка', approved: '👍 Подтверждено' };
     const statusColors = { pending: 'var(--muted)', completed: 'var(--green)', in_progress: 'var(--blue)', waiting: 'var(--orange)', failed: 'var(--red)', approved: 'var(--purple)' };
 
+    // Check if previous step is completed (strict pipeline order)
+    const prevStepKey = i > 0 ? STEPS[i - 1].key : null;
+    const prevStatus = prevStepKey ? (state.steps[prevStepKey]?.status || 'pending') : 'completed';
+    const prevDone = prevStatus === 'completed' || prevStatus === 'approved';
+    const isLocked = i > 0 && !prevDone;
+
     let actionBtn = '';
     if (s.auto && (status === 'pending' || status === 'failed')) {
-      actionBtn = `<button class="btn btn-blue btn-sm" onclick="runStep('${s.key}', this)">▶ Запустить</button>`;
+      if (isLocked) {
+        actionBtn = `<button class="btn btn-outline btn-sm" disabled style="opacity:0.3;" title="Сначала завершите предыдущий шаг">🔒 Заблокировано</button>`;
+      } else {
+        actionBtn = `<button class="btn btn-blue btn-sm" onclick="runStepValidated('${s.key}', this)">▶ Запустить</button>`;
+      }
     } else if (s.auto && (status === 'completed' || status === 'approved')) {
       actionBtn = `<button class="btn btn-outline btn-sm" onclick="restartStep('${s.key}', this)">🔄 Перезапустить</button>`;
     } else if (s.key === 'shooting' && status === 'waiting') {
       actionBtn = `<button class="btn btn-green btn-sm" onclick="shotDone(this)">✓ Съёмка готова</button>`;
     } else if (s.key === 'editing' && status === 'waiting') {
       actionBtn = `<button class="btn btn-green btn-sm" onclick="editDone(this)">✓ Монтаж готов</button>`;
+    } else if (!s.auto && status === 'pending' && isLocked) {
+      actionBtn = `<button class="btn btn-outline btn-sm" disabled style="opacity:0.3;">🔒 Заблокировано</button>`;
     }
 
     let dataToggle = '';
@@ -483,8 +511,714 @@ async function refreshDetail() {
       dataToggle = `<button class="btn btn-outline btn-sm" onclick="toggleData('data-${s.key}')">📋 Данные</button>`;
     }
 
+    // Research results panel
+    let researchPanel = '';
+    if (s.key === 'research' && stepState.data && (status === 'completed' || status === 'approved')) {
+      const rd = stepState.data;
+      const competitors = rd.competitors || [];
+      const angles = rd.trending_angles || [];
+      const hotAngle = rd.hot_angle || '';
+      const recTitles = rd.recommended_titles || [];
+      const gaps = rd.content_gaps || [];
+      const bestVideo = rd.best_performing_video || {};
+      const breakthroughs = rd._breakthroughs || [];
+      const avgRu = rd._avg_views_ru || 0;
+      const avgEn = rd._avg_views_en || 0;
+      const totalVideos = rd._total_unique || 0;
+      const avgDuration = rd._avg_duration_minutes || 0;
+      const recDuration = rd._recommended_duration_minutes || 0;
+
+      researchPanel = `
+        <div id="researchPanel" style="margin-top:12px;">
+          <!-- Stats summary -->
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:var(--blue);">${totalVideos}</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Видео найдено</div>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:var(--green);">${(avgRu/1000).toFixed(0)}K</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. просмотры RU</div>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:var(--purple);">${(avgEn/1000).toFixed(0)}K</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. просмотры EN</div>
+            </div>
+            ${avgDuration ? `
+            <div style="background:var(--bg);border:1px solid var(--orange);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:var(--orange);">${avgDuration} мин</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. длительность</div>
+              <div style="font-size:10px;color:var(--orange);margin-top:2px;">Рек.: ${recDuration} мин</div>
+            </div>
+            ` : ''}
+          </div>
+
+          <!-- Best video — prominent -->
+          ${bestVideo.title ? `
+          <div style="background:rgba(34,197,94,0.06);border:1px solid var(--green);border-radius:10px;padding:16px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;">
+            ${bestVideo.video_id ? `
+            <a href="https://youtube.com/watch?v=${esc(bestVideo.video_id)}" target="_blank" style="flex-shrink:0;display:block;position:relative;">
+              <img src="https://img.youtube.com/vi/${esc(bestVideo.video_id)}/hqdefault.jpg" style="width:240px;border-radius:8px;display:block;">
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                <div style="width:44px;height:44px;background:rgba(0,0,0,0.7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">▶</div>
+              </div>
+            </a>
+            ` : ''}
+            <div style="flex:1;">
+              <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Самое залетевшее видео</div>
+              <a href="https://youtube.com/watch?v=${esc(bestVideo.video_id || '')}" target="_blank" style="font-size:16px;font-weight:700;color:var(--text);text-decoration:none;">${esc(bestVideo.title)}</a>
+              ${bestVideo.views ? `<div style="font-size:14px;color:var(--green);margin-top:6px;font-weight:700;">${bestVideo.views >= 1000000 ? (bestVideo.views/1000000).toFixed(1) + 'M' : (bestVideo.views/1000).toFixed(0) + 'K'} просмотров</div>` : ''}
+              <div style="font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5;">${esc(bestVideo.why_it_works || '')}</div>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Breakthrough videos -->
+          ${breakthroughs.length ? `
+          <div style="font-size:11px;color:var(--orange);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Прорывные ролики — маленький канал, огромные просмотры</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Каналы до 50K подписчиков с непропорционально большими просмотрами. Это самые ценные сигналы — тема залетает независимо от размера канала.</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:10px;margin-bottom:16px;">
+            ${breakthroughs.map(b => {
+              const daysAgo = b.days_since_publish || 0;
+              const ageText = daysAgo <= 7 ? daysAgo + ' дн. назад' : daysAgo <= 30 ? Math.round(daysAgo/7) + ' нед. назад' : daysAgo <= 365 ? Math.round(daysAgo/30) + ' мес. назад' : '1+ год';
+              const vpd = b.views_per_day || 0;
+              const speedColor = vpd > 500 ? 'var(--green)' : vpd > 100 ? 'var(--orange)' : 'var(--muted)';
+              const speedIcon = vpd > 500 ? '🔥' : vpd > 100 ? '⚡' : '📈';
+              return `
+              <div style="background:rgba(245,158,11,0.04);border:1px solid var(--orange);border-radius:8px;overflow:hidden;">
+                <a href="https://youtube.com/watch?v=${esc(b.video_id)}" target="_blank" style="display:block;position:relative;">
+                  <img src="https://img.youtube.com/vi/${esc(b.video_id)}/mqdefault.jpg" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" onerror="this.style.display='none'">
+                  <div style="position:absolute;top:6px;left:6px;display:flex;gap:4px;">
+                    <span style="background:var(--orange);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">x${Math.round(b.breakthrough_score)}</span>
+                    <span style="background:rgba(0,0,0,0.8);color:var(--text);padding:2px 6px;border-radius:4px;font-size:10px;">${ageText}</span>
+                  </div>
+                  <div style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:10px;color:${speedColor};">${speedIcon} ${vpd > 1000 ? (vpd/1000).toFixed(1) + 'K' : Math.round(vpd)} просм/день</div>
+                  <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;color:var(--green);">
+                    ${b.views >= 1000000 ? (b.views/1000000).toFixed(1) + 'M' : (b.views/1000).toFixed(0) + 'K'} просм.
+                  </div>
+                </a>
+                <div style="padding:10px;">
+                  <a href="https://youtube.com/watch?v=${esc(b.video_id)}" target="_blank" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;display:block;line-height:1.3;">${esc(b.title)}</a>
+                  <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                    <span style="font-size:11px;color:var(--muted);">${esc(b.channel)}</span>
+                    <span style="font-size:11px;color:var(--text2);">${(b.subscribers/1000).toFixed(1)}K подп.</span>
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          ` : ''}
+
+          <!-- Top competitors -->
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Все конкуренты</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:10px;margin-bottom:16px;" id="competitorsGrid">
+            ${competitors.slice(0, 8).map((c, ci) => `
+              <div style="background:var(--bg);border:1px solid ${c.is_breakthrough ? 'var(--orange)' : 'var(--border)'};border-radius:8px;overflow:hidden;">
+                <a href="https://youtube.com/watch?v=${esc(c.video_id || '')}" target="_blank" style="display:block;position:relative;">
+                  <img src="https://img.youtube.com/vi/${esc(c.video_id || '')}/mqdefault.jpg" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" onerror="this.style.display='none'">
+                  ${c.is_breakthrough ? `<div style="position:absolute;top:6px;left:6px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">ПРОРЫВ</div>` : ''}
+                  <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;color:var(--green);">
+                    ${c.views ? (c.views >= 1000000 ? (c.views/1000000).toFixed(1) + 'M' : (c.views/1000).toFixed(0) + 'K') + ' просм.' : ''}
+                  </div>
+                </a>
+                <div style="padding:10px;">
+                  <a href="https://youtube.com/watch?v=${esc(c.video_id || '')}" target="_blank" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;display:block;line-height:1.3;">${esc(c.video_title || '')}</a>
+                  <div style="display:flex;justify-content:space-between;margin-top:3px;">
+                    <span style="font-size:11px;color:var(--muted);">${esc(c.channel || '')}</span>
+                    ${c.subscribers ? `<span style="font-size:11px;color:var(--text2);">${c.subscribers >= 1000000 ? (c.subscribers/1000000).toFixed(1) + 'M' : (c.subscribers/1000).toFixed(1) + 'K'} подп.</span>` : ''}
+                  </div>
+                  <div style="font-size:10px;margin-top:6px;">
+                    <span style="color:var(--green);">+ ${esc(c.strengths || '')}</span>
+                  </div>
+                  <div style="font-size:10px;margin-top:2px;">
+                    <span style="color:var(--red);">- ${esc(c.weaknesses || '')}</span>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Trending angles — selectable with explanations -->
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">О чём будем снимать видео?</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Выберите угол подачи. AI проанализировал конкурентов и предлагает варианты — от самого перспективного к менее очевидным.</div>
+
+          <div class="options-grid" id="anglesGrid">
+            <!-- Hot angle (AI's #1 recommendation) -->
+            ${hotAngle ? `
+              <div class="option-card" id="angle-hot" onclick="selectAngle('hot', this)" style="border-color:var(--orange);background:rgba(245,158,11,0.04);">
+                <div class="check"></div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span style="background:var(--orange);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;">Рекомендация AI</span>
+                  <span style="font-size:10px;color:var(--orange);">Максимальный потенциал просмотров</span>
+                </div>
+                <div class="title-text">${esc(hotAngle)}</div>
+                ${rd.recommended_approach ? `<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.4;">${esc(rd.recommended_approach)}</div>` : ''}
+              </div>
+            ` : ''}
+
+            <!-- Other angles -->
+            ${angles.filter(a => a !== hotAngle).map((a, ai) => `
+              <div class="option-card" id="angle-${ai}" onclick="selectAngle(${ai}, this)">
+                <div class="check"></div>
+                <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Вариант ${ai + 1}</div>
+                <div class="title-text">${esc(a)}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          ${gaps.length ? `
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Что упускают конкуренты</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${gaps.map(g => `<span style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);color:var(--purple);padding:4px 8px;border-radius:4px;font-size:11px;">${esc(g)}</span>`).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          ${recTitles.length ? `
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Рекомендованные заголовки</div>
+            ${recTitles.map(t => `<div style="font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);">• ${esc(t)}</div>`).join('')}
+          </div>
+          ` : ''}
+        </div>`;
+    }
+
+    // Sources panel
+    let sourcesPanel = '';
+    if (s.key === 'sources') {
+      const sd = stepState.data || {};
+      const hasExtracted = sd.facts || sd.quotes || sd.statistics;
+      const isSkipped = sd.skipped;
+
+      sourcesPanel = `<div style="margin-top:12px;" id="sourcesPanel">
+
+        <!-- Add source -->
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <input id="sourceUrlInput" placeholder="Вставьте URL статьи или YouTube-видео..." style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;">
+          <button class="btn btn-blue btn-sm" onclick="addSourceSmart()">+ Добавить</button>
+          <button class="btn btn-outline btn-sm" onclick="showAddTextSource()">+ Текст</button>
+          <button class="btn btn-purple btn-sm" onclick="showAddNotebook()" style="background:var(--purple);">+ NotebookLM</button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:-6px;margin-bottom:8px;">YouTube-ссылки определяются автоматически — транскрипт скачивается бесплатно</div>
+
+        <div id="addNotebookArea" style="display:none;margin-bottom:10px;background:rgba(168,85,247,0.05);border:1px solid var(--purple);border-radius:8px;padding:12px;">
+          <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">Подключить NotebookLM</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Создайте блокнот в NotebookLM, добавьте YouTube-видео/PDF/статьи, и вставьте ID блокнота.<br>Авторизация живёт ~12-24ч. Если истекла — запустите <code style="background:var(--bg);padding:2px 4px;border-radius:3px;">nlm login</code> в терминале.</div>
+          <input id="notebookIdInput" placeholder="ID блокнота NotebookLM..." style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
+          <input id="notebookTitleInput" placeholder="Название (необязательно)" style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-purple btn-sm" onclick="addNotebookSource()">Подключить</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addNotebookArea').style.display='none'">Отмена</button>
+          </div>
+        </div>
+
+        <div id="addTextSourceArea" style="display:none;margin-bottom:10px;">
+          <input id="sourceTextTitle" placeholder="Название заметки..." style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
+          <textarea id="sourceTextContent" rows="4" placeholder="Вставьте текст, заметки, факты..." style="font-size:12px;"></textarea>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="btn btn-green btn-sm" onclick="addSourceText()">Добавить текст</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addTextSourceArea').style.display='none'">Отмена</button>
+          </div>
+        </div>
+
+        <!-- Sources list -->
+        <div id="sourcesList" style="margin-bottom:12px;"></div>
+
+        ${hasExtracted ? `
+        <!-- Extracted data -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Извлечённые данные</div>
+
+        ${sd.summary ? `
+        <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">РЕЗЮМЕ ИСТОЧНИКОВ</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">${esc(sd.summary)}</div>
+        </div>
+        ` : ''}
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;margin-bottom:10px;">
+          ${(sd.facts || []).map(f => `
+            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 10px;">
+              <div style="font-size:9px;color:var(--green);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Факт</div>
+              <div style="font-size:12px;color:var(--text);line-height:1.4;">${esc(f.text || '')}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">Источник: ${esc(f.source || '?')}</div>
+            </div>
+          `).join('')}
+
+          ${(sd.quotes || []).map(q => `
+            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:8px 10px;">
+              <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Цитата</div>
+              <div style="font-size:12px;color:var(--text);line-height:1.4;font-style:italic;">"${esc(q.text || '')}"</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">— ${esc(q.author || '?')} (${esc(q.source || '')})</div>
+            </div>
+          `).join('')}
+
+          ${(sd.statistics || []).map(s => `
+            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;padding:8px 10px;">
+              <div style="font-size:9px;color:var(--orange);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Статистика</div>
+              <div style="font-size:16px;font-weight:700;color:var(--orange);">${esc(s.metric || '')}</div>
+              <div style="font-size:11px;color:var(--text2);">${esc(s.context || '')}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">Источник: ${esc(s.source || '?')}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        ${(sd.key_insights || []).length ? `
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;color:var(--purple);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ключевые инсайты</div>
+          ${sd.key_insights.map(ins => `<div style="font-size:12px;color:var(--text2);padding:3px 0;">• ${esc(ins)}</div>`).join('')}
+        </div>
+        ` : ''}
+        ` : `
+        ${!isSkipped ? '<div style="font-size:12px;color:var(--muted);padding:12px;text-align:center;">Добавьте источники и нажмите "Запустить" чтобы извлечь факты и цитаты.</div>' : ''}
+        `}
+      </div>`;
+    }
+
+    // References + Covers panel (combined)
+    let refsPanel = '';
+    if (s.key === 'references' && stepState.data && (status === 'completed' || status === 'approved')) {
+      const rfd = stepState.data;
+      const patterns = rfd.pattern_analysis || {};
+      const concepts = rfd.concepts || [];
+      const recommended = rfd.recommended || '';
+      const fonts = patterns.fonts || {};
+      const colors = patterns.colors || {};
+      const composition = patterns.composition || {};
+      const clickbait = patterns.clickbait_elements || [];
+      const totalRefs = rfd.total_references || 0;
+
+      refsPanel = `<div style="margin-top:12px;">
+
+        <!-- Expert photo check -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;display:flex;gap:12px;align-items:center;">
+          <img id="refExpertPhoto" src="/api/assets/expert.jpg" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--green);"
+               onerror="this.style.borderColor='var(--red)';this.src='';this.style.background='var(--card)';this.alt='⚠';document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--red);font-weight:600>Фото не загружено!</span> Загрузите в Настройках.'"
+               onload="document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--green)>✓ Фото загружено</span>'">
+          <div id="expertPhotoStatus" style="font-size:12px;">Проверяю фото...</div>
+        </div>
+
+        <!-- Pattern analysis -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Анализ обложек конкурентов (${totalRefs} обложек)</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:8px;margin-bottom:16px;">
+          <!-- Fonts -->
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:18px;margin-bottom:4px;">🔤</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Шрифты</div>
+            <div style="font-size:11px;color:var(--text2);">Стили: ${esc((fonts.dominant_styles || []).join(', '))}</div>
+            <div style="font-size:11px;color:var(--text2);">Длина: ${esc(fonts.text_length || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">Позиция: ${esc(fonts.text_position || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">Регистр: ${esc(fonts.capitalization || '—')}</div>
+          </div>
+
+          <!-- Colors -->
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:18px;margin-bottom:4px;">🎨</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Цвета</div>
+            <div style="display:flex;gap:4px;margin-bottom:4px;">
+              ${((colors.dominant_palettes || [])[0] || []).map(c => `<div style="width:20px;height:20px;border-radius:4px;background:${esc(c)};border:1px solid rgba(255,255,255,0.1);"></div>`).join('')}
+            </div>
+            <div style="font-size:11px;color:var(--text2);">Контраст: ${esc(colors.contrast_level || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">Фон: ${esc(colors.background_type || '—')}</div>
+          </div>
+
+          <!-- Composition -->
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:18px;margin-bottom:4px;">📐</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Композиция</div>
+            <div style="font-size:11px;color:var(--text2);">Лицо: ${esc(composition.face_present || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">Позиция: ${esc(composition.face_position || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">Размер: ${esc(composition.face_size || '—')}</div>
+          </div>
+
+          <!-- Clickbait -->
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:18px;margin-bottom:4px;">🎯</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Кликбейт-элементы</div>
+            ${clickbait.map(c => `<div style="font-size:11px;color:var(--text2);">• ${esc(c)}</div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Reference thumbnails from research -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Обложки конкурентов</div>
+        <div id="refThumbsGrid" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;overflow-x:auto;"></div>
+
+        <!-- Concepts -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Концепции обложек</div>
+        <div style="display:grid;gap:10px;margin-bottom:12px;">
+          ${concepts.map((c, ci) => {
+            const isRec = c.name === recommended;
+            return `
+            <div style="background:${isRec ? 'rgba(34,197,94,0.05)' : 'var(--bg)'};border:2px solid ${isRec ? 'var(--green)' : 'var(--border)'};border-radius:10px;padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:14px;font-weight:700;color:var(--purple);">${esc(c.name || 'Концепт ' + (ci+1))}</span>
+                  ${isRec ? '<span style="background:var(--green);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;">РЕКОМЕНДОВАННЫЙ</span>' : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="font-size:12px;font-weight:700;color:var(--orange);">CTR: ${c.ctr_score || '?'}/10</span>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                  <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Сцена (промпт)</div>
+                  <div style="font-size:12px;color:var(--text2);line-height:1.4;">${esc(c.scene_description || '')}</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Эмоция и стиль</div>
+                  <div style="font-size:12px;color:var(--text2);">Эмоция: ${esc(c.emotion || c.expert_expression || '—')}</div>
+                  <div style="font-size:12px;color:var(--text2);">Стиль: ${esc(c.style || '—')}</div>
+                  <div style="font-size:12px;color:var(--text2);">Эксперт: ${esc(c.expert_position || '—')}</div>
+                </div>
+              </div>
+
+              <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                <div style="font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:${esc(c.text_color || '#fff')};text-shadow:0 0 4px ${esc(c.text_stroke_color || '#000')};background:linear-gradient(135deg, ${(c.background_colors || ['#333','#111']).join(',')});padding:6px 14px;border-radius:6px;">${esc(c.text_overlay || '')}</div>
+                <div style="font-size:10px;color:var(--muted);">Текст: ${esc(c.text_position || '—')}</div>
+              </div>
+
+              ${c.ctr_reasoning ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic;">💡 ${esc(c.ctr_reasoning)}</div>` : ''}
+              ${c.inspired_by ? `<div style="font-size:10px;color:var(--text2);margin-top:2px;">Вдохновлено: ${esc(c.inspired_by)}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Tip for small channels -->
+        <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">СОВЕТ ДЛЯ РАСТУЩЕГО КАНАЛА</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">Без узнаваемого лица обложка должна компенсировать другими элементами: крупный контрастный текст (2-3 слова), яркая эмоция на лице, интригующий визуал. Используйте стрелки, обводки, эффект «до/после». Топовые каналы показали: максимальный CTR = крупное лицо + 2-3 слова КАПСОМ + яркий фон.</div>
+        </div>
+
+      </div>`;
+    }
+
+    // Content plan panel
+    let titlePanel = '';
+    if (s.key === 'content_plan' && stepState.data && (status === 'completed' || status === 'approved')) {
+      const cpd = stepState.data;
+      const titles = cpd.titles || [cpd.title, cpd.subtitle].filter(Boolean);
+      const hooks = cpd.hooks || (cpd.hook ? [{ style: 'основной', text: cpd.hook, why: '' }] : []);
+      const structure = cpd.structure || [];
+      const thumbText = cpd.thumbnail_text || '';
+      const thumbEmotion = cpd.thumbnail_emotion || '';
+      const thumbVariants = cpd.thumbnail_text_variants || [thumbText].filter(Boolean);
+      const totalMin = structure.reduce((s, b) => s + (b.duration_minutes || 0), 0);
+      const emotionEmoji = { shock: '😱', confidence: '💪', curiosity: '🤔', excitement: '🤩', anger: '😤', fear: '😨' };
+
+      titlePanel = `<div style="margin-top:12px;">
+
+        <!-- Titles -->
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Заголовки видео</div>
+        <div class="options-grid" id="dashTitlesGrid">
+          ${titles.map((t, ti) => `
+            <div class="option-card" id="dtitle-${ti}" onclick="toggleDashTitle(${ti})">
+              <div class="check"></div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); editDashTitle(${ti})" title="Редактировать">✏</button>
+                <button class="btn-delete" onclick="event.stopPropagation(); removeDashTitle(${ti})" title="Удалить">✕</button>
+              </div>
+              <div class="title-text">${esc(t)}</div>
+              <div class="char-count">${t.length} символов</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Hooks (selectable) -->
+        ${hooks.length ? `
+        <div style="margin-top:16px;">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Хук — первые 30 секунд</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">Выберите один вариант хука для вашего видео.</div>
+          <div style="display:grid;gap:8px;" id="hooksGrid">
+            ${hooks.map((h, hi) => `
+              <div class="option-card" id="hook-${hi}" onclick="selectHook(${hi})" style="padding:14px;">
+                <div class="check"></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span style="background:${hi === 0 ? 'var(--green)' : 'var(--border)'};color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;text-transform:uppercase;">${esc(h.style || 'Вариант ' + (hi+1))}</span>
+                  ${hi === 0 ? '<span style="font-size:10px;color:var(--green);">Рекомендованный</span>' : ''}
+                </div>
+                <div class="title-text" style="font-size:13px;line-height:1.6;font-weight:400;white-space:pre-wrap;padding-right:32px;">${esc(h.text || '')}</div>
+                ${h.why ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;">💡 ${esc(h.why)}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Video Structure Timeline -->
+        ${structure.length ? `
+        <div style="margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;">Структура видео</div>
+            <div style="font-size:12px;color:var(--text2);">Общий хрон.: <strong>${totalMin} мин</strong></div>
+          </div>
+
+          <!-- Timeline bar -->
+          <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:12px;gap:1px;">
+            ${structure.map((b, bi) => {
+              const colors = ['var(--red)', 'var(--blue)', 'var(--green)', 'var(--purple)', 'var(--orange)', 'var(--magenta)', 'var(--blue)', 'var(--green)'];
+              const pct = totalMin > 0 ? (b.duration_minutes / totalMin * 100) : 10;
+              return `<div style="flex:${pct};background:${colors[bi % colors.length]};border-radius:2px;" title="${esc(b.section)}: ${b.duration_minutes} мин"></div>`;
+            }).join('')}
+          </div>
+
+          <!-- Blocks -->
+          <div style="display:grid;gap:6px;">
+            ${(() => {
+              let timeOffset = 0;
+              return structure.map((b, bi) => {
+                const colors = ['var(--red)', 'var(--blue)', 'var(--green)', 'var(--purple)', 'var(--orange)', 'var(--magenta)', 'var(--blue)', 'var(--green)'];
+                const color = colors[bi % colors.length];
+                const startMin = timeOffset;
+                timeOffset += (b.duration_minutes || 0);
+                const typeIcons = { hook: '🎣', intro: '👋', main: '📝', demo: '💻', climax: '🔥', cta: '📢' };
+                const icon = typeIcons[b.type] || '📌';
+                return `
+                <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ${color};border-radius:6px;padding:12px;display:flex;gap:12px;">
+                  <div style="flex-shrink:0;text-align:center;min-width:50px;">
+                    <div style="font-size:18px;">${icon}</div>
+                    <div style="font-size:10px;color:var(--muted);margin-top:2px;">${startMin}:00</div>
+                    <div style="font-size:11px;font-weight:700;color:${color};">${b.duration_minutes} мин</div>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${esc(b.section || '')}</div>
+                    ${(b.key_points || []).length ? `<div style="margin-bottom:4px;">${b.key_points.map(p => `<div style="font-size:11px;color:var(--text2);padding:1px 0;">• ${esc(p)}</div>`).join('')}</div>` : ''}
+                    ${b.visual_notes ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;">🎬 ${esc(b.visual_notes)}</div>` : ''}
+                    ${b.retention_hook ? `<div style="font-size:10px;color:var(--orange);margin-top:2px;">🪝 ${esc(b.retention_hook)}</div>` : ''}
+                  </div>
+                </div>`;
+              }).join('');
+            })()}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Thumbnail Text & Emotion -->
+        ${thumbText || thumbEmotion ? `
+        <div style="margin-top:16px;">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Обложка</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <!-- Emotion -->
+            ${thumbEmotion ? `
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;min-width:120px;">
+              <div style="font-size:40px;margin-bottom:6px;">${emotionEmoji[thumbEmotion.toLowerCase()] || '😮'}</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;">${esc(thumbEmotion)}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">Эмоция обложки</div>
+            </div>
+            ` : ''}
+            <!-- Text variants -->
+            <div style="flex:1;display:grid;gap:6px;min-width:200px;">
+              ${thumbVariants.map((tv, tvi) => `
+                <div style="background:var(--bg);border:2px solid ${tvi === 0 ? 'var(--orange)' : 'var(--border)'};border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+                  <div style="font-size:18px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">${esc(tv)}</div>
+                  ${tvi === 0 ? '<span style="font-size:9px;color:var(--orange);font-weight:600;">РЕКОМЕНДОВАННЫЙ</span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Why it will work -->
+        ${cpd.why_this_will_work ? `
+        <div style="margin-top:16px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">ПОЧЕМУ ЭТОТ ПЛАН СРАБОТАЕТ</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">${esc(cpd.why_this_will_work)}</div>
+        </div>
+        ` : ''}
+
+      </div>`;
+    }
+
+    // Script panel
+    let scriptPanel = '';
+    if (s.key === 'script' && stepState.data && (status === 'completed' || status === 'approved')) {
+      const sd = stepState.data;
+      const blocks = sd.blocks || [];
+      const totalDur = sd.total_duration_minutes || blocks.reduce((s, b) => s + (b.duration_seconds || 0), 0) / 60;
+      const keyMessages = sd.key_messages || [];
+      const typeIcons = { hook: '🎣', intro: '👋', main: '📝', climax: '🔥', cta_outro: '📢', cta: '📢' };
+      const typeColors = { hook: 'var(--red)', intro: 'var(--blue)', main: 'var(--green)', climax: 'var(--orange)', cta_outro: 'var(--purple)', cta: 'var(--purple)' };
+      const formatIcons = { talking_head: '🗣', b_roll: '🎬', screen_record: '💻', mixed: '🔀' };
+
+      scriptPanel = `<div style="margin-top:12px;">
+
+        <!-- Stats -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:var(--blue);">${blocks.length}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Блоков</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:var(--green);">${Math.round(totalDur)} мин</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:var(--purple);">${sd.tone ? '✓' : '—'}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Тон: ${esc((sd.tone || '').substring(0, 20))}</div>
+          </div>
+        </div>
+
+        <!-- Timeline bar -->
+        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:12px;gap:1px;">
+          ${blocks.map((b, bi) => {
+            const color = typeColors[b.block_type] || 'var(--border)';
+            const totalSec = blocks.reduce((s, x) => s + (x.duration_seconds || 0), 0);
+            const pct = totalSec > 0 ? (b.duration_seconds / totalSec * 100) : 10;
+            return '<div style="flex:' + pct + ';background:' + color + ';border-radius:2px;" title="' + esc(b.name) + '"></div>';
+          }).join('')}
+        </div>
+
+        <!-- Blocks -->
+        <div style="display:grid;gap:0;">
+          ${blocks.map((b, bi) => {
+            const icon = typeIcons[b.block_type] || '📌';
+            const color = typeColors[b.block_type] || 'var(--border)';
+            const fmtIcon = formatIcons[b.format] || '';
+            const durMin = Math.floor((b.duration_seconds || 0) / 60);
+            const durSec = (b.duration_seconds || 0) % 60;
+            const isLast = bi === blocks.length - 1;
+            return `
+            <div style="display:flex;gap:0;">
+              <!-- Timeline connector -->
+              <div style="width:40px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${icon}</div>
+                ${!isLast ? '<div style="width:2px;flex:1;background:var(--border);min-height:20px;"></div>' : ''}
+              </div>
+              <!-- Block content -->
+              <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-left:3px solid ${color};border-radius:0 8px 8px 0;padding:12px;margin-bottom:${isLast ? '0' : '0'};margin-left:-1px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <div>
+                    <span style="font-size:13px;font-weight:700;">${esc(b.name || '')}</span>
+                    <span style="font-size:10px;color:var(--muted);margin-left:6px;">${b.timestamp_start || ''}</span>
+                  </div>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    ${fmtIcon ? '<span style="font-size:12px;" title="' + esc(b.format || '') + '">' + fmtIcon + '</span>' : ''}
+                    <span style="font-size:11px;font-weight:600;color:${color};">${durMin}:${durSec.toString().padStart(2,'0')}</span>
+                  </div>
+                </div>
+
+                ${b.key_phrase ? '<div style="background:rgba(59,130,246,0.06);border-left:3px solid var(--blue);padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:8px;font-size:12px;font-style:italic;color:var(--text);">"' + esc(b.key_phrase) + '"</div>' : ''}
+
+                ${(b.talking_points || []).length ? '<div style="margin-bottom:6px;">' + b.talking_points.map(function(p) { return '<div style="font-size:11px;color:var(--text2);padding:2px 0;display:flex;gap:6px;"><span style="color:var(--muted);flex-shrink:0;">•</span><span>' + esc(p) + '</span></div>'; }).join('') + '</div>' : ''}
+
+                <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10px;">
+                  ${b.visual_direction ? '<span style="color:var(--blue);">🎬 ' + esc(b.visual_direction) + '</span>' : ''}
+                  ${b.audio_notes ? '<span style="color:var(--purple);">🎵 ' + esc(b.audio_notes) + '</span>' : ''}
+                  ${b.retention_hook ? '<span style="color:var(--orange);">🪝 ' + esc(b.retention_hook) + '</span>' : ''}
+                </div>
+
+                ${b.transition_to_next && !isLast ? '<div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic;">→ ' + esc(b.transition_to_next) + '</div>' : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+
+        ${keyMessages.length ? `
+        <div style="margin-top:14px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:6px;">КЛЮЧЕВЫЕ СООБЩЕНИЯ</div>
+          ${keyMessages.map(function(m) { return '<div style="font-size:12px;color:var(--text2);padding:2px 0;">• ' + esc(m) + '</div>'; }).join('')}
+        </div>
+        ` : ''}
+
+        ${sd.climax_setup ? `
+        <div style="margin-top:8px;font-size:11px;color:var(--muted);">
+          <span style="font-weight:600;">Подводка к кульминации:</span> ${esc(sd.climax_setup)}
+        </div>
+        ` : ''}
+
+        ${sd.pacing_notes ? `
+        <div style="margin-top:4px;font-size:11px;color:var(--muted);">
+          <span style="font-weight:600;">Темп:</span> ${esc(sd.pacing_notes)}
+        </div>
+        ` : ''}
+
+      </div>`;
+    }
+
+    // Teleprompter panel
+    let teleprompterPanel = '';
+    if (s.key === 'teleprompter' && stepState.data && (status === 'completed' || status === 'approved')) {
+      const td = stepState.data;
+      const scenes = td.scenes || [];
+      const totalWords = td.total_word_count || 0;
+      const readTime = td.estimated_read_time_minutes || 0;
+      const typeIcons = { hook: '🎣', intro: '👋', main: '📝', climax: '🔥', cta_outro: '📢', cta: '📢' };
+      const typeColors = { hook: 'var(--red)', intro: 'var(--blue)', main: 'var(--green)', climax: 'var(--orange)', cta_outro: 'var(--purple)', cta: 'var(--purple)' };
+
+      teleprompterPanel = `<div style="margin-top:12px;">
+
+        <!-- Stats + Copy all (real word count from actual text) -->
+        ${(() => {
+          const allText = scenes.map(sc => sc.teleprompter_text || '').join(' ');
+          const realWordCount = allText.split(/\\s+/).filter(Boolean).length;
+          const WORDS_PER_MIN = 150; // average Russian speaking speed
+          const realReadMin = (realWordCount / WORDS_PER_MIN).toFixed(1);
+          const minNeeded = totalWords > realWordCount ? totalWords - realWordCount : 0;
+          const isShort = realWordCount < 1500;
+          return `
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+          <div style="background:var(--bg);border:1px solid ${isShort ? 'var(--red)' : 'var(--border)'};border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+            <div style="font-size:20px;font-weight:700;color:${isShort ? 'var(--red)' : 'var(--blue)'};">${realWordCount}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Слов (реально)</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+            <div style="font-size:20px;font-weight:700;color:var(--green);">~${realReadMin} мин</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж (150 сл/мин)</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+            <div style="font-size:20px;font-weight:700;color:var(--purple);">${scenes.length}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Сцен</div>
+          </div>
+          <div style="flex:1;"></div>
+          <button class="btn btn-blue btn-sm" onclick="copyTeleprompterAll()">📋 Скопировать весь текст</button>
+        </div>
+        ${isShort ? '<div style="background:rgba(239,68,68,0.08);border:1px solid var(--red);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--red);">⚠ Текст слишком короткий для видео 10+ минут. Нужно минимум 1500 слов (сейчас ' + realWordCount + '). Перегенерируйте телесуфлёр.</div>' : ''}`;
+        })()}
+
+        <!-- Scenes -->
+        <div style="display:grid;gap:10px;" id="teleprompterScenes">
+          ${scenes.map((sc, si) => {
+            const icon = typeIcons[sc.block_type] || '📌';
+            const color = typeColors[sc.block_type] || 'var(--border)';
+            const text = sc.teleprompter_text || '';
+            const wordCount = text.split(/\s+/).filter(Boolean).length;
+            return `
+            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ${color};border-radius:0 8px 8px 0;overflow:hidden;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:16px;">${icon}</span>
+                  <span style="font-size:13px;font-weight:700;">${esc(sc.scene_name || 'Сцена ' + (si+1))}</span>
+                  ${sc.timestamp ? '<span style="font-size:10px;color:var(--muted);">' + esc(sc.timestamp) + '</span>' : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  ${sc.emotion_tone ? '<span style="font-size:10px;color:var(--muted);font-style:italic;">' + esc(sc.emotion_tone) + '</span>' : ''}
+                  <span style="font-size:10px;color:var(--muted);">${wordCount} слов</span>
+                  <button class="btn btn-outline btn-xs" onclick="copySceneText(${si})" title="Скопировать">📋</button>
+                </div>
+              </div>
+              <div style="padding:14px 16px;font-size:15px;line-height:1.8;white-space:pre-wrap;color:var(--text);font-family:var(--font-sans);" id="scene-text-${si}">${esc(text)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+
+        ${td.pacing_summary ? `
+        <div style="margin-top:10px;font-size:11px;color:var(--muted);">
+          <span style="font-weight:600;">Ритм:</span> ${esc(td.pacing_summary)}
+        </div>
+        ` : ''}
+
+      </div>`;
+    }
+
+    const hasPanel = researchPanel || sourcesPanel || refsPanel || titlePanel || scriptPanel || teleprompterPanel;
+    const panelId = 'panel-' + s.key;
+    // Auto-collapse completed steps that have panels
+    const collapsed = hasPanel && (status === 'completed' || status === 'approved');
+
     return `
-      <div class="step-row">
+      <div class="step-row" ${hasPanel ? `onclick="togglePanel('${panelId}', event)" style="cursor:pointer;"` : ''}>
         <div class="num ${status}">${i + 1}</div>
         <div class="info">
           <div class="name">${s.name}</div>
@@ -493,7 +1227,16 @@ async function refreshDetail() {
         <span class="status-label" style="color:${statusColors[status]}">${statusLabels[status]}</span>
         ${dataToggle}
         ${actionBtn}
+        ${hasPanel ? `<span class="collapse-icon" id="icon-${panelId}" style="font-size:16px;color:var(--muted);transition:transform 0.2s;${collapsed ? 'transform:rotate(-90deg);' : ''}"">▼</span>` : ''}
       </div>
+      ${hasPanel ? `<div id="${panelId}" style="${collapsed ? 'display:none;' : ''}">` : ''}
+      ${researchPanel}
+      ${sourcesPanel}
+      ${refsPanel}
+      ${titlePanel}
+      ${scriptPanel}
+      ${teleprompterPanel}
+      ${hasPanel ? '</div>' : ''}
       ${stepState.data ? `<div class="step-data" id="data-${s.key}" style="display:none"><pre>${esc(JSON.stringify(stepState.data, null, 2))}</pre></div>` : ''}
     `;
   }).join('');
@@ -522,6 +1265,48 @@ async function refreshDetail() {
 function toggleData(id) {
   const el = document.getElementById(id);
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function togglePanel(id, event) {
+  // Don't toggle when clicking buttons inside step-row
+  if (event && (event.target.closest('button') || event.target.closest('a'))) return;
+  const el = document.getElementById(id);
+  const icon = document.getElementById('icon-' + id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? '' : 'none';
+  if (icon) icon.style.transform = isHidden ? '' : 'rotate(-90deg)';
+}
+
+// ── Run Step (with validation) ──
+async function runStepValidated(step, btn) {
+  // Validate prerequisites
+  if (step === 'content_plan') {
+    // Check if angle was selected (from saved state)
+    if (!selectedAngleText) {
+      // Double-check from API
+      if (currentProject) {
+        const ad = await api(`/api/project/${currentProject}/selected-angle`);
+        if (ad.ok && ad.angle) {
+          selectedAngleText = ad.angle;
+        }
+      }
+    }
+    if (!selectedAngleText) {
+      toast('Сначала выберите угол подачи в разделе "Исследование" выше!', true);
+      // Expand research panel and scroll to angles
+      const resPanel = document.getElementById('panel-research');
+      if (resPanel && resPanel.style.display === 'none') {
+        togglePanel('panel-research', { target: {} });
+      }
+      setTimeout(() => {
+        const anglesGrid = document.getElementById('anglesGrid');
+        if (anglesGrid) anglesGrid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+      return;
+    }
+  }
+  return runStep(step, btn);
 }
 
 // ── Run Step ──
@@ -898,8 +1683,680 @@ async function initStyles() {
   }
 }
 
+// ── Sources Management ──
+async function addSourceSmart() {
+  const input = document.getElementById('sourceUrlInput');
+  const url = input.value.trim();
+  if (!url) { toast('Вставьте URL', true); return; }
+  if (!currentProject) { toast('Откройте проект', true); return; }
+
+  // Auto-detect YouTube
+  const isYoutube = /youtu\.be|youtube\.com/.test(url);
+  const type = isYoutube ? 'youtube' : 'url';
+
+  const data = await api(`/api/project/${currentProject}/sources`, { type, url });
+  if (data.ok) {
+    toast(isYoutube ? 'YouTube-видео добавлено! Транскрипт скачается при запуске.' : 'Источник добавлен!');
+    input.value = '';
+    loadSourcesList();
+  } else {
+    toast(data.error || 'Ошибка', true);
+  }
+}
+
+function showAddTextSource() {
+  document.getElementById('addTextSourceArea').style.display = '';
+}
+
+async function addSourceText() {
+  const title = document.getElementById('sourceTextTitle').value.trim();
+  const content = document.getElementById('sourceTextContent').value.trim();
+  if (!content) { toast('Введите текст', true); return; }
+  if (!currentProject) return;
+
+  const data = await api(`/api/project/${currentProject}/sources`, { type: 'text', title: title || 'Заметки', content });
+  if (data.ok) {
+    toast('Текст добавлен!');
+    document.getElementById('sourceTextTitle').value = '';
+    document.getElementById('sourceTextContent').value = '';
+    document.getElementById('addTextSourceArea').style.display = 'none';
+    loadSourcesList();
+  } else {
+    toast(data.error || 'Ошибка', true);
+  }
+}
+
+async function removeSource(sourceId) {
+  if (!confirm('Удалить этот источник?')) return;
+  await fetch(`/api/project/${currentProject}/sources/${sourceId}`, { method: 'DELETE' });
+  toast('Источник удалён');
+  loadSourcesList();
+}
+
+async function loadSourcesList() {
+  if (!currentProject) return;
+  const listEl = document.getElementById('sourcesList');
+  if (!listEl) return;
+
+  const data = await api(`/api/project/${currentProject}/sources`);
+  const items = data.items || [];
+
+  if (items.length === 0) {
+    listEl.innerHTML = '';
+    return;
+  }
+
+  listEl.innerHTML = items.map(item => {
+    const isUrl = item.type === 'url';
+    const isYt = item.type === 'youtube';
+    const isNb = item.type === 'notebook';
+    const icon = isYt ? '▶' : isNb ? '📓' : isUrl ? '🔗' : '📝';
+    const statusColor = item.status === 'fetched' ? 'var(--green)' : item.status === 'error' ? 'var(--red)' : 'var(--muted)';
+    const preview = isUrl ? (item.url || '').substring(0, 60) : (item.content || '').substring(0, 80) + '...';
+    return `
+      <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;">
+        <span style="font-size:16px;">${icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title || preview)}</div>
+          ${isUrl || isYt ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.url)}</div>` : ''}
+          <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
+            ${item.auto_added ? '<span style="font-size:9px;background:rgba(59,130,246,0.12);color:var(--blue);padding:1px 4px;border-radius:2px;">из Research</span>' : ''}
+            ${item.word_count ? `<span style="font-size:10px;color:var(--muted);">${item.word_count} слов</span>` : ''}
+            ${item.views ? `<span style="font-size:10px;color:var(--green);">${(item.views/1000).toFixed(0)}K просм.</span>` : ''}
+            ${item.breakthrough_score ? `<span style="font-size:10px;color:var(--orange);">x${Math.round(item.breakthrough_score)}</span>` : ''}
+          </div>
+        </div>
+        <span style="width:8px;height:8px;border-radius:50%;background:${statusColor};flex-shrink:0;" title="${item.status || 'pending'}"></span>
+        <button class="btn btn-outline btn-xs" onclick="removeSource('${item.id}')" style="flex-shrink:0;">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function showAddNotebook() {
+  document.getElementById('addNotebookArea').style.display = '';
+}
+
+async function addNotebookSource() {
+  const nbId = document.getElementById('notebookIdInput').value.trim();
+  const title = document.getElementById('notebookTitleInput').value.trim();
+  if (!nbId) { toast('Введите ID блокнота NotebookLM', true); return; }
+  if (!currentProject) return;
+
+  const data = await api(`/api/project/${currentProject}/sources`, {
+    type: 'notebook',
+    notebook_id: nbId,
+    title: title || 'NotebookLM',
+  });
+  if (data.ok) {
+    toast('NotebookLM блокнот подключён!');
+    document.getElementById('notebookIdInput').value = '';
+    document.getElementById('notebookTitleInput').value = '';
+    document.getElementById('addNotebookArea').style.display = 'none';
+    loadSourcesList();
+  } else {
+    toast(data.error || 'Ошибка', true);
+  }
+}
+
+// ── Teleprompter Copy ──
+function copyTeleprompterAll() {
+  const scenes = document.getElementById('teleprompterScenes');
+  if (!scenes) return;
+  const texts = [];
+  scenes.querySelectorAll('[id^="scene-text-"]').forEach(el => {
+    texts.push(el.textContent.trim());
+  });
+  navigator.clipboard.writeText(texts.join('\n\n---\n\n'))
+    .then(() => toast('Весь текст скопирован!'))
+    .catch(() => toast('Ошибка копирования', true));
+}
+
+function copySceneText(idx) {
+  const el = document.getElementById('scene-text-' + idx);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent.trim())
+    .then(() => toast('Сцена скопирована!'))
+    .catch(() => toast('Ошибка копирования', true));
+}
+
+// ── Research Angle Selection ──
+let selectedAngleIdx = null;
+let selectedAngleText = '';
+
+function selectAngle(idx, el) {
+  // Deselect all
+  document.querySelectorAll('#anglesGrid .option-card').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.check').textContent = '';
+  });
+  // Select this one
+  if (selectedAngleIdx === idx) {
+    selectedAngleIdx = null;
+    selectedAngleText = '';
+  } else {
+    selectedAngleIdx = idx;
+    el.classList.add('selected');
+    el.querySelector('.check').textContent = '✓';
+    selectedAngleText = el.querySelector('.title-text').textContent;
+  }
+  // Save
+  if (currentProject) {
+    api(`/api/project/${currentProject}/selected-angle`, {
+      angle: selectedAngleText,
+      angleIndex: selectedAngleIdx,
+    });
+  }
+}
+
+// ── Hook Selection ──
+let selectedHookIdx = -1;
+
+function selectHook(idx) {
+  const grid = document.getElementById('hooksGrid');
+  if (!grid) return;
+  // Toggle
+  if (selectedHookIdx === idx) {
+    selectedHookIdx = -1;
+  } else {
+    selectedHookIdx = idx;
+  }
+  // Update UI
+  grid.querySelectorAll('.option-card').forEach((card, i) => {
+    const isSelected = i === selectedHookIdx;
+    card.className = 'option-card' + (isSelected ? ' selected' : '');
+    card.querySelector('.check').textContent = isSelected ? '✓' : '';
+  });
+  // Save
+  if (currentProject) {
+    api(`/api/project/${currentProject}/selected-hook`, {
+      hookIndex: selectedHookIdx,
+    });
+  }
+}
+
+// ── Dashboard Title Selection ──
+let dashTitles = [];
+let dashSelectedTitles = [];
+
+async function loadDashTitles() {
+  if (!currentProject) return;
+  const data = await api(`/api/project/${currentProject}/selected-titles`);
+  if (data.ok) {
+    dashSelectedTitles = data.selectedIndices || [];
+    renderDashTitleSelection();
+  }
+}
+
+function renderDashTitleSelection() {
+  const grid = document.getElementById('dashTitlesGrid');
+  if (!grid) return;
+  const cards = grid.querySelectorAll('.option-card');
+  cards.forEach((card, i) => {
+    const isSelected = dashSelectedTitles.includes(i);
+    card.className = 'option-card' + (isSelected ? ' selected' : '');
+    const check = card.querySelector('.check');
+    if (check) check.textContent = isSelected ? (dashSelectedTitles.indexOf(i) + 1) : '';
+  });
+}
+
+function toggleDashTitle(i) {
+  const idx = dashSelectedTitles.indexOf(i);
+  if (idx >= 0) {
+    dashSelectedTitles.splice(idx, 1);
+  } else {
+    dashSelectedTitles.push(i);
+  }
+  renderDashTitleSelection();
+  saveDashTitles();
+}
+
+function editDashTitle(i) {
+  const card = document.getElementById('dtitle-' + i);
+  if (!card) return;
+  const textEl = card.querySelector('.title-text');
+  const current = textEl.textContent;
+  const newText = prompt('Редактировать заголовок:', current);
+  if (newText !== null && newText.trim()) {
+    textEl.textContent = newText.trim();
+    card.querySelector('.char-count').textContent = newText.trim().length + ' символов';
+    dashTitles[i] = newText.trim();
+    saveDashTitles();
+  }
+}
+
+function removeDashTitle(i) {
+  if (!confirm('Удалить этот заголовок?')) return;
+  dashTitles.splice(i, 1);
+  dashSelectedTitles = dashSelectedTitles
+    .filter(idx => idx !== i)
+    .map(idx => idx > i ? idx - 1 : idx);
+  saveDashTitles();
+  refreshDetail();
+}
+
+async function saveDashTitles() {
+  if (!currentProject) return;
+  await api(`/api/project/${currentProject}/selected-titles`, {
+    titles: dashTitles,
+    selectedIndices: dashSelectedTitles,
+  });
+}
+
+// Patch refreshDetail to also load title selection state + angle
+const _origRefreshDetail = refreshDetail;
+refreshDetail = async function() {
+  await _origRefreshDetail();
+  if (currentProject) {
+    // Load sources list
+    loadSourcesList();
+
+    // Load reference thumbnails
+    const refsGrid = document.getElementById('refThumbsGrid');
+    if (refsGrid) {
+      const refsData = await api(`/api/project/${currentProject}/references`);
+      if (refsData.ok && refsData.files.length) {
+        refsGrid.innerHTML = refsData.files.slice(0, 15).map(f =>
+          `<img src="${f}" style="height:80px;border-radius:6px;border:1px solid var(--border);object-fit:cover;" onerror="this.remove()">`
+        ).join('');
+      } else {
+        refsGrid.innerHTML = '<span style="font-size:11px;color:var(--muted);">Нет обложек</span>';
+      }
+    }
+
+    // Load selected hook
+    const hookData = await api(`/api/project/${currentProject}/selected-hook`);
+    if (hookData.ok && hookData.hookIndex >= 0) {
+      selectedHookIdx = hookData.hookIndex;
+      const hooksGrid = document.getElementById('hooksGrid');
+      if (hooksGrid) {
+        hooksGrid.querySelectorAll('.option-card').forEach((card, i) => {
+          if (i === selectedHookIdx) {
+            card.classList.add('selected');
+            card.querySelector('.check').textContent = '✓';
+          }
+        });
+      }
+    }
+
+    // Load selected angle
+    const angleData = await api(`/api/project/${currentProject}/selected-angle`);
+    if (angleData.ok && angleData.angle) {
+      selectedAngleText = angleData.angle;
+      selectedAngleIdx = angleData.angleIndex;
+      // Highlight in UI
+      const anglesGrid = document.getElementById('anglesGrid');
+      if (anglesGrid) {
+        anglesGrid.querySelectorAll('.option-card').forEach(c => {
+          if (c.querySelector('.title-text')?.textContent === selectedAngleText) {
+            c.classList.add('selected');
+            c.querySelector('.check').textContent = '✓';
+          }
+        });
+      }
+    }
+    // Load titles from content_plan
+    const data = await api(`/api/project/${currentProject}`);
+    if (data.ok && data.state.steps.content_plan?.data) {
+      const cpData = data.state.steps.content_plan.data;
+      dashTitles = cpData.titles || [cpData.title, cpData.subtitle].filter(Boolean);
+    }
+    await loadDashTitles();
+  }
+};
+
+// ── Channel Management ──
+let allChannels = [];
+let currentChannelId = '';
+
+async function loadChannels() {
+  const data = await api('/api/channels');
+  allChannels = data.channels || [];
+  // Populate both selectors
+  const selectors = ['channelSelect', 'channelSelectNew'];
+  selectors.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const val = sel.value;
+    sel.innerHTML = '<option value="">— Канал по умолчанию —</option>';
+    allChannels.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.name}${c.niche ? ' (' + c.niche + ')' : ''}`;
+      sel.appendChild(opt);
+    });
+    sel.value = val;
+  });
+}
+
+async function loadChannelContext() {
+  const sel = document.getElementById('channelSelect');
+  currentChannelId = sel.value;
+  const metaFields = document.getElementById('channelMetaFields');
+  const analyticsBtn = document.getElementById('channelAnalyticsBtn');
+  const nicheInfo = document.getElementById('channelNicheInfo');
+
+  if (!currentChannelId) {
+    metaFields.style.display = 'none';
+    analyticsBtn.style.display = 'none';
+    nicheInfo.style.display = 'none';
+    loadContext(); // Load default context
+    return;
+  }
+
+  metaFields.style.display = '';
+  analyticsBtn.style.display = '';
+
+  const data = await api(`/api/channels/${currentChannelId}`);
+  if (!data.ok) return;
+  const ctx = data.context;
+
+  // Fill channel-specific fields
+  el('ctx-niche').value = ctx.niche || '';
+  el('ctx-target-audience').value = ctx.target_audience || '';
+  nicheInfo.style.display = ctx.niche ? '' : 'none';
+  nicheInfo.textContent = ctx.niche ? `Ниша: ${ctx.niche} | ЦА: ${ctx.target_audience || 'не задана'}` : '';
+
+  // Fill author/channel forms from channel context
+  const a = ctx.author || {};
+  el('ctx-author-name').value = a.name || '';
+  el('ctx-author-full_name').value = a.full_name || '';
+  el('ctx-author-who').value = a.who || '';
+  el('ctx-author-expertise').value = (a.expertise || []).join(', ');
+  el('ctx-author-experience').value = a.experience || '';
+  el('ctx-author-tone').value = a.tone || '';
+
+  const ch = ctx.channel || {};
+  el('ctx-channel-name').value = ch.name || '';
+  el('ctx-channel-youtube_url').value = ch.youtube_url || '';
+  el('ctx-channel-telegram_url').value = ch.telegram_url || '';
+  el('ctx-channel-telegram_group').value = ch.telegram_group || '';
+  el('ctx-channel-website').value = ch.website || '';
+}
+
+function showAddChannelModal() {
+  const name = prompt('Название канала:');
+  if (!name) return;
+  const niche = prompt('Ниша канала (например: бизнес, маркетинг, AI):') || '';
+  const audience = prompt('Целевая аудитория:') || '';
+  const url = prompt('YouTube URL канала (необязательно):') || '';
+  createChannel(name, niche, url, audience);
+}
+
+async function createChannel(name, niche, youtube_url, target_audience) {
+  const data = await api('/api/channels', { name, niche, youtube_url, target_audience });
+  if (data.ok) {
+    toast(`Канал "${name}" создан!`);
+    await loadChannels();
+    document.getElementById('channelSelect').value = data.channel_id;
+    loadChannelContext();
+  } else {
+    toast(data.error || 'Ошибка', true);
+  }
+}
+
+// Override saveContext to save per-channel if channel selected
+const _origSaveContext = saveContext;
+saveContext = async function() {
+  if (!currentChannelId) {
+    return _origSaveContext();
+  }
+  // Save to channel context
+  const ctx = {
+    author: {
+      name: el('ctx-author-name').value,
+      full_name: el('ctx-author-full_name').value,
+      who: el('ctx-author-who').value,
+      expertise: el('ctx-author-expertise').value.split(',').map(s => s.trim()).filter(Boolean),
+      experience: el('ctx-author-experience').value,
+      tone: el('ctx-author-tone').value,
+    },
+    channel: {
+      name: el('ctx-channel-name').value,
+      youtube_url: el('ctx-channel-youtube_url').value,
+      telegram_url: el('ctx-channel-telegram_url').value,
+      telegram_group: el('ctx-channel-telegram_group').value,
+      website: el('ctx-channel-website').value,
+      social_links: {},
+    },
+    niche: el('ctx-niche').value,
+    target_audience: el('ctx-target-audience').value,
+    cta: {
+      subscribe: 'Подписывайтесь на канал и нажмите колокольчик!',
+      like_comment: 'Ставьте лайк и напишите в комментариях',
+      lead_magnet: { enabled: el('ctx-cta-lead_magnet-enabled').checked, text: el('ctx-cta-lead_magnet-text').value, url: el('ctx-cta-lead_magnet-url').value, placement: el('ctx-cta-lead_magnet-placement').value },
+      mid_roll: { enabled: el('ctx-cta-mid_roll-enabled').checked, text: el('ctx-cta-mid_roll-text').value, url: el('ctx-cta-mid_roll-url').value, placement_after_block: parseInt(el('ctx-cta-mid_roll-placement_after_block').value) || 3 },
+      end_screen: { enabled: el('ctx-cta-end_screen-enabled').checked, text: el('ctx-cta-end_screen-text').value },
+    },
+    description_links: [],
+    hashtags_always: el('ctx-hashtags_always').value.split(',').map(s => s.trim()).filter(Boolean),
+    tags_always: el('ctx-tags_always').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+  const data = await api(`/api/channels/${currentChannelId}`, { context: ctx });
+  if (data.ok) toast('Настройки канала сохранены!');
+  else toast(data.error || 'Ошибка', true);
+};
+
+// ── Audience Fit Check ──
+let fitTimeout;
+document.getElementById('topicInput').addEventListener('input', function() {
+  clearTimeout(fitTimeout);
+  fitTimeout = setTimeout(checkAudienceFit, 800);
+});
+
+async function checkAudienceFit() {
+  const topic = el('topicInput').value.trim();
+  const channelId = el('channelSelectNew').value;
+  const alertEl = el('audienceFitAlert');
+  if (!topic || !channelId) { alertEl.style.display = 'none'; return; }
+
+  const data = await api('/api/audience-fit', { channel_id: channelId, topic });
+  if (data.fit === 'warning') {
+    alertEl.style.display = '';
+    alertEl.style.background = 'rgba(245,158,11,0.1)';
+    alertEl.style.border = '1px solid var(--orange)';
+    alertEl.style.color = 'var(--orange)';
+    alertEl.textContent = '⚠ ' + (data.message || 'Тема может не совпадать с ЦА канала');
+  } else if (data.fit === 'poor') {
+    alertEl.style.display = '';
+    alertEl.style.background = 'rgba(239,68,68,0.1)';
+    alertEl.style.border = '1px solid var(--red)';
+    alertEl.style.color = 'var(--red)';
+    alertEl.textContent = '⛔ ' + (data.message || 'Тема не подходит для этого канала');
+  } else {
+    alertEl.style.display = 'none';
+  }
+}
+
+// ── Channel Video Analytics ──
+async function loadChannelVideos() {
+  if (!currentChannelId) { toast('Выберите канал', true); return; }
+  toast('Загрузка видео канала...');
+  const data = await api(`/api/channels/${currentChannelId}/videos`);
+  if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
+
+  const videos = data.videos || [];
+  const section = document.getElementById('channelVideosSection');
+  const list = document.getElementById('channelVideosList');
+  section.style.display = '';
+
+  if (!videos.length) { list.innerHTML = '<p style="color:var(--muted);">Нет видео</p>'; return; }
+
+  const avgViews = videos.reduce((s, v) => s + v.views, 0) / videos.length;
+
+  list.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Всего ${videos.length} видео | Ср. просмотры: ${(avgViews/1000).toFixed(1)}K</div>
+    <div style="display:grid;gap:4px;max-height:400px;overflow-y:auto;">
+      ${videos.map(v => {
+        const aboveAvg = v.views > avgViews;
+        const color = aboveAvg ? 'var(--green)' : 'var(--red)';
+        const date = new Date(v.published_at).toLocaleDateString('ru-RU');
+        return `
+          <div style="display:flex;gap:8px;align-items:center;padding:6px;border-radius:6px;background:var(--bg);border:1px solid var(--border);">
+            <img src="${v.thumbnail_url || ''}" style="width:80px;height:45px;border-radius:4px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(v.title)}</div>
+              <div style="font-size:10px;color:var(--muted);">${date}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:13px;font-weight:700;color:${color};">${(v.views/1000).toFixed(1)}K</div>
+              <div style="font-size:9px;color:var(--muted);">${v.likes} ❤</div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+  toast(`${videos.length} видео загружено`);
+}
+
+// ── Topic Recommendations ──
+async function loadRecommendations() {
+  if (!currentChannelId) { toast('Выберите канал', true); return; }
+  toast('Генерирую рекомендации... (Claude AI)');
+  const data = await api(`/api/channels/${currentChannelId}/recommendations`);
+  if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
+
+  const recs = data.recommendations || [];
+  const section = document.getElementById('channelRecsSection');
+  const list = document.getElementById('channelRecsList');
+  section.style.display = '';
+
+  if (data.top_performing_themes) {
+    list.innerHTML = `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">Темы, которые залетают:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">${(data.top_performing_themes || []).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+      </div>
+      ${data.underperforming_themes?.length ? `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">Темы, которые не работают:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">${data.underperforming_themes.map(t => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+      </div>` : ''}
+      <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Рекомендованные темы</div>
+      <div style="display:grid;gap:6px;">
+        ${recs.map(r => `
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">${esc(r.topic)}</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px;">${esc(r.rationale)}</div>
+              ${r.related_existing ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Связано с: ${esc(r.related_existing)}</div>` : ''}
+            </div>
+            <span style="background:${r.estimated_appeal === 'high' ? 'var(--green)' : 'var(--orange)'};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;">${r.estimated_appeal === 'high' ? 'ВЫСОКИЙ' : 'СРЕДНИЙ'}</span>
+            <button class="btn btn-blue btn-xs" onclick="createProjectFromRec('${esc(r.topic)}')">Создать</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  toast('Рекомендации готовы!');
+}
+
+function createProjectFromRec(topic) {
+  el('topicInput').value = topic;
+  el('channelSelectNew').value = currentChannelId;
+  showModal();
+}
+
+// Patch createProject to include channel_id
+const _origCreateProject = createProject;
+createProject = async function() {
+  const input = document.getElementById('topicInput');
+  const topic = input.value.trim();
+  if (!topic) return;
+  const channelId = el('channelSelectNew').value;
+  const btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Создаю...';
+  try {
+    const data = await api('/api/new', { topic, channel_id: channelId });
+    if (data.ok) {
+      toast('Проект создан!');
+      input.value = '';
+      hideModal();
+      await loadProjects();
+    } else {
+      toast(data.error || 'Ошибка', true);
+    }
+  } catch (e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.textContent = 'Создать';
+};
+
+// Show channel badge on project cards
+const _origLoadProjects = loadProjects;
+loadProjects = async function() {
+  await _origLoadProjects();
+  // Add channel badges
+  const cards = document.querySelectorAll('.project-card .topic');
+  // We need to re-read projects to get channel_id — handled in the card render
+};
+
+// ── 2FA Management ──
+let totpSetupSecret = '';
+
+async function load2FAStatus() {
+  const data = await api('/api/2fa/status');
+  const statusEl = document.getElementById('twoFaStatus');
+  const setupEl = document.getElementById('twoFaSetup');
+  const disableEl = document.getElementById('twoFaDisable');
+
+  if (data.enabled) {
+    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:var(--green);font-weight:600;">✓ 2FA включена</span><span style="font-size:12px;color:var(--muted);">Google Authenticator</span></div>';
+    setupEl.style.display = 'none';
+    disableEl.style.display = '';
+  } else {
+    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:var(--red);font-weight:600;">✗ 2FA отключена</span><button class="btn btn-blue btn-sm" onclick="setup2FA()">Настроить 2FA</button></div>';
+    setupEl.style.display = 'none';
+    disableEl.style.display = 'none';
+  }
+}
+
+async function setup2FA() {
+  const data = await api('/api/2fa/setup', {});
+  if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
+
+  totpSetupSecret = data.secret;
+  document.getElementById('totpSecretDisplay').textContent = data.secret;
+  // Show QR as text link (user can use Google Lens or manual entry)
+  document.getElementById('qrCode').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qr_text)}" alt="QR Code" style="width:200px;height:200px;">`;
+  document.getElementById('twoFaSetup').style.display = '';
+}
+
+async function verifyAndEnable2FA() {
+  const code = document.getElementById('verifyTotpCode').value.trim();
+  if (!code || code.length !== 6) { toast('Введите 6-значный код', true); return; }
+
+  const data = await api('/api/2fa/verify', { secret: totpSetupSecret, code });
+  if (data.ok) {
+    toast('2FA включена! При следующем входе потребуется код.');
+    load2FAStatus();
+  } else {
+    toast(data.error || 'Неверный код', true);
+  }
+}
+
+async function disable2FA() {
+  const code = document.getElementById('disableTotpCode').value.trim();
+  if (!code || code.length !== 6) { toast('Введите текущий код 2FA', true); return; }
+
+  const data = await api('/api/2fa/disable', { code });
+  if (data.ok) {
+    toast('2FA отключена');
+    load2FAStatus();
+  } else {
+    toast(data.error || 'Неверный код', true);
+  }
+}
+
+// Override showSettings to load channels
+const _origShowSettings2 = showSettings;
+showSettings = function() {
+  _origShowSettings2();
+  loadChannels();
+  load2FAStatus();
+};
+
 // Init
 loadProjects();
+loadChannels();
 initStyles();
 </script>
 </body>

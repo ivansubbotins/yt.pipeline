@@ -179,10 +179,33 @@ class TeleprompterStep(BaseStep):
         climax_setup = script.get("climax_setup", "")
         key_messages = script.get("key_messages", [])
 
+        # Get recommended duration from research
+        research = self.get_previous_step_data("research")
+        content_plan = self.get_previous_step_data("content_plan")
+        rec_duration = research.get('_recommended_duration_minutes', content_plan.get('target_length_minutes', 12))
+        min_words = int(rec_duration * 150)  # 150 words per minute speaking speed
+
+        # Get sources for enrichment
+        sources = self.get_previous_step_data("sources")
+        sources_context = ""
+        if sources and not sources.get("skipped"):
+            parts = []
+            for q in sources.get("quotes", []):
+                parts.append(f"ЦИТАТА для вплетения: \"{q.get('text', '')}\" — {q.get('author', '?')}")
+            for s in sources.get("statistics", []):
+                parts.append(f"СТАТИСТИКА для упоминания: {s.get('metric', '')} — {s.get('context', '')}")
+            for f in sources.get("facts", []):
+                parts.append(f"ФАКТ: {f.get('text', '')} (источник: {f.get('source', '?')})")
+            if parts:
+                sources_context = "\n=== ДАННЫЕ ИЗ ИСТОЧНИКОВ — ВПЛЕТИ В ТЕКСТ ЕСТЕСТВЕННО ===\n" + "\n".join(parts) + "\nВажно: упоминай источники естественно ('по данным McKinsey...', 'как говорит эксперт...')\n"
+
         prompt = f"""Преобразуй скелет сценария в ПОЛНЫЙ текст для суфлёра.
 
 Заголовок видео: {script.get('title', self.state.topic)}
 Тон: {script.get('tone', 'разговорный, дружелюбный')}
+ЦЕЛЕВАЯ длительность видео: {rec_duration} минут (на основе анализа конкурентов)
+МИНИМУМ слов: {min_words} (скорость речи ~150 слов/мин)
+{sources_context}
 
 Ключевые сообщения видео:
 {json.dumps(key_messages, ensure_ascii=False, indent=2)}
@@ -204,7 +227,7 @@ class TeleprompterStep(BaseStep):
 5. Включи ВСЕ talking points и key_phrase из каждого блока
 6. Retention-хуки для удержания зрителя — словами, без маркеров
 7. Переходы между блоками — плавные и естественные
-8. Минимум 2000 слов суммарно
+8. Минимум {min_words} слов суммарно (для {rec_duration} минут при 150 слов/мин)
 9. Речь должна звучать ЕСТЕСТВЕННО, как живой разговор
 10. Контекст: Россия, цены в рублях"""
 
@@ -225,7 +248,7 @@ class TeleprompterStep(BaseStep):
             formatted_txt = _format_teleprompter_txt(result, TELEPROMPTER_WORDS_PER_LINE)
 
             txt_path = self.state.project_dir / "teleprompter.txt"
-            with open(txt_path, "w") as f:
+            with open(txt_path, "w", encoding="utf-8") as f:
                 f.write(formatted_txt)
             result["teleprompter_file"] = str(txt_path)
             logger.info(f"Teleprompter text saved to {txt_path}")
@@ -234,7 +257,7 @@ class TeleprompterStep(BaseStep):
             full_text = result.get("full_text", "")
             if full_text:
                 raw_path = self.state.project_dir / "teleprompter_raw.txt"
-                with open(raw_path, "w") as f:
+                with open(raw_path, "w", encoding="utf-8") as f:
                     f.write(full_text)
                 result["teleprompter_raw_file"] = str(raw_path)
 

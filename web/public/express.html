@@ -4,91 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Express — YouTube Pipeline</title>
+<link rel="stylesheet" href="/shared.css">
 <style>
-:root {
-  --bg: #0c0c0c; --card: #151515; --card2: #1a1a1a; --border: #262626;
-  --text: #e8e8e8; --text2: #bbb; --muted: #666;
-  --blue: #3b82f6; --red: #ef4444; --green: #22c55e; --purple: #a855f7;
-  --magenta: #ec4899; --orange: #f59e0b;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-.topbar { height: 48px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; }
-.topbar .back-btn { color: var(--muted); text-decoration: none; font-size: 18px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
-.topbar .back-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-.topbar h1 { font-size: 15px; font-weight: 700; }
 .topbar h1 span { color: var(--orange); }
-.topbar .spacer { flex: 1; }
+.container { max-width: 900px; }
 
-.container { max-width: 900px; margin: 0 auto; padding: 24px; }
-
-.section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-.section h2 { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-.section h2 .num { width: 24px; height: 24px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.section h2 .num.done { background: var(--green); }
-
-label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-input, textarea, select { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; }
-input:focus, textarea:focus { border-color: var(--blue); }
-textarea { resize: vertical; min-height: 60px; }
-
-.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-blue { background: var(--blue); color: #fff; }
-.btn-green { background: var(--green); color: #fff; }
-.btn-orange { background: var(--orange); color: #fff; }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
-.btn-outline:hover { border-color: var(--muted); }
-
-.loading { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 4px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Options grid */
-.options-grid { display: grid; gap: 8px; margin-top: 8px; }
-.option-card { background: var(--bg); border: 2px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.15s; position: relative; }
-.option-card:hover { border-color: var(--muted); }
-.option-card.selected { border-color: var(--blue); background: rgba(59,130,246,0.06); }
-.option-card .check { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; }
-.option-card.selected .check { background: var(--blue); border-color: var(--blue); color: #fff; }
-.option-card .title-text { font-size: 14px; font-weight: 600; padding-right: 28px; }
-.option-card .desc-text { font-size: 12px; line-height: 1.6; color: var(--text2); white-space: pre-wrap; max-height: 150px; overflow-y: auto; }
-.option-card .char-count { font-size: 10px; color: var(--muted); margin-top: 4px; }
-
-/* Covers grid */
-.covers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 8px; }
-.cover-card { border: 3px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.15s; }
-.cover-card:hover { border-color: var(--muted); }
-.cover-card.selected { border-color: var(--green); box-shadow: 0 0 12px rgba(34,197,94,0.3); }
-.cover-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-
-/* Tags */
-.tag { display:inline-flex; align-items:center; gap:4px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.25); color:var(--blue); padding:3px 8px; border-radius:4px; font-size:11px; }
-.tag .tag-x { cursor:pointer; opacity:0.6; font-size:13px; }
-.tag .tag-x:hover { opacity:1; }
-
-/* Toast */
-.toast { position: fixed; bottom: 24px; right: 24px; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 18px; font-size: 12px; z-index: 200; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-.toast.show { display: block; animation: fadeIn 0.25s; }
-.toast.error { border-color: var(--red); }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Status */
-.status-bar { display: flex; gap: 4px; margin-bottom: 16px; }
-.status-step { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
-.status-step.active { background: var(--blue); }
-.status-step.done { background: var(--green); }
-
-/* Actions bar */
-.actions-bar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
-
-/* Mobile */
-@media (max-width: 768px) {
-  .container { padding: 14px; }
-  .section { padding: 14px; }
-  .covers-grid { grid-template-columns: 1fr; }
-  .topbar { padding: 0 10px; }
-  .toast { bottom: 12px; right: 12px; left: 12px; text-align: center; }
+/* Inline edit for titles */
+.option-card .edit-area {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+  min-height: 40px;
 }
 </style>
 </head>
@@ -98,7 +26,7 @@ textarea { resize: vertical; min-height: 60px; }
   <a href="/" class="back-btn" title="Назад">←</a>
   <h1><span>Express</span> Publish</h1>
   <div class="spacer"></div>
-  <a href="/api/logout" class="btn btn-outline" style="font-size:10px;padding:4px 8px;text-decoration:none;color:var(--muted);">Выйти</a>
+  <a href="/api/logout" class="btn btn-outline btn-xs" style="text-decoration:none;color:var(--muted);">Выйти</a>
 </div>
 
 <div class="container">
@@ -149,9 +77,10 @@ textarea { resize: vertical; min-height: 60px; }
     </div>
   </div>
 
-  <!-- Step 2: Choose title -->
+  <!-- Step 2: Choose titles (multi-select) -->
   <div class="section" id="step2" style="display:none;">
-    <h2><span class="num" id="n2">2</span> Выберите заголовок</h2>
+    <h2><span class="num" id="n2">2</span> Выберите заголовки</h2>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Выберите один или несколько. Первый выбранный пойдёт на публикацию, остальные — в A/B тест.</p>
     <div class="options-grid" id="titlesGrid"></div>
     <div class="actions-bar">
       <button class="btn btn-outline" onclick="generateContent()">Перегенерировать</button>
@@ -174,18 +103,43 @@ textarea { resize: vertical; min-height: 60px; }
     <div id="tagsContainer" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     <div style="margin-top:8px;display:flex;gap:6px;">
       <input id="newTag" placeholder="Добавить тег..." style="flex:1;padding:6px 10px;font-size:12px;">
-      <button class="btn btn-outline" onclick="addTag()" style="font-size:11px;padding:4px 10px;">+</button>
+      <button class="btn btn-outline btn-sm" onclick="addTag()">+</button>
     </div>
   </div>
 
-  <!-- Step 4: Covers -->
+  <!-- Step 4: Covers (prompt approval + multi-select) -->
   <div class="section" id="step4" style="display:none;">
     <h2><span class="num" id="n4">4</span> Обложки</h2>
-    <div class="actions-bar" style="margin-top:0;margin-bottom:10px;">
-      <button class="btn btn-orange" onclick="generateCovers()" id="btnCovers">Сгенерировать 3 обложки</button>
-      <a href="#" class="btn btn-outline" id="editorLink" style="display:none;text-decoration:none;" target="_blank">Открыть в Cover Editor</a>
+
+    <!-- Sub-step 4a: Generate & approve prompts -->
+    <div id="step4a">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Сначала AI сгенерирует промпты для обложек. Вы сможете отредактировать их перед генерацией.</p>
+      <div class="actions-bar" style="margin-top:0;margin-bottom:10px;">
+        <button class="btn btn-orange" onclick="generateCoverPrompts()" id="btnCoverPrompts">Сгенерировать промпты</button>
+      </div>
+
+      <div id="promptsLoading" style="display:none;text-align:center;padding:20px;color:var(--muted);">
+        <span class="loading" style="width:20px;height:20px;border-width:3px;"></span> AI придумывает концепции обложек...
+      </div>
+
+      <div id="promptsGrid" style="display:grid;gap:8px;"></div>
+
+      <div id="step4aActions" class="actions-bar" style="display:none;">
+        <button class="btn btn-green" onclick="generateCoversFromPrompts()" id="btnGenFromPrompts">Сгенерировать обложки из одобренных промптов</button>
+        <button class="btn btn-outline" onclick="generateCoverPrompts()">Перегенерировать промпты</button>
+      </div>
     </div>
-    <div class="covers-grid" id="coversGrid"></div>
+
+    <!-- Sub-step 4b: Generated covers -->
+    <div id="step4b" style="display:none;">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Выберите одну или несколько обложек. Первая — для публикации, остальные — для A/B теста.</p>
+      <div class="covers-grid" id="coversGrid"></div>
+      <div class="actions-bar">
+        <button class="btn btn-outline" onclick="showPromptsStep()">Вернуться к промптам</button>
+        <a href="#" class="btn btn-outline" id="editorLink" style="display:none;text-decoration:none;" target="_blank">Открыть в Cover Editor</a>
+      </div>
+    </div>
+
     <div id="coversLoading" style="display:none;text-align:center;padding:20px;color:var(--muted);">
       <span class="loading" style="width:20px;height:20px;border-width:3px;"></span> Генерация обложек... Это может занять 1-2 минуты
     </div>
@@ -251,7 +205,7 @@ textarea { resize: vertical; min-height: 60px; }
       <select id="playlist" style="padding:8px 10px;">
         <option value="">— без плейлиста —</option>
       </select>
-      <button class="btn btn-outline" onclick="loadPlaylists()" style="margin-top:4px;font-size:10px;">Загрузить плейлисты</button>
+      <button class="btn btn-outline btn-xs" onclick="loadPlaylists()" style="margin-top:4px;">Загрузить плейлисты</button>
     </div>
 
     <div style="margin-bottom:10px;">
@@ -269,16 +223,27 @@ textarea { resize: vertical; min-height: 60px; }
     <div id="publishResult" style="display:none;margin-top:12px;background:rgba(34,197,94,0.1);border:1px solid var(--green);border-radius:8px;padding:14px;"></div>
   </div>
 
-  <!-- Step 7: Split-Test -->
+  <!-- Step 7: Split-Test (Matrix Mode) -->
   <div class="section" id="step7" style="display:none;">
     <h2><span class="num" id="n7">7</span> A/B Сплит-тест</h2>
     <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Автоматическая ротация заголовков и обложек. YouTube покажет разные варианты — вы узнаете, какой лучше.</p>
 
     <!-- Config -->
     <div id="splitConfig">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Варианты для теста</div>
+      <!-- Titles for test -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Заголовки для теста</div>
+        <div id="splitTitles"></div>
+      </div>
 
-      <div id="splitVariants" style="margin-bottom:12px;"></div>
+      <!-- Thumbnails for test -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;">Обложки для теста</div>
+        <div id="splitCovers" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Matrix preview -->
+      <div id="matrixPreview" style="margin-bottom:12px;"></div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
         <div>
@@ -303,7 +268,7 @@ textarea { resize: vertical; min-height: 60px; }
       </div>
 
       <div class="actions-bar">
-        <button class="btn btn-purple" onclick="startSplitTest()" id="btnSplit" style="background:var(--purple);">Запустить A/B тест</button>
+        <button class="btn btn-purple" onclick="startSplitTest()" id="btnSplit">Запустить A/B тест</button>
       </div>
     </div>
 
@@ -314,7 +279,7 @@ textarea { resize: vertical; min-height: 60px; }
           <span id="splitStatus" style="font-size:12px;font-weight:600;color:var(--green);"></span>
           <span id="splitTimer" style="font-size:11px;color:var(--muted);margin-left:8px;"></span>
         </div>
-        <button class="btn btn-outline" onclick="stopSplitTest()" style="font-size:10px;padding:4px 8px;">Остановить тест</button>
+        <button class="btn btn-outline btn-sm" onclick="stopSplitTest()">Остановить тест</button>
       </div>
       <div id="splitResults" style="margin-bottom:10px;"></div>
       <div style="font-size:9px;color:var(--muted);">Данные обновляются автоматически каждые 60 сек. Статистика CTR может отставать на 48-72ч.</div>
@@ -331,10 +296,11 @@ const state = {
   descriptions: [],
   tags: [],
   covers: [],
-  selectedTitle: -1,
+  selectedTitles: [],    // multi-select: array of indices
   selectedDesc: -1,
-  selectedCover: -1,
+  selectedCovers: [],    // multi-select: array of indices
   expressId: null,
+  editingTitle: -1,      // index of title being edited, -1 = none
 };
 
 async function api(url, body) {
@@ -379,6 +345,9 @@ async function generateContent() {
       state.titles = data.titles || [];
       state.descriptions = data.descriptions || [];
       state.tags = data.tags || [];
+      state.selectedTitles = [];
+      state.selectedCovers = [];
+      state.editingTitle = -1;
       renderTitles();
       renderDescs();
       renderTags();
@@ -389,7 +358,7 @@ async function generateContent() {
       document.getElementById('n1').className = 'num done';
       document.getElementById('n1').textContent = '✓';
       updateProgress(2);
-      toast('Готово! Выберите заголовок и описание');
+      toast('Готово! Выберите заголовки и описание');
     } else {
       toast(data.error || 'Ошибка генерации', true);
     }
@@ -399,26 +368,78 @@ async function generateContent() {
   btn.textContent = 'Сгенерировать заголовки и описания';
 }
 
-// ═══ Step 2: Titles ═══
+// ═══ Step 2: Titles (multi-select) ═══
 function renderTitles() {
   const grid = document.getElementById('titlesGrid');
-  grid.innerHTML = state.titles.map((t, i) => `
-    <div class="option-card ${state.selectedTitle === i ? 'selected' : ''}" onclick="selectTitle(${i})">
-      <div class="check">${state.selectedTitle === i ? '✓' : ''}</div>
-      <div class="title-text">${esc(t)}</div>
-      <div class="char-count">${t.length} символов</div>
-    </div>
-  `).join('');
+  grid.innerHTML = state.titles.map((t, i) => {
+    const isSelected = state.selectedTitles.includes(i);
+    const isEditing = state.editingTitle === i;
+    const orderNum = isSelected ? state.selectedTitles.indexOf(i) + 1 : '';
+    return `
+      <div class="option-card ${isSelected ? 'selected' : ''}" onclick="selectTitle(${i}, event)">
+        <div class="check">${isSelected ? orderNum : ''}</div>
+        <div class="card-actions">
+          <button onclick="event.stopPropagation(); startEditTitle(${i})" title="Редактировать">✏</button>
+          <button class="btn-delete" onclick="event.stopPropagation(); removeTitle(${i})" title="Удалить">✕</button>
+        </div>
+        ${isEditing
+          ? `<textarea class="edit-area" id="editTitle${i}" onclick="event.stopPropagation()" onblur="finishEditTitle(${i})" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();finishEditTitle(${i})}">${esc(t)}</textarea>`
+          : `<div class="title-text">${esc(t)}</div>`
+        }
+        <div class="char-count">${t.length} символов</div>
+      </div>
+    `;
+  }).join('');
+
+  // Focus textarea if editing
+  if (state.editingTitle >= 0) {
+    const el = document.getElementById('editTitle' + state.editingTitle);
+    if (el) { el.focus(); el.selectionStart = el.value.length; }
+  }
 }
 
-function selectTitle(i) {
-  state.selectedTitle = i;
+function selectTitle(i, event) {
+  if (state.editingTitle === i) return;
+  const idx = state.selectedTitles.indexOf(i);
+  if (idx >= 0) {
+    state.selectedTitles.splice(idx, 1);
+  } else {
+    state.selectedTitles.push(i);
+  }
   renderTitles();
   updateSummary();
-  if (state.selectedTitle >= 0 && state.selectedDesc >= 0) {
+  if (state.selectedTitles.length > 0 && state.selectedDesc >= 0) {
     document.getElementById('n2').className = 'num done';
     document.getElementById('n2').textContent = '✓';
+  } else {
+    document.getElementById('n2').className = 'num';
+    document.getElementById('n2').textContent = '2';
   }
+}
+
+function startEditTitle(i) {
+  state.editingTitle = i;
+  renderTitles();
+}
+
+function finishEditTitle(i) {
+  const el = document.getElementById('editTitle' + i);
+  if (el) state.titles[i] = el.value.trim() || state.titles[i];
+  state.editingTitle = -1;
+  renderTitles();
+  updateSummary();
+}
+
+function removeTitle(i) {
+  state.titles.splice(i, 1);
+  // Fix selected indices
+  state.selectedTitles = state.selectedTitles
+    .filter(idx => idx !== i)
+    .map(idx => idx > i ? idx - 1 : idx);
+  if (state.editingTitle === i) state.editingTitle = -1;
+  else if (state.editingTitle > i) state.editingTitle--;
+  renderTitles();
+  updateSummary();
 }
 
 // ═══ Step 3: Descriptions ═══
@@ -439,7 +460,7 @@ function selectDesc(i) {
   editArea.style.display = '';
   editArea.value = state.descriptions[i];
   updateSummary();
-  if (state.selectedTitle >= 0 && state.selectedDesc >= 0) {
+  if (state.selectedTitles.length > 0 && state.selectedDesc >= 0) {
     document.getElementById('n3').className = 'num done';
     document.getElementById('n3').textContent = '✓';
     updateProgress(3);
@@ -453,25 +474,115 @@ function autoSaveDesc() {
   updateSummary();
 }
 
-// ═══ Step 4: Covers ═══
-async function generateCovers() {
-  const topic = document.getElementById('topic').value.trim();
-  const title = state.selectedTitle >= 0 ? state.titles[state.selectedTitle] : topic;
+// ═══ Step 4: Covers — Prompt Approval + Multi-select ═══
 
-  const btn = document.getElementById('btnCovers');
+// Sub-step 4a: Generate prompts for approval
+async function generateCoverPrompts() {
+  const topic = document.getElementById('topic').value.trim();
+  const title = state.selectedTitles.length > 0 ? state.titles[state.selectedTitles[0]] : topic;
+
+  const btn = document.getElementById('btnCoverPrompts');
   btn.disabled = true;
   btn.innerHTML = '<span class="loading"></span> Генерирую...';
-  document.getElementById('coversLoading').style.display = '';
+  document.getElementById('promptsLoading').style.display = '';
 
   try {
     const script = document.getElementById('script').value.trim();
     const desc = state.selectedDesc >= 0 ? state.descriptions[state.selectedDesc] : '';
-    const data = await api('/api/express/covers', { topic, title, script, description: desc, count: 3 });
+    const data = await api('/api/express/cover-prompts', { topic, title, script, description: desc, count: 3 });
+
+    if (data.ok && data.prompts.length > 0) {
+      state.coverPrompts = data.prompts.map(p => ({ ...p, approved: true }));
+      renderPromptCards();
+      document.getElementById('step4aActions').style.display = '';
+      toast(`${data.prompts.length} концепций обложек готовы к одобрению`);
+    } else {
+      toast(data.error || 'Не удалось сгенерировать промпты', true);
+    }
+  } catch(e) { toast(e.message, true); }
+
+  btn.disabled = false;
+  btn.textContent = 'Сгенерировать промпты';
+  document.getElementById('promptsLoading').style.display = 'none';
+}
+
+function renderPromptCards() {
+  const grid = document.getElementById('promptsGrid');
+  grid.innerHTML = (state.coverPrompts || []).map((p, i) => `
+    <div class="prompt-card ${p.approved ? 'approved' : 'rejected'}" id="prompt-${i}">
+      <div class="prompt-header">
+        <span class="prompt-num">Концепция ${i + 1}</span>
+        <div class="prompt-actions">
+          <button class="btn btn-xs ${p.approved ? 'btn-green' : 'btn-outline'}" onclick="togglePromptApproval(${i})">
+            ${p.approved ? '✓ Одобрено' : 'Одобрить'}
+          </button>
+          <button class="btn btn-xs btn-outline" onclick="removePrompt(${i})" title="Удалить">✕</button>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">${esc(p.concept || '')}</div>
+      <label style="font-size:10px;">Промпт (English)</label>
+      <textarea class="edit-area" id="promptText${i}" rows="3" style="font-size:11px;min-height:60px;" onchange="updatePrompt(${i}, 'prompt', this.value)">${esc(p.prompt || '')}</textarea>
+      <div class="prompt-meta">
+        <span>Текст: <strong>${esc(p.text_on_image || '—')}</strong></span>
+        <span>Эмоция: ${esc(p.emotion || '—')}</span>
+        <span>Стиль: ${esc(p.style_hint || '—')}</span>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:6px;">
+        <input value="${esc(p.text_on_image || '')}" placeholder="Текст на обложке" onchange="updatePrompt(${i}, 'text_on_image', this.value)" style="flex:1;padding:5px 8px;font-size:11px;">
+        <input value="${esc(p.emotion || '')}" placeholder="Эмоция" onchange="updatePrompt(${i}, 'emotion', this.value)" style="width:120px;padding:5px 8px;font-size:11px;">
+      </div>
+    </div>
+  `).join('');
+}
+
+function togglePromptApproval(i) {
+  state.coverPrompts[i].approved = !state.coverPrompts[i].approved;
+  renderPromptCards();
+}
+
+function removePrompt(i) {
+  state.coverPrompts.splice(i, 1);
+  renderPromptCards();
+}
+
+function updatePrompt(i, field, value) {
+  if (state.coverPrompts[i]) state.coverPrompts[i][field] = value;
+}
+
+function showPromptsStep() {
+  document.getElementById('step4a').style.display = '';
+  document.getElementById('step4b').style.display = 'none';
+}
+
+// Sub-step 4b: Generate covers from approved prompts
+async function generateCoversFromPrompts() {
+  const approved = (state.coverPrompts || []).filter(p => p.approved);
+  if (approved.length === 0) { toast('Одобрите хотя бы один промпт', true); return; }
+
+  const topic = document.getElementById('topic').value.trim();
+  const title = state.selectedTitles.length > 0 ? state.titles[state.selectedTitles[0]] : topic;
+
+  const btn = document.getElementById('btnGenFromPrompts');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Генерирую обложки...';
+  document.getElementById('coversLoading').style.display = '';
+
+  try {
+    const data = await api('/api/express/covers', {
+      topic,
+      title,
+      prompts: approved,
+      count: approved.length,
+    });
 
     if (data.ok) {
       state.covers = data.covers || [];
       state.expressId = data.express_id;
+      state.selectedCovers = [];
       renderCovers();
+      // Switch to covers view
+      document.getElementById('step4a').style.display = 'none';
+      document.getElementById('step4b').style.display = '';
       document.getElementById('editorLink').style.display = '';
       toast(`${state.covers.length} обложек сгенерировано!`);
     } else {
@@ -480,59 +591,101 @@ async function generateCovers() {
   } catch(e) { toast(e.message, true); }
 
   btn.disabled = false;
-  btn.textContent = 'Сгенерировать 3 обложки';
+  btn.textContent = 'Сгенерировать обложки из одобренных промптов';
   document.getElementById('coversLoading').style.display = 'none';
 }
 
 function renderCovers() {
   const grid = document.getElementById('coversGrid');
-  grid.innerHTML = state.covers.map((url, i) => `
-    <div class="cover-card ${state.selectedCover === i ? 'selected' : ''}" onclick="selectCover(${i})">
-      <img src="${url}?t=${Date.now()}" alt="Обложка ${i+1}">
-    </div>
-  `).join('');
+  grid.innerHTML = state.covers.map((url, i) => {
+    const isSelected = state.selectedCovers.includes(i);
+    const orderNum = isSelected ? state.selectedCovers.indexOf(i) + 1 : '';
+    return `
+      <div class="cover-card ${isSelected ? 'selected' : ''}" onclick="selectCover(${i})">
+        <img src="${url}?t=${Date.now()}" alt="Обложка ${i+1}">
+        ${isSelected ? `<div style="position:absolute;top:8px;left:8px;width:24px;height:24px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;">${orderNum}</div>` : ''}
+        <div class="cover-actions">
+          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation(); regenerateCover(${i})" title="Перегенерировать" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);">↻</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function regenerateCover(i) {
+  const prompt = state.coverPrompts && state.coverPrompts[i]
+    ? state.coverPrompts[i]
+    : { prompt: `YouTube thumbnail for "${document.getElementById('topic').value.trim()}"`, text_on_image: '' };
+
+  toast('Перегенерация обложки ' + (i + 1) + '...');
+
+  try {
+    const data = await api('/api/express/covers', {
+      topic: document.getElementById('topic').value.trim(),
+      title: state.selectedTitles.length > 0 ? state.titles[state.selectedTitles[0]] : '',
+      prompts: [prompt],
+      count: 1,
+    });
+
+    if (data.ok && data.covers && data.covers.length > 0) {
+      state.covers[i] = data.covers[0];
+      renderCovers();
+      toast('Обложка ' + (i + 1) + ' перегенерирована!');
+    } else {
+      toast(data.error || 'Ошибка', true);
+    }
+  } catch(e) { toast(e.message, true); }
 }
 
 function selectCover(i) {
-  state.selectedCover = i;
+  const idx = state.selectedCovers.indexOf(i);
+  if (idx >= 0) {
+    state.selectedCovers.splice(idx, 1);
+  } else {
+    state.selectedCovers.push(i);
+  }
   renderCovers();
-  document.getElementById('n4').className = 'num done';
-  document.getElementById('n4').textContent = '✓';
-  updateProgress(5);
   updateSummary();
-  document.getElementById('step5').style.display = '';
-  document.getElementById('step6').style.display = '';
+
+  if (state.selectedCovers.length > 0) {
+    document.getElementById('n4').className = 'num done';
+    document.getElementById('n4').textContent = '✓';
+    updateProgress(5);
+    document.getElementById('step5').style.display = '';
+    document.getElementById('step6').style.display = '';
+  } else {
+    document.getElementById('n4').className = 'num';
+    document.getElementById('n4').textContent = '4';
+  }
 }
 
 // ═══ Summary ═══
 function updateSummary() {
-  if (state.selectedTitle >= 0)
-    document.getElementById('summaryTitle').textContent = state.titles[state.selectedTitle];
+  if (state.selectedTitles.length > 0)
+    document.getElementById('summaryTitle').textContent = state.titles[state.selectedTitles[0]];
   if (state.selectedDesc >= 0)
     document.getElementById('summaryDesc').textContent = state.descriptions[state.selectedDesc];
-  if (state.selectedCover >= 0) {
+  if (state.selectedCovers.length > 0) {
     const img = document.getElementById('summaryCover');
-    img.src = state.covers[state.selectedCover] + '?t=' + Date.now();
+    img.src = state.covers[state.selectedCovers[0]] + '?t=' + Date.now();
     img.style.display = '';
   }
 }
 
 function downloadAll() {
-  // Download cover
-  if (state.selectedCover >= 0) {
+  if (state.selectedCovers.length > 0) {
     const a = document.createElement('a');
-    a.href = state.covers[state.selectedCover];
+    a.href = state.covers[state.selectedCovers[0]];
     a.download = 'cover.jpg';
     a.click();
   }
-  // Copy desc
   copyDesc();
   toast('Обложка скачивается, описание скопировано!');
 }
 
 function copyDesc() {
   const desc = state.selectedDesc >= 0 ? state.descriptions[state.selectedDesc] : '';
-  const title = state.selectedTitle >= 0 ? state.titles[state.selectedTitle] : '';
+  const title = state.selectedTitles.length > 0 ? state.titles[state.selectedTitles[0]] : '';
   const text = `${title}\n\n${desc}`;
   navigator.clipboard.writeText(text).then(() => toast('Скопировано!')).catch(() => toast('Ошибка копирования', true));
 }
@@ -597,11 +750,11 @@ async function loadPlaylists() {
 // ═══ Step 6: Publish ═══
 async function publishToYouTube() {
   if (!state.videoUploaded) { toast('Сначала загрузите видео (шаг 5)', true); return; }
-  if (state.selectedTitle < 0) { toast('Выберите заголовок (шаг 2)', true); return; }
+  if (state.selectedTitles.length === 0) { toast('Выберите заголовок (шаг 2)', true); return; }
 
-  const title = state.titles[state.selectedTitle];
+  const title = state.titles[state.selectedTitles[0]];
   const description = state.selectedDesc >= 0 ? state.descriptions[state.selectedDesc] : '';
-  const coverUrl = state.selectedCover >= 0 ? state.covers[state.selectedCover] : '';
+  const coverUrl = state.selectedCovers.length > 0 ? state.covers[state.selectedCovers[0]] : '';
   const schedule = document.getElementById('schedule').value;
 
   if (!confirm(`Опубликовать видео "${title}" на YouTube?`)) return;
@@ -625,17 +778,15 @@ async function publishToYouTube() {
     const resultDiv = document.getElementById('publishResult');
     if (data.ok) {
       resultDiv.style.display = '';
-      // Extract video_id from output if possible
       const vidMatch = (data.output || '').match(/(?:youtu\.be\/|video_id[:\s]+)([a-zA-Z0-9_-]{11})/);
       if (vidMatch) state.videoId = vidMatch[1];
       resultDiv.innerHTML = `<div style="font-size:14px;font-weight:600;color:var(--green);margin-bottom:6px;">Видео опубликовано!</div><div style="font-size:12px;color:var(--text2);white-space:pre-wrap;">${esc(data.output)}</div>`;
       document.getElementById('n6').className = 'num done';
       document.getElementById('n6').textContent = '✓';
       toast('Видео опубликовано на YouTube!');
-      // Show split-test step
       document.getElementById('step7').style.display = '';
       updateProgress(7);
-      renderSplitVariants();
+      renderSplitConfig();
     } else {
       resultDiv.style.display = '';
       resultDiv.style.borderColor = 'var(--red)';
@@ -672,29 +823,97 @@ function removeTag(i) {
   renderTags();
 }
 
-// ═══ Step 7: Split-Test ═══
-function renderSplitVariants() {
-  const container = document.getElementById('splitVariants');
-  // Build variants from available titles and covers
-  const variants = [];
-  for (let i = 0; i < Math.max(state.titles.length, state.covers.length); i++) {
-    if (i >= 3) break; // Max 3 variants
-    variants.push({
-      title: state.titles[i] || state.titles[0] || '',
-      cover: state.covers[i] || state.covers[0] || '',
-    });
-  }
-  state.splitVariants = variants;
+// ═══ Step 7: Split-Test (Matrix Mode) ═══
+function renderSplitConfig() {
+  // Build title checkboxes from selected titles
+  const titlesEl = document.getElementById('splitTitles');
+  const testTitles = state.selectedTitles.map(i => state.titles[i]);
 
-  container.innerHTML = variants.map((v, i) => `
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;gap:10px;align-items:center;">
-      <div style="font-size:18px;font-weight:700;color:var(--purple);min-width:24px;">${i + 1}</div>
-      ${v.cover ? `<img src="${v.cover}?t=${Date.now()}" style="width:80px;height:45px;border-radius:4px;object-fit:cover;">` : ''}
-      <div style="flex:1;">
-        <input value="${esc(v.title)}" onchange="state.splitVariants[${i}].title=this.value" style="width:100%;padding:6px 8px;font-size:12px;">
-      </div>
+  // If only 1 title selected, include all titles as options
+  const titlePool = state.selectedTitles.length > 1
+    ? state.selectedTitles.map(i => ({ idx: i, text: state.titles[i], checked: true }))
+    : state.titles.map((t, i) => ({ idx: i, text: t, checked: state.selectedTitles.includes(i) }));
+
+  titlesEl.innerHTML = titlePool.map((t, n) => `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+      <input type="checkbox" id="stitle${n}" ${t.checked ? 'checked' : ''} onchange="updateMatrixPreview()" style="width:auto;padding:0;">
+      <input value="${esc(t.text)}" id="stitleText${n}" style="flex:1;padding:6px 8px;font-size:12px;" onchange="updateMatrixPreview()">
+      <span style="font-size:10px;color:var(--muted);">${t.text.length} сим.</span>
     </div>
   `).join('');
+
+  // Build cover checkboxes
+  const coversEl = document.getElementById('splitCovers');
+  const coverPool = state.covers.map((url, i) => ({ idx: i, url, checked: state.selectedCovers.includes(i) }));
+
+  coversEl.innerHTML = coverPool.map((c, n) => `
+    <div style="position:relative;cursor:pointer;" onclick="document.getElementById('scover${n}').checked=!document.getElementById('scover${n}').checked;updateMatrixPreview()">
+      <img src="${c.url}?t=${Date.now()}" style="width:120px;height:68px;border-radius:6px;object-fit:cover;border:2px solid ${c.checked ? 'var(--green)' : 'var(--border)'};">
+      <input type="checkbox" id="scover${n}" ${c.checked ? 'checked' : ''} onchange="updateMatrixPreview()" style="position:absolute;top:4px;left:4px;width:auto;">
+    </div>
+  `).join('');
+
+  updateMatrixPreview();
+}
+
+function getSelectedSplitTitles() {
+  const titles = [];
+  let n = 0;
+  while (document.getElementById('stitle' + n)) {
+    if (document.getElementById('stitle' + n).checked) {
+      titles.push(document.getElementById('stitleText' + n).value);
+    }
+    n++;
+  }
+  return titles;
+}
+
+function getSelectedSplitCovers() {
+  const covers = [];
+  let n = 0;
+  while (document.getElementById('scover' + n)) {
+    if (document.getElementById('scover' + n).checked) {
+      covers.push(state.covers[n]);
+    }
+    n++;
+  }
+  return covers;
+}
+
+function updateMatrixPreview() {
+  const titles = getSelectedSplitTitles();
+  const covers = getSelectedSplitCovers();
+  const total = titles.length * covers.length;
+
+  const previewEl = document.getElementById('matrixPreview');
+  if (total === 0) {
+    previewEl.innerHTML = '<div style="font-size:11px;color:var(--muted);">Выберите минимум 1 заголовок и 1 обложку</div>';
+    return;
+  }
+
+  let html = `<div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">${titles.length} заголовк${titles.length === 1 ? '' : titles.length < 5 ? 'а' : 'ов'} × ${covers.length} обложк${covers.length === 1 ? 'а' : covers.length < 5 ? 'и' : ''} = ${total} вариант${total === 1 ? '' : total < 5 ? 'а' : 'ов'}</div>`;
+
+  if (total > 12) {
+    html += `<div style="font-size:11px;color:var(--red);margin-bottom:4px;">Максимум 12 вариантов. Уберите лишние.</div>`;
+  }
+
+  html += '<div class="matrix-preview">';
+  let count = 0;
+  for (const title of titles) {
+    for (const cover of covers) {
+      if (count >= 12) break;
+      html += `
+        <div class="matrix-cell">
+          <img src="${cover}?t=${Date.now()}">
+          <div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(title)}</div>
+          <span style="font-size:10px;color:var(--muted);">#${count + 1}</span>
+        </div>`;
+      count++;
+    }
+  }
+  html += '</div>';
+
+  previewEl.innerHTML = html;
 }
 
 async function startSplitTest() {
@@ -705,12 +924,12 @@ async function startSplitTest() {
     state.videoId = vid.trim();
   }
 
-  const variants = (state.splitVariants || []).map(v => ({
-    title: v.title,
-    thumbnail: v.cover,
-  }));
+  const titles = getSelectedSplitTitles();
+  const covers = getSelectedSplitCovers();
 
-  if (variants.length < 2) { toast('Нужно минимум 2 варианта', true); return; }
+  if (titles.length < 1 || covers.length < 1) { toast('Выберите минимум 1 заголовок и 1 обложку', true); return; }
+  if (titles.length * covers.length > 12) { toast('Максимум 12 вариантов (уберите лишние)', true); return; }
+  if (titles.length * covers.length < 2) { toast('Нужно минимум 2 варианта для теста', true); return; }
 
   const btn = document.getElementById('btnSplit');
   btn.disabled = true;
@@ -720,7 +939,9 @@ async function startSplitTest() {
     const data = await api('/api/splittest/start', {
       project_id: state.expressId,
       video_id: state.videoId,
-      variants,
+      mode: 'matrix',
+      titles,
+      thumbnails: covers,
       rotation_hours: parseInt(document.getElementById('splitRotation').value),
       duration_hours: parseInt(document.getElementById('splitDuration').value),
     });
@@ -732,7 +953,6 @@ async function startSplitTest() {
       document.getElementById('n7').className = 'num done';
       document.getElementById('n7').textContent = '✓';
       updateSplitDashboard(data.test);
-      // Start polling
       state.splitPollInterval = setInterval(pollSplitTest, 60000);
     } else {
       toast(data.error || 'Ошибка запуска', true);
@@ -773,12 +993,12 @@ function updateSplitDashboard(test) {
       <div style="background:var(--bg);border:2px solid ${borderColor};border-radius:8px;padding:10px;margin-bottom:6px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-size:13px;font-weight:600;">
-            ${isWinner ? '🏆 ' : ''}Вариант ${i + 1}${isActive ? ' (активен)' : ''}
+            ${isWinner ? '&#x1F3C6; ' : ''}Вариант ${i + 1}${isActive ? ' (активен)' : ''}
           </div>
           <div style="font-size:12px;color:var(--green);font-weight:600;">+${v.total_views_delta || 0} просмотров</div>
         </div>
         <div style="font-size:11px;color:var(--text2);margin-top:4px;">${esc(v.title)}</div>
-        ${test.status === 'running' ? `<button class="btn btn-outline" onclick="pickWinner(${i})" style="font-size:9px;padding:2px 6px;margin-top:4px;">Выбрать победителем</button>` : ''}
+        ${test.status === 'running' ? `<button class="btn btn-outline btn-xs" onclick="pickWinner(${i})" style="margin-top:4px;">Выбрать победителем</button>` : ''}
       </div>
     `;
   }).join('');
@@ -839,7 +1059,6 @@ async function connectYouTube() {
   } catch(e) { toast(e.message, true); }
 }
 
-// Check YouTube status on page load
 checkYouTubeStatus();
 
 // ═══ Upload Expert Photo ═══

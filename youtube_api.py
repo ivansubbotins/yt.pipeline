@@ -30,16 +30,17 @@ SCOPES = [
 class YouTubeAPI:
     """Wrapper around YouTube Data API v3."""
 
-    def __init__(self):
+    def __init__(self, token_file: Path | None = None):
         self._service = None
         self._credentials = None
+        self._token_file = token_file or YOUTUBE_TOKEN_FILE
 
     def authenticate(self):
         """Authenticate with OAuth2. Opens browser on first run."""
         creds = None
 
-        if YOUTUBE_TOKEN_FILE.exists():
-            with open(YOUTUBE_TOKEN_FILE) as f:
+        if self._token_file.exists():
+            with open(self._token_file, encoding="utf-8") as f:
                 token_data = json.load(f)
             creds = Credentials.from_authorized_user_info(token_data, SCOPES)
 
@@ -60,7 +61,7 @@ class YouTubeAPI:
             creds = self._manual_auth_flow(flow)
 
         # Save token
-        with open(YOUTUBE_TOKEN_FILE, "w") as f:
+        with open(self._token_file, "w", encoding="utf-8") as f:
             f.write(creds.to_json())
 
         self._credentials = creds
@@ -310,3 +311,48 @@ class YouTubeAPI:
                 "comments": int(stats.get("commentCount", 0)),
             }
         return {}
+
+    def list_channel_videos(self, max_results: int = 50) -> list[dict]:
+        """List all videos from the authenticated channel with statistics."""
+        # Get channel's uploads playlist
+        channels = self.service.channels().list(part="contentDetails", mine=True).execute()
+        if not channels.get("items"):
+            return []
+        uploads_playlist = channels["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+
+        videos = []
+        next_page = None
+        while len(videos) < max_results:
+            pl_response = self.service.playlistItems().list(
+                part="snippet",
+                playlistId=uploads_playlist,
+                maxResults=min(50, max_results - len(videos)),
+                pageToken=next_page,
+            ).execute()
+
+            video_ids = [item["snippet"]["resourceId"]["videoId"] for item in pl_response["items"]]
+
+            if video_ids:
+                stats_response = self.service.videos().list(
+                    part="statistics,snippet,contentDetails",
+                    id=",".join(video_ids),
+                ).execute()
+
+                for item in stats_response.get("items", []):
+                    stats = item.get("statistics", {})
+                    videos.append({
+                        "video_id": item["id"],
+                        "title": item["snippet"]["title"],
+                        "published_at": item["snippet"]["publishedAt"],
+                        "views": int(stats.get("viewCount", 0)),
+                        "likes": int(stats.get("likeCount", 0)),
+                        "comments": int(stats.get("commentCount", 0)),
+                        "duration": item["contentDetails"]["duration"],
+                        "thumbnail_url": item["snippet"]["thumbnails"].get("high", {}).get("url", ""),
+                    })
+
+            next_page = pl_response.get("nextPageToken")
+            if not next_page:
+                break
+
+        return sorted(videos, key=lambda v: v["views"], reverse=True)

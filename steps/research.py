@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
+YOUTUBE_CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels"
 
 
 def _parse_duration_seconds(iso_duration: str) -> int:
@@ -64,6 +65,14 @@ def _search_youtube(
         params["publishedAfter"] = published_after
 
     resp = requests.get(YOUTUBE_SEARCH_URL, params=params, timeout=30)
+    if resp.status_code == 403:
+        error_data = resp.json().get("error", {})
+        if "quotaExceeded" in str(error_data) or "forbidden" in str(error_data).lower():
+            raise RuntimeError(
+                "YouTube API квота исчерпана (10,000 units/день). "
+                "Сбросится завтра в ~10:00 МСК. "
+                "Для увеличения лимита: Google Cloud Console → APIs → YouTube Data API → Quotas → Request increase"
+            )
     resp.raise_for_status()
     data = resp.json()
 
@@ -74,6 +83,7 @@ def _search_youtube(
             "video_id": item["id"]["videoId"],
             "title": snippet.get("title", ""),
             "channel_title": snippet.get("channelTitle", ""),
+            "channel_id": snippet.get("channelId", ""),
             "description": snippet.get("description", ""),
             "published_at": snippet.get("publishedAt", ""),
             "thumbnail_url": snippet.get("thumbnails", {}).get("high", {}).get("url", ""),
@@ -117,6 +127,37 @@ def _get_video_details(video_ids: list[str]) -> dict[str, dict]:
                 "default_audio_language": snippet.get("defaultAudioLanguage", ""),
             }
     return all_details
+
+
+def _get_channel_stats(channel_ids: list[str]) -> dict[str, dict]:
+    """Fetch subscriber counts for channels."""
+    if not channel_ids:
+        return {}
+
+    all_stats = {}
+    unique_ids = list(set(channel_ids))
+    for i in range(0, len(unique_ids), 50):
+        batch = unique_ids[i : i + 50]
+        params = {
+            "part": "statistics",
+            "id": ",".join(batch),
+            "key": YOUTUBE_API_KEY,
+        }
+        try:
+            resp = requests.get(YOUTUBE_CHANNELS_URL, params=params, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+            for item in data.get("items", []):
+                cid = item["id"]
+                stats = item.get("statistics", {})
+                all_stats[cid] = {
+                    "subscriber_count": int(stats.get("subscriberCount", 0)),
+                    "video_count": int(stats.get("videoCount", 0)),
+                    "hidden_subscriber_count": stats.get("hiddenSubscriberCount", False),
+                }
+        except Exception as e:
+            logger.warning(f"Failed to get channel stats: {e}")
+    return all_stats
 
 
 def _download_thumbnail(url: str, output_path: Path) -> bool:
@@ -165,11 +206,18 @@ ANALYSIS_SYSTEM_PROMPT = """Ты — YouTube SEO-аналитик.
       "video_title": "название видео",
       "video_id": "ID видео",
       "views": 123456,
+      "subscribers": 5000,
+      "breakthrough_score": 24.7,
+      "is_breakthrough": true,
       "strengths": "что хорошо — конкретно",
       "weaknesses": "что можно улучшить — конкретно"
     }
   ],
-  "trending_angles": ["стрельнувший угол 1", "угол 2", "угол 3"],
+  "trending_angles": [
+    "Угол 1: краткое описание — почему зайдёт (на основе данных)",
+    "Угол 2: описание — аргумент",
+    "Угол 3: описание — аргумент"
+  ],
   "keywords": ["ключевое слово 1", "ключевое слово 2"],
   "recommended_titles": [
     "Заголовок 1 (объяснение почему зайдёт)",
@@ -188,7 +236,9 @@ ANALYSIS_SYSTEM_PROMPT = """Ты — YouTube SEO-аналитик.
     "title": "",
     "video_id": "",
     "views": 0,
-    "why_it_works": "ПОДРОБНО — почему именно это видео набрало больше всего"
+    "subscribers": 0,
+    "breakthrough_score": 0,
+    "why_it_works": "ПОДРОБНО — почему именно это видео выстрелило (учитывай размер канала!)"
   },
   "recommended_approach": "конкретная рекомендация — какое видео снимать, с каким углом, заголовком"
 }"""
@@ -240,26 +290,38 @@ class ResearchStep(BaseStep):
         ru_videos = []
         en_videos = []
 
-        # Search with both "medium" (4-20 min) and "long" (20+ min) filters
-        # to exclude shorts and short clips
-        for q in queries:
-            for duration_filter in ("medium", "long"):
-                # RU search — by viewCount, last year, 4+ min
-                logger.info(f"Searching RU (viewCount, {duration_filter}): {q}")
-                results = _search_youtube(
-                    q, max_results=10, language="ru",
-                    order="viewCount", published_after=one_year_ago,
-                    video_duration=duration_filter,
-                )
-                for v in results:
-                    if v["video_id"] not in seen_ids:
-                        seen_ids.add(v["video_id"])
-                        ru_videos.append(v)
+        # Optimized search: ~8 requests = 800 units (instead of 19 = 1900)
+        # RU: top 3 queries × medium only (shorts filtered by duration later)
+        for q in queries[:3]:
+            logger.info(f"Searching RU (viewCount, medium): {q}")
+            results = _search_youtube(
+                q, max_results=15, language="ru",
+                order="viewCount", published_after=one_year_ago,
+                video_duration="medium",
+            )
+            for v in results:
+                if v["video_id"] not in seen_ids:
+                    seen_ids.add(v["video_id"])
+                    ru_videos.append(v)
 
-            # EN search — by viewCount, last year, medium only (top long-form)
+        # RU long-form: top 2 queries
+        for q in queries[:2]:
+            logger.info(f"Searching RU (viewCount, long): {q}")
+            results = _search_youtube(
+                q, max_results=10, language="ru",
+                order="viewCount", published_after=one_year_ago,
+                video_duration="long",
+            )
+            for v in results:
+                if v["video_id"] not in seen_ids:
+                    seen_ids.add(v["video_id"])
+                    ru_videos.append(v)
+
+        # EN: top 2 queries only
+        for q in queries[:2]:
             logger.info(f"Searching EN (viewCount, medium): {q}")
             results = _search_youtube(
-                q, max_results=5, language="en",
+                q, max_results=10, language="en",
                 order="viewCount", published_after=one_year_ago,
                 video_duration="medium",
             )
@@ -295,8 +357,8 @@ class ResearchStep(BaseStep):
             if vid in details:
                 v.update(details[vid])
 
-        # --- Filter: only 10+ minute videos ---
-        MIN_DURATION_SEC = 600  # 10 minutes
+        # --- Filter: only 5+ minute videos (long-form content) ---
+        MIN_DURATION_SEC = 300  # 5 minutes
         before_count = len(all_videos)
         all_videos = [
             v for v in all_videos
@@ -305,12 +367,55 @@ class ResearchStep(BaseStep):
         ru_videos = [v for v in ru_videos if v in all_videos]
         en_videos = [v for v in en_videos if v in all_videos]
         logger.info(
-            f"Duration filter (10+ min): {before_count} → {len(all_videos)} videos "
+            f"Duration filter (5+ min): {before_count} → {len(all_videos)} videos "
             f"({before_count - len(all_videos)} shorts/clips removed)"
         )
 
-        # --- Download thumbnails (top 30 by views) ---
+        # --- Get channel subscriber counts ---
+        channel_ids = [v.get("channel_id", "") for v in all_videos if v.get("channel_id")]
+        logger.info(f"Fetching subscriber counts for {len(set(channel_ids))} channels...")
+        channel_stats = _get_channel_stats(channel_ids)
+
+        # Merge channel stats and calculate breakthrough score
+        for v in all_videos:
+            cid = v.get("channel_id", "")
+            if cid and cid in channel_stats:
+                v["subscriber_count"] = channel_stats[cid]["subscriber_count"]
+            else:
+                v["subscriber_count"] = 0
+
+            # Calculate days since publish
+            days_old = 365
+            if v.get("published_at"):
+                try:
+                    pub_date = datetime.fromisoformat(v["published_at"].replace("Z", "+00:00"))
+                    days_old = max(1, (datetime.now(pub_date.tzinfo) - pub_date).days)
+                except Exception:
+                    pass
+            v["days_since_publish"] = days_old
+            v["views_per_day"] = round(v.get("view_count", 0) / days_old, 1)
+
+            # Breakthrough score = (views / subscribers) * velocity_bonus
+            # velocity_bonus: newer videos get a multiplier (< 30 days = x3, < 90 days = x2, < 180 = x1.5)
+            subs = max(v.get("subscriber_count", 0), 1)
+            views = v.get("view_count", 0)
+            velocity_bonus = 3.0 if days_old <= 30 else 2.0 if days_old <= 90 else 1.5 if days_old <= 180 else 1.0
+            v["breakthrough_score"] = round((views / subs) * velocity_bonus, 2)
+            v["velocity_bonus"] = velocity_bonus
+
+        # --- Sort: primary by views ---
         sorted_all = sorted(all_videos, key=lambda x: x.get("view_count", 0), reverse=True)
+
+        # Find breakthrough videos: channels <50K subs with high views AND good velocity
+        breakthroughs = sorted(
+            [v for v in all_videos
+             if 0 < v.get("subscriber_count", 0) < 50000
+             and v.get("view_count", 0) > 5000
+             and v.get("views_per_day", 0) > 50],  # at least 50 views/day
+            key=lambda x: x.get("breakthrough_score", 0),
+            reverse=True,
+        )[:10]
+        logger.info(f"Found {len(breakthroughs)} breakthrough videos (small channel, big views)")
         top_for_thumbs = sorted_all[:30]
 
         logger.info(f"Downloading thumbnails for top {len(top_for_thumbs)} videos...")
@@ -338,7 +443,9 @@ class ResearchStep(BaseStep):
                 "video_id": v["video_id"],
                 "title": v["title"],
                 "channel": v["channel_title"],
+                "subscribers": v.get("subscriber_count", 0),
                 "views": v.get("view_count", 0),
+                "breakthrough_score": v.get("breakthrough_score", 0),
                 "likes": v.get("like_count", 0),
                 "comments": v.get("comment_count", 0),
                 "duration": v.get("duration", ""),
@@ -351,6 +458,20 @@ class ResearchStep(BaseStep):
             else:
                 en_summary.append(entry)
 
+        # Breakthrough summary for Claude
+        breakthrough_summary = []
+        for v in breakthroughs[:5]:
+            breakthrough_summary.append({
+                "title": v["title"],
+                "channel": v["channel_title"],
+                "subscribers": v.get("subscriber_count", 0),
+                "views": v.get("view_count", 0),
+                "views_per_day": v.get("views_per_day", 0),
+                "days_old": v.get("days_since_publish", 0),
+                "breakthrough_score": v.get("breakthrough_score", 0),
+                "video_id": v["video_id"],
+            })
+
         # Stats
         ru_views = [v.get("view_count", 0) for v in ru_videos if v.get("view_count")]
         en_views = [v.get("view_count", 0) for v in en_videos if v.get("view_count")]
@@ -359,28 +480,39 @@ class ResearchStep(BaseStep):
 
         prompt = f"""Проанализируй РЕАЛЬНЫЕ данные YouTube по теме: {topic}
 
-Поисковые запросы, которые использовались: {json.dumps(queries, ensure_ascii=False)}
+Поисковые запросы: {json.dumps(queries, ensure_ascii=False)}
 Период: последние 12 месяцев
-Сортировка: по количеству просмотров (самые популярные)
+Фильтр: только видео от 5 минут (длинный формат)
 
 Всего найдено: {len(ru_videos)} RU видео, {len(en_videos)} EN видео
 Средние просмотры: RU {avg_ru:,} / EN {avg_en:,}
 
-Топ русскоязычных видео (по просмотрам):
+=== ПРОРЫВНЫЕ РОЛИКИ (маленький канал — огромные просмотры) ===
+Это самые ценные находки — каналы с <50K подписчиков, у которых видео набрало непропорционально много просмотров.
+breakthrough_score = просмотры / подписчики (чем выше — тем вирусней)
+
+{json.dumps(breakthrough_summary, ensure_ascii=False, indent=2)}
+
+=== ТОП видео по просмотрам (RU) ===
+Включают данные о подписчиках канала — учитывай это при анализе!
 {json.dumps(ru_summary, ensure_ascii=False, indent=2)}
 
-Топ англоязычных видео (для сравнения):
+=== ТОП видео (EN, для сравнения) ===
 {json.dumps(en_summary, ensure_ascii=False, indent=2)}
 
 ЗАДАЧА:
-1. Найди САМУЮ СТРЕЛЬНУВШУЮ подтему/угол — что набирает больше всего просмотров
-2. Проанализируй ТОП-5 видео — почему именно они выстрелили
-3. Какие заголовки работают лучше всего (конкретные паттерны)
-4. Какие теги/ключевые слова у топовых видео
-5. Что упускают конкуренты — где можно сделать лучше
+ВАЖНО: для best_performing_video выбирай НЕ видео с самыми большими просмотрами от крупного канала,
+а видео с ЛУЧШИМ breakthrough_score (просмотры/подписчики). Канал с 1000 подписчиков и 50K просмотров
+ценнее чем канал с 2M подписчиков и 500K просмотров.
+
+1. ГЛАВНОЕ: найди ПРОРЫВНЫЕ темы/углы — что залетает даже у маленьких каналов (breakthrough_score > 5)
+2. Отдельно отметь крупные каналы (100K+ подписчиков) vs маленькие — что работает у маленьких?
+3. Проанализируй ТОП-5 видео — почему они выстрелили, учитывая размер канала
+4. Какие заголовки работают лучше всего (паттерны)
+5. Что упускают конкуренты — content gaps
 6. Предложи 5 заголовков которые переплюнут конкурентов
 7. Дай КОНКРЕТНУЮ рекомендацию — какое видео снимать, с каким углом
-8. Анализ обложек — общие паттерны у топовых видео"""
+8. Анализ обложек — паттерны у топовых видео"""
 
         response = self.ask_claude(ANALYSIS_SYSTEM_PROMPT, prompt)
 
@@ -394,6 +526,34 @@ class ResearchStep(BaseStep):
             else:
                 result = {"raw_response": response}
 
+        # Calculate average duration of top videos
+        durations_sec = [v.get("days_since_publish", 0) for v in sorted_all]  # placeholder
+        durations_sec = []
+        for v in sorted_all[:20]:
+            dur = _parse_duration_seconds(v.get("duration", ""))
+            if dur >= 300:  # only 5+ min videos
+                durations_sec.append(dur)
+        avg_duration_min = round(sum(durations_sec) / len(durations_sec) / 60, 1) if durations_sec else 12
+        # Best performing video duration
+        best_dur_min = round(_parse_duration_seconds(sorted_all[0].get("duration", "")) / 60, 1) if sorted_all else 12
+
+        result["_avg_duration_minutes"] = avg_duration_min
+        result["_best_video_duration_minutes"] = best_dur_min
+        result["_recommended_duration_minutes"] = round(avg_duration_min * 1.2, 0)  # 20% longer than average
+
+        # Attach breakthroughs to result
+        result["_breakthroughs"] = [{
+            "video_id": v["video_id"],
+            "title": v["title"],
+            "channel": v["channel_title"],
+            "views": v.get("view_count", 0),
+            "subscribers": v.get("subscriber_count", 0),
+            "breakthrough_score": v.get("breakthrough_score", 0),
+            "days_since_publish": v.get("days_since_publish", 0),
+            "views_per_day": v.get("views_per_day", 0),
+            "published_at": v.get("published_at", ""),
+        } for v in breakthroughs[:8]]
+
         # Attach metadata
         result["_search_queries"] = queries
         result["_videos_found_ru"] = len(ru_videos)
@@ -403,7 +563,13 @@ class ResearchStep(BaseStep):
         result["_avg_views_en"] = avg_en
         result["_raw_data_path"] = str(raw_path)
         result["_references_dir"] = str(references_dir)
-        result["_top_video"] = sorted_all[0] if sorted_all else {}
+        # Use breakthrough leader as top video (not just highest views)
+        if breakthroughs:
+            result["_top_video"] = breakthroughs[0]
+        elif sorted_all:
+            result["_top_video"] = sorted_all[0]
+        else:
+            result["_top_video"] = {}
         result["_period"] = "last 12 months"
 
         logger.info(

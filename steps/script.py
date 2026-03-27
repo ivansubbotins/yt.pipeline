@@ -88,8 +88,26 @@ class ScriptStep(BaseStep):
     def execute(self) -> dict:
         content_plan = self.get_previous_step_data("content_plan")
         research = self.get_previous_step_data("research")
+        sources = self.get_previous_step_data("sources")
 
         cta_instructions = self._build_cta_instructions()
+
+        # Build sources context if available
+        sources_context = ""
+        if sources and not sources.get("skipped"):
+            parts = []
+            for f in sources.get("facts", []):
+                parts.append(f"ФАКТ: {f.get('text', '')} (источник: {f.get('source', '?')})")
+            for q in sources.get("quotes", []):
+                parts.append(f"ЦИТАТА: \"{q.get('text', '')}\" — {q.get('author', '?')} ({q.get('source', '')})")
+            for s in sources.get("statistics", []):
+                parts.append(f"СТАТИСТИКА: {s.get('metric', '')} — {s.get('context', '')} (источник: {s.get('source', '?')})")
+            for ins in sources.get("key_insights", []):
+                parts.append(f"ИНСАЙТ: {ins}")
+            if parts:
+                sources_context = "\n\n=== РЕАЛЬНЫЕ ДАННЫЕ ИЗ ИСТОЧНИКОВ ===\n" + "\n".join(parts) + "\nВАЖНО: используй эти данные в сценарии! НЕ выдумывай факты — бери из источников.\n"
+
+        rec_duration = research.get('_recommended_duration_minutes', content_plan.get('target_length_minutes', 12))
 
         prompt = f"""Напиши скелет сценария для YouTube-видео.
 
@@ -104,9 +122,9 @@ class ScriptStep(BaseStep):
 - B-roll идеи: {json.dumps(content_plan.get('b_roll_ideas', []), ensure_ascii=False)}
 
 Ключевые слова для SEO: {json.dumps(research.get('keywords', []), ensure_ascii=False)}
-
+{sources_context}
 Требования:
-- Минимум 10 минут хронометража
+- Целевой хронометраж: {rec_duration} минут (на основе анализа конкурентов)
 - Обязательные блоки: хук (30 сек), интро, 3-5 основных блоков, кульминация, CTA+аутро
 - Тайминг (timestamp_start) и длительность (duration_seconds) для КАЖДОГО блока
 - Ключевые переходы (transition_to_next) между блоками

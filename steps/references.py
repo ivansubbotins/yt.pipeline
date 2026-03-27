@@ -83,7 +83,7 @@ class ReferencesStep(BaseStep):
         raw_path = refs_dir / "videos_raw.json"
         videos_data = []
         if raw_path.exists():
-            with open(raw_path, "r") as f:
+            with open(raw_path, "r", encoding="utf-8") as f:
                 videos_data = json.load(f)
 
         # Build image content for Claude Vision (top 10 thumbnails)

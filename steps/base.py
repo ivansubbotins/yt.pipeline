@@ -43,9 +43,14 @@ class BaseStep(ABC):
         ...
 
     def get_channel_context(self) -> dict:
-        """Load channel context (cached per step instance)."""
+        """Load channel context (cached per step instance). Uses per-channel context if project has channel_id."""
         if not hasattr(self, "_channel_ctx"):
-            self._channel_ctx = load_channel_context()
+            channel_id = self.state.channel_id
+            if channel_id:
+                from config import load_channel_context_by_id
+                self._channel_ctx = load_channel_context_by_id(channel_id)
+            else:
+                self._channel_ctx = load_channel_context()
         return self._channel_ctx
 
     def _build_author_context(self) -> str:

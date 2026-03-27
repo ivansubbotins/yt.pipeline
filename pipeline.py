@@ -6,6 +6,7 @@ from datetime import datetime
 
 from state import PipelineState, StepStatus, PIPELINE_STEPS
 from steps.research import ResearchStep
+from steps.sources import SourcesStep
 from steps.content_plan import ContentPlanStep
 from steps.references import ReferencesStep
 from steps.script import ScriptStep
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 # Map step names to their implementations
 STEP_CLASSES = {
     "research": ResearchStep,
+    "sources": SourcesStep,
     "content_plan": ContentPlanStep,
     "references": ReferencesStep,
     "script": ScriptStep,
@@ -212,7 +214,7 @@ class Pipeline:
         """Export all generated content to a review file."""
         review_text = self.review()
         review_file = self.state.project_dir / "REVIEW.txt"
-        with open(review_file, "w") as f:
+        with open(review_file, "w", encoding="utf-8") as f:
             f.write(review_text)
         logger.info(f"Review exported to {review_file}")
         return str(review_file)

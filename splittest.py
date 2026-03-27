@@ -181,6 +181,57 @@ def finish_test(project_id: str, method: str = "auto", winner_index: int | None 
     return test
 
 
+def analyze_test(project_id: str) -> dict:
+    """Analyze split-test results with matrix aggregation.
+
+    Returns per-title and per-thumbnail performance if title_index/thumbnail_index
+    are present in variants (matrix mode).
+    """
+    test = load_test(project_id)
+    if not test:
+        raise ValueError(f"No split-test found for {project_id}")
+
+    result = {"variants": test["variants"], "status": test["status"]}
+
+    # Check if this is a matrix test (variants have title_index and thumbnail_index)
+    has_matrix = all("title_index" in v and "thumbnail_index" in v for v in test["variants"])
+
+    if has_matrix:
+        # Aggregate by title
+        title_perf = {}
+        for v in test["variants"]:
+            ti = v["title_index"]
+            if ti not in title_perf:
+                title_perf[ti] = {"title": v["title"], "total_views": 0, "variant_count": 0}
+            title_perf[ti]["total_views"] += v.get("total_views_delta", 0)
+            title_perf[ti]["variant_count"] += 1
+
+        # Aggregate by thumbnail
+        thumb_perf = {}
+        for v in test["variants"]:
+            ci = v["thumbnail_index"]
+            if ci not in thumb_perf:
+                thumb_perf[ci] = {"thumbnail": v["thumbnail"], "total_views": 0, "variant_count": 0}
+            thumb_perf[ci]["total_views"] += v.get("total_views_delta", 0)
+            thumb_perf[ci]["variant_count"] += 1
+
+        # Best title and best thumbnail
+        best_title = max(title_perf.values(), key=lambda x: x["total_views"]) if title_perf else None
+        best_thumb = max(thumb_perf.values(), key=lambda x: x["total_views"]) if thumb_perf else None
+
+        result["matrix_analysis"] = {
+            "by_title": list(title_perf.values()),
+            "by_thumbnail": list(thumb_perf.values()),
+            "best_title": best_title,
+            "best_thumbnail": best_thumb,
+        }
+
+    if test.get("winner"):
+        result["winner"] = test["winner"]
+
+    return result
+
+
 def get_all_running() -> list[str]:
     """Get all project IDs with running split-tests."""
     running = []

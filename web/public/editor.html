@@ -4,36 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cover Editor — YouTube Pipeline</title>
+<link rel="stylesheet" href="/shared.css">
 <style>
 @font-face { font-family: 'Oswald-Bold'; src: url('/api/fonts/Oswald-Bold.ttf') format('truetype'); font-weight: bold; }
 
-:root {
-  --bg: #0c0c0c;
-  --card: #151515;
-  --card2: #1a1a1a;
-  --border: #262626;
-  --border-light: #333;
-  --text: #e8e8e8;
-  --text2: #bbb;
-  --muted: #666;
-  --blue: #3b82f6;
-  --red: #ef4444;
-  --green: #22c55e;
-  --purple: #a855f7;
-  --magenta: #ec4899;
-  --orange: #f59e0b;
-  --accent: #3b82f6;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-/* ── Top Bar ── */
-.topbar { height: 48px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; }
-.topbar .back-btn { color: var(--muted); text-decoration: none; font-size: 18px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.15s; }
-.topbar .back-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-.topbar h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+/* ── Top Bar (editor-specific) ── */
+.topbar h1 { letter-spacing: -0.3px; }
 .topbar h1 span { color: var(--magenta); }
-.topbar .spacer { flex: 1; }
 .topbar .project-name { font-size: 11px; color: var(--muted); background: var(--bg); padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border); }
 .topbar .top-actions { display: flex; gap: 6px; }
 
@@ -150,31 +129,19 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 4px; }
 .expert-status.loaded { border: 1px solid var(--green); }
 .expert-status.empty { border: 1px solid var(--orange); }
 
-/* ── Buttons ── */
-.btn { padding: 7px 14px; border: none; border-radius: 7px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.1px; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn:active { transform: scale(0.97); }
-.btn-blue { background: var(--accent); color: #fff; }
-.btn-blue:hover { background: #2563eb; }
-.btn-green { background: var(--green); color: #fff; }
-.btn-green:hover { background: #16a34a; }
-.btn-red { background: var(--red); color: #fff; }
-.btn-outline { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--text2); }
-.btn-outline:hover { border-color: var(--muted); background: rgba(255,255,255,0.06); color: var(--text); }
-.btn-magenta { background: var(--magenta); color: #fff; }
+/* ── Buttons (editor overrides) ── */
+.btn { padding: 7px 14px; font-size: 11px; letter-spacing: 0.1px; }
 
-/* ── Toast ── */
-.toast { position: fixed; top: 60px; right: 24px; background: var(--card2); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 18px; font-size: 12px; z-index: 200; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.4); font-weight: 500; backdrop-filter: blur(8px); }
-.toast.show { display: block; animation: toastIn 0.25s ease-out; }
-.toast.error { border-color: var(--red); background: rgba(239,68,68,0.1); }
+/* ── Toast (editor position override) ── */
+.toast { top: 60px; bottom: auto; backdrop-filter: blur(8px); }
+.toast.show { animation: toastIn 0.25s ease-out; }
 @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ── Prompt area ── */
 .prompt-area { width: 100%; min-height: 52px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 11px; resize: vertical; outline: none; font-family: inherit; transition: border-color 0.15s; }
 .prompt-area:focus { border-color: var(--accent); }
 .prompt-result { width: 100%; min-height: 44px; padding: 8px 10px; background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.15); border-radius: 6px; color: var(--text); font-size: 10px; resize: vertical; outline: none; font-family: inherit; margin-top: 6px; }
-.loading { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 4px; }
-@keyframes spin { to { transform: rotate(360deg); } }
+/* loading and spin inherited from shared.css */
 
 /* ── Intensity slider row ── */
 .intensity-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; padding: 8px 0; }

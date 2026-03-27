@@ -23,6 +23,7 @@ class StepStatus(str, Enum):
 
 PIPELINE_STEPS = [
     "research",
+    "sources",
     "content_plan",
     "references",
     "script",
@@ -47,8 +48,13 @@ class PipelineState:
 
     def _load(self) -> dict:
         if self.state_file.exists():
-            with open(self.state_file) as f:
-                return json.load(f)
+            with open(self.state_file, encoding="utf-8") as f:
+                state = json.load(f)
+            # Migrate: add missing pipeline steps
+            for step in PIPELINE_STEPS:
+                if step not in state.get("steps", {}):
+                    state["steps"][step] = {"status": StepStatus.PENDING, "data": {}, "log": []}
+            return state
         return self._init_state()
 
     def _init_state(self) -> dict:
@@ -57,6 +63,7 @@ class PipelineState:
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
             "topic": "",
+            "channel_id": "",
             "current_step": PIPELINE_STEPS[0],
             "steps": {step: {"status": StepStatus.PENDING, "data": {}, "log": []} for step in PIPELINE_STEPS},
         }
@@ -67,7 +74,7 @@ class PipelineState:
         if state is None:
             state = self._state
         state["updated_at"] = datetime.now().isoformat()
-        with open(self.state_file, "w") as f:
+        with open(self.state_file, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2, default=str)
 
     @property
@@ -77,6 +84,15 @@ class PipelineState:
     @topic.setter
     def topic(self, value: str):
         self._state["topic"] = value
+        self._save()
+
+    @property
+    def channel_id(self) -> str:
+        return self._state.get("channel_id", "")
+
+    @channel_id.setter
+    def channel_id(self, value: str):
+        self._state["channel_id"] = value
         self._save()
 
     @property

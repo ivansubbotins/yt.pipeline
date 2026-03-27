@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 """YouTube Pipeline Agent — CLI entry point.
 
 Usage:
@@ -66,8 +69,13 @@ def generate_project_id(topic: str) -> str:
 def cmd_new(args):
     topic = " ".join(args.topic)
     project_id = generate_project_id(topic)
+    channel_id = getattr(args, 'channel', '') or ''
 
     pipe = Pipeline(project_id, topic=topic)
+    if channel_id:
+        pipe.state.channel_id = channel_id
+        pipe.state._save()
+        print(f"Канал: {channel_id}")
     print(f"Создан проект: {project_id}")
     print(f"Тема: {topic}")
     print(f"Директория: {pipe.state.project_dir}")
@@ -335,6 +343,105 @@ def cmd_auth(_args):
         print("Авторизация выполнена, но канал не найден.")
 
 
+def cmd_channel_videos(args):
+    """List videos from a YouTube channel."""
+    import json as json_mod
+    from config import get_channel_token_path
+    from youtube_api import YouTubeAPI
+
+    token_path = get_channel_token_path(args.channel_id)
+    yt = YouTubeAPI(token_file=token_path)
+    yt.authenticate()
+    videos = yt.list_channel_videos(max_results=args.max)
+
+    # Cache results
+    if args.channel_id:
+        from config import CHANNELS_DIR
+        cache_file = CHANNELS_DIR / args.channel_id / "videos_cache.json"
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json_mod.dump({"videos": videos, "cached_at": datetime.now().isoformat()}, f, ensure_ascii=False, indent=2)
+
+    print(json_mod.dumps(videos, ensure_ascii=False, indent=2))
+
+
+def cmd_recommend_topics(args):
+    """Generate topic recommendations based on channel's video performance."""
+    import json as json_mod
+    from config import get_channel_token_path, load_channel_context_by_id, CHANNELS_DIR
+    from youtube_api import YouTubeAPI
+    import anthropic
+
+    channel_id = args.channel_id
+    ctx = load_channel_context_by_id(channel_id)
+
+    # Try cache first
+    cache_file = CHANNELS_DIR / channel_id / "videos_cache.json" if channel_id else None
+    videos = []
+    if cache_file and cache_file.exists():
+        with open(cache_file, "r", encoding="utf-8") as f:
+            cached = json_mod.load(f)
+        videos = cached.get("videos", [])
+    else:
+        token_path = get_channel_token_path(channel_id)
+        yt = YouTubeAPI(token_file=token_path)
+        yt.authenticate()
+        videos = yt.list_channel_videos(max_results=50)
+
+    if not videos:
+        print("Нет видео на канале")
+        return
+
+    # Build prompt
+    niche = ctx.get("niche", "")
+    audience = ctx.get("target_audience", "")
+    channel_name = ctx.get("channel", {}).get("name", "")
+
+    videos_summary = json_mod.dumps(
+        [{"title": v["title"], "views": v["views"], "likes": v["likes"], "published_at": v["published_at"]} for v in videos[:30]],
+        ensure_ascii=False, indent=2
+    )
+
+    client = anthropic.Anthropic()
+    result = ""
+    with client.messages.stream(
+        model="claude-sonnet-4-20250514",
+        max_tokens=8000,
+        system="Ты — YouTube-стратег. Анализируешь видео канала и предлагаешь темы для новых видео.",
+        messages=[{"role": "user", "content": f"""Проанализируй видео канала и предложи темы для новых видео.
+
+Канал: {channel_name}
+Ниша: {niche}
+Целевая аудитория: {audience}
+
+Видео канала (от самого популярного к наименее):
+{videos_summary}
+
+Задача:
+1. Какие темы/форматы залетают лучше всего на ЭТОМ канале?
+2. Какие темы проваливаются?
+3. Предложи 8-10 новых тем, которые с высокой вероятностью залетят, основываясь на данных.
+
+Ответ в JSON:
+{{
+  "top_performing_themes": ["тема 1", "тема 2"],
+  "underperforming_themes": ["тема 1"],
+  "recommendations": [
+    {{
+      "topic": "Предложенная тема видео",
+      "rationale": "Почему залетит (на основе данных канала)",
+      "estimated_appeal": "high / medium",
+      "related_existing": "Какое видео канала показывает что эта тема работает"
+    }}
+  ]
+}}"""}],
+    ) as stream:
+        for text in stream.text_stream:
+            result += text
+
+    print(result)
+
+
 def cmd_splittest_start(args):
     """Start a split-test from config file."""
     import json as json_mod
@@ -377,6 +484,7 @@ def main():
     # new
     p_new = subparsers.add_parser("new", help="Создать новый проект")
     p_new.add_argument("topic", nargs="+", help="Тема видео")
+    p_new.add_argument("--channel", default="", help="ID канала")
 
     # run
     p_run = subparsers.add_parser("run", help="Запустить автоматические шаги")
@@ -427,6 +535,14 @@ def main():
     subparsers.add_parser("auth", help="Авторизация YouTube API")
 
     # split-test
+    # Channel commands
+    p_chvid = subparsers.add_parser("channel-videos", help="Выгрузить видео с канала")
+    p_chvid.add_argument("channel_id", nargs="?", default="", help="ID канала")
+    p_chvid.add_argument("--max", type=int, default=50, help="Макс. кол-во видео")
+
+    p_chrec = subparsers.add_parser("recommend-topics", help="Рекомендации тем для канала")
+    p_chrec.add_argument("channel_id", nargs="?", default="", help="ID канала")
+
     p_st_start = subparsers.add_parser("splittest-start", help="Запустить A/B тест")
     p_st_start.add_argument("project_id", help="ID проекта")
 
@@ -456,6 +572,8 @@ def main():
         "publish": cmd_publish,
         "playlists": cmd_playlists,
         "auth": cmd_auth,
+        "channel-videos": cmd_channel_videos,
+        "recommend-topics": cmd_recommend_topics,
         "splittest-start": cmd_splittest_start,
         "splittest-finish": cmd_splittest_finish,
     }

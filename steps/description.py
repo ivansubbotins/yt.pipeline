@@ -319,7 +319,7 @@ SEO-ключевые слова из исследования:
         # Format and save the complete description file
         description_text = _format_description_file(result)
         desc_file = self.state.project_dir / "description.txt"
-        with open(desc_file, "w") as f:
+        with open(desc_file, "w", encoding="utf-8") as f:
             f.write(description_text)
         result["description_file"] = str(desc_file)
         result["description_full_text"] = description_text

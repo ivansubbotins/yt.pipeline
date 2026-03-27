@@ -48,6 +48,78 @@ const crypto = require('crypto');
 const activeSessions = new Map(); // token -> { user, created }
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// ── 2FA: TOTP (Google Authenticator) ──
+const TOTP_SECRET_FILE = path.join(__dirname, '..', '.totp_secret');
+let TOTP_ENABLED = false;
+let TOTP_SECRET = '';
+
+// Load or check TOTP
+try {
+  if (fs.existsSync(TOTP_SECRET_FILE)) {
+    TOTP_SECRET = fs.readFileSync(TOTP_SECRET_FILE, 'utf8').trim();
+    TOTP_ENABLED = TOTP_SECRET.length > 0;
+  }
+} catch(e) {}
+
+function base32Decode(base32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const c of base32.toUpperCase().replace(/=+$/, '')) {
+    const val = chars.indexOf(c);
+    if (val === -1) continue;
+    bits += val.toString(2).padStart(5, '0');
+  }
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.substring(i, i + 8), 2));
+  }
+  return Buffer.from(bytes);
+}
+
+function base32Encode(buffer) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const byte of buffer) bits += byte.toString(2).padStart(8, '0');
+  let result = '';
+  for (let i = 0; i < bits.length; i += 5) {
+    const chunk = bits.substring(i, i + 5).padEnd(5, '0');
+    result += chars[parseInt(chunk, 2)];
+  }
+  return result;
+}
+
+function generateTOTP(secret, timeStep = 30, digits = 6) {
+  const time = Math.floor(Date.now() / 1000 / timeStep);
+  const timeBuffer = Buffer.alloc(8);
+  timeBuffer.writeUInt32BE(Math.floor(time / 0x100000000), 0);
+  timeBuffer.writeUInt32BE(time & 0xFFFFFFFF, 4);
+  const key = base32Decode(secret);
+  const hmac = crypto.createHmac('sha1', key).update(timeBuffer).digest();
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const code = ((hmac[offset] & 0x7f) << 24 | hmac[offset+1] << 16 | hmac[offset+2] << 8 | hmac[offset+3]) % (10 ** digits);
+  return code.toString().padStart(digits, '0');
+}
+
+function verifyTOTP(secret, token) {
+  // Check current and ±1 time window (30 sec tolerance)
+  for (const offset of [0, -1, 1]) {
+    const time = Math.floor(Date.now() / 1000 / 30) + offset;
+    const timeBuffer = Buffer.alloc(8);
+    timeBuffer.writeUInt32BE(Math.floor(time / 0x100000000), 0);
+    timeBuffer.writeUInt32BE(time & 0xFFFFFFFF, 4);
+    const key = base32Decode(secret);
+    const hmac = crypto.createHmac('sha1', key).update(timeBuffer).digest();
+    const off = hmac[hmac.length - 1] & 0x0f;
+    const code = ((hmac[off] & 0x7f) << 24 | hmac[off+1] << 16 | hmac[off+2] << 8 | hmac[off+3]) % 1000000;
+    if (code.toString().padStart(6, '0') === token) return true;
+  }
+  return false;
+}
+
+function generateTOTPSecret() {
+  return base32Encode(crypto.randomBytes(20));
+}
+
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
@@ -170,11 +242,15 @@ const MIME = {
 // ── Run python agent command ──
 function runAgent(args) {
   return new Promise((resolve, reject) => {
-    const pythonBin = path.join(PIPELINE_DIR, '.venv', 'bin', 'python3');
-    const python = fs.existsSync(pythonBin) ? pythonBin : 'python3';
+    // Try venv (Linux then Windows), then system python
+    const venvUnix = path.join(PIPELINE_DIR, '.venv', 'bin', 'python3');
+    const venvWin = path.join(PIPELINE_DIR, '.venv', 'Scripts', 'python.exe');
+    const python = fs.existsSync(venvUnix) ? venvUnix
+                 : fs.existsSync(venvWin) ? venvWin
+                 : (process.platform === 'win32' ? 'python' : 'python3');
     const proc = spawn(python, [AGENT_PY, ...args], {
       cwd: PIPELINE_DIR,
-      env: { ...process.env, PYTHONUNBUFFERED: '1' },
+      env: { ...process.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' },
     });
     let stdout = '';
     let stderr = '';
@@ -192,7 +268,12 @@ function runAgent(args) {
 function readState(projectId) {
   const stateFile = path.join(DATA_DIR, projectId, 'state.json');
   if (!fs.existsSync(stateFile)) return null;
-  return JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  } catch (e) {
+    console.error(`Error reading state for ${projectId}:`, e.message);
+    return null;
+  }
 }
 
 // ── List projects ──
@@ -205,6 +286,7 @@ function listProjects() {
       return {
         id: d,
         topic: state?.topic || '—',
+        channel_id: state?.channel_id || '',
         current_step: state?.current_step || '—',
         created_at: state?.created_at || '—',
         updated_at: state?.updated_at || '—',
@@ -217,6 +299,7 @@ function listProjects() {
 // ── Read POST body ──
 function readBody(req) {
   return new Promise((resolve, reject) => {
+    req.setEncoding('utf8');
     let body = '';
     req.on('data', c => { body += c; if (body.length > 1e6) req.destroy(); });
     req.on('end', () => resolve(body));
@@ -277,6 +360,19 @@ http.createServer(async (req, res) => {
       return;
     }
     if (body.user === ADMIN_USER && body.pass === ADMIN_PASS) {
+      // Check 2FA if enabled
+      if (TOTP_ENABLED) {
+        if (!body.totp) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, need_totp: true, error: 'Введите код из Google Authenticator' }));
+          return;
+        }
+        if (!verifyTOTP(TOTP_SECRET, body.totp)) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'Неверный код 2FA' }));
+          return;
+        }
+      }
       const token = generateToken();
       activeSessions.set(token, { user: body.user, created: Date.now() });
       res.writeHead(200, {
@@ -300,6 +396,67 @@ http.createServer(async (req, res) => {
       'Location': '/login.html',
     });
     res.end();
+    return;
+  }
+
+  // GET /api/2fa/status — Check if 2FA is enabled (no auth required for login page)
+  if (pathname === '/api/2fa/status' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, enabled: TOTP_ENABLED }));
+    return;
+  }
+
+  // POST /api/2fa/setup — Generate TOTP secret and QR URL (auth required)
+  if (pathname === '/api/2fa/setup' && req.method === 'POST') {
+    if (!isAuthenticated(req)) { res.writeHead(401); res.end('Unauthorized'); return; }
+    const secret = TOTP_SECRET || generateTOTPSecret();
+    const issuer = 'YT-Pipeline';
+    const account = ADMIN_USER;
+    const otpauthUrl = `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}&digits=6&period=30`;
+    // Don't save yet — user must verify first
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, secret, otpauth_url: otpauthUrl, qr_text: otpauthUrl }));
+    return;
+  }
+
+  // POST /api/2fa/verify — Verify TOTP code and enable 2FA
+  if (pathname === '/api/2fa/verify' && req.method === 'POST') {
+    if (!isAuthenticated(req)) { res.writeHead(401); res.end('Unauthorized'); return; }
+    const body = JSON.parse(await readBody(req));
+    const { secret, code } = body;
+    if (!secret || !code) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Secret and code required' }));
+      return;
+    }
+    if (verifyTOTP(secret, code)) {
+      // Save secret and enable
+      fs.writeFileSync(TOTP_SECRET_FILE, secret);
+      TOTP_SECRET = secret;
+      TOTP_ENABLED = true;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, message: '2FA включена!' }));
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Неверный код. Попробуйте ещё раз.' }));
+    }
+    return;
+  }
+
+  // POST /api/2fa/disable — Disable 2FA
+  if (pathname === '/api/2fa/disable' && req.method === 'POST') {
+    if (!isAuthenticated(req)) { res.writeHead(401); res.end('Unauthorized'); return; }
+    const body = JSON.parse(await readBody(req));
+    if (TOTP_ENABLED && !verifyTOTP(TOTP_SECRET, body.code || '')) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Введите текущий код 2FA для отключения' }));
+      return;
+    }
+    try { fs.unlinkSync(TOTP_SECRET_FILE); } catch(e) {}
+    TOTP_SECRET = '';
+    TOTP_ENABLED = false;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: '2FA отключена' }));
     return;
   }
 
@@ -418,6 +575,18 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // Serve shared CSS without auth (needed by login page)
+  if (pathname === '/shared.css') {
+    const cssPath = path.join(__dirname, 'public', 'shared.css');
+    if (fs.existsSync(cssPath)) {
+      res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+      fs.createReadStream(cssPath).pipe(res);
+    } else {
+      res.writeHead(404); res.end('Not found');
+    }
+    return;
+  }
+
   // OPTIONS preflight — no auth
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
@@ -443,6 +612,328 @@ http.createServer(async (req, res) => {
   }
 
   // ── API Routes (auth required) ──
+
+  // ── Channel Management ──
+
+  // GET /api/channels — List all channels
+  if (pathname === '/api/channels' && req.method === 'GET') {
+    const indexFile = path.join(DATA_DIR, 'channels', 'channels.json');
+    const channels = fs.existsSync(indexFile) ? JSON.parse(fs.readFileSync(indexFile, 'utf8')) : [];
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, channels }));
+    return;
+  }
+
+  // POST /api/channels — Create channel
+  if (pathname === '/api/channels' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const indexFile = path.join(DATA_DIR, 'channels', 'channels.json');
+      const channels = fs.existsSync(indexFile) ? JSON.parse(fs.readFileSync(indexFile, 'utf8')) : [];
+      // Simple transliteration for channel ID
+      const translit = { 'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya' };
+      const slug = body.name.toLowerCase().split('').map(c => translit[c] || c).join('').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 40);
+      const channelId = slug || 'channel';
+      const channelDir = path.join(DATA_DIR, 'channels', channelId);
+      if (!fs.existsSync(channelDir)) {
+        fs.mkdirSync(channelDir, { recursive: true });
+        const context = {
+          author: { name: '', full_name: '', who: '', expertise: [], experience: '', tone: '' },
+          channel: { name: body.name || '', youtube_url: body.youtube_url || '', telegram_url: '', telegram_group: '', website: '', social_links: {} },
+          niche: body.niche || '',
+          target_audience: body.target_audience || '',
+          cta: { subscribe: '', like_comment: '', lead_magnet: { enabled: false }, mid_roll: { enabled: false }, end_screen: { enabled: true, text: '' } },
+          description_links: [], hashtags_always: [], tags_always: [],
+        };
+        fs.writeFileSync(path.join(channelDir, 'context.json'), JSON.stringify(context, null, 2));
+        // Update index
+        const entry = { id: channelId, name: body.name, niche: body.niche || '', youtube_url: body.youtube_url || '', target_audience: body.target_audience || '', created_at: new Date().toISOString() };
+        // Check if already exists
+        const existing = channels.find(c => c.id === channelId);
+        if (!existing) channels.push(entry);
+        const idxDir = path.join(DATA_DIR, 'channels');
+        fs.mkdirSync(idxDir, { recursive: true });
+        fs.writeFileSync(path.join(idxDir, 'channels.json'), JSON.stringify(channels, null, 2));
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, channel_id: channelId }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/channels/:id — Get channel context
+  if (pathname.match(/^\/api\/channels\/[^/]+$/) && req.method === 'GET') {
+    const channelId = pathname.split('/')[3];
+    const ctxFile = path.join(DATA_DIR, 'channels', channelId, 'context.json');
+    if (fs.existsSync(ctxFile)) {
+      const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, context: ctx, channel_id: channelId }));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'Channel not found' }));
+    }
+    return;
+  }
+
+  // PUT /api/channels/:id — Update channel context
+  if (pathname.match(/^\/api\/channels\/[^/]+$/) && req.method === 'PUT') {
+    try {
+      const channelId = pathname.split('/')[3];
+      const body = JSON.parse(await readBody(req));
+      const channelDir = path.join(DATA_DIR, 'channels', channelId);
+      fs.mkdirSync(channelDir, { recursive: true });
+      fs.writeFileSync(path.join(channelDir, 'context.json'), JSON.stringify(body.context || body, null, 2));
+      // Update index entry
+      const indexFile = path.join(DATA_DIR, 'channels', 'channels.json');
+      if (fs.existsSync(indexFile)) {
+        const channels = JSON.parse(fs.readFileSync(indexFile, 'utf8'));
+        const idx = channels.findIndex(c => c.id === channelId);
+        if (idx >= 0) {
+          if (body.context?.channel?.name) channels[idx].name = body.context.channel.name;
+          if (body.context?.niche) channels[idx].niche = body.context.niche;
+          if (body.context?.target_audience) channels[idx].target_audience = body.context.target_audience;
+          fs.writeFileSync(indexFile, JSON.stringify(channels, null, 2));
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/channels/:id/auth-status — Check YouTube auth for channel
+  if (pathname.match(/^\/api\/channels\/[^/]+\/auth-status$/) && req.method === 'GET') {
+    const channelId = pathname.split('/')[3];
+    const tokenFile = path.join(DATA_DIR, 'channels', channelId, 'token.json');
+    const hasToken = fs.existsSync(tokenFile);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, connected: hasToken }));
+    return;
+  }
+
+  // GET /api/channels/:id/videos — Fetch channel's own videos
+  if (pathname.match(/^\/api\/channels\/[^/]+\/videos$/) && req.method === 'GET') {
+    try {
+      const channelId = pathname.split('/')[3];
+      // Check cache first (TTL 24h)
+      const cacheFile = path.join(DATA_DIR, 'channels', channelId, 'videos_cache.json');
+      if (fs.existsSync(cacheFile)) {
+        const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        const cachedAt = new Date(cached.cached_at || 0);
+        const hoursOld = (Date.now() - cachedAt.getTime()) / 3600000;
+        if (hoursOld < 24 && cached.videos) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, videos: cached.videos, cached: true }));
+          return;
+        }
+      }
+      // Fetch fresh
+      const output = await runAgent(['channel-videos', channelId || '']);
+      let videos = [];
+      try { videos = JSON.parse(output); } catch(e) {}
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, videos }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/channels/:id/recommendations — Topic recommendations
+  if (pathname.match(/^\/api\/channels\/[^/]+\/recommendations$/) && req.method === 'GET') {
+    try {
+      const channelId = pathname.split('/')[3];
+      const output = await runAgent(['recommend-topics', channelId || '']);
+      let recommendations = {};
+      try {
+        const match = output.match(/\{[\s\S]*\}/);
+        if (match) recommendations = JSON.parse(match[0]);
+      } catch(e) {}
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...recommendations }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // POST /api/audience-fit — Check topic vs channel audience fit
+  if (pathname === '/api/audience-fit' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const { channel_id, topic } = body;
+      if (!topic) throw new Error('Topic required');
+
+      // Load channel context
+      let niche = '', audience = '', channelName = '';
+      if (channel_id) {
+        const ctxFile = path.join(DATA_DIR, 'channels', channel_id, 'context.json');
+        if (fs.existsSync(ctxFile)) {
+          const ctx = JSON.parse(fs.readFileSync(ctxFile, 'utf8'));
+          niche = ctx.niche || '';
+          audience = ctx.target_audience || '';
+          channelName = ctx.channel?.name || '';
+        }
+      }
+
+      if (!niche && !audience) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, fit: 'good', message: 'Ниша канала не задана — проверка невозможна' }));
+        return;
+      }
+
+      const result = await callClaude(
+        'Ты оцениваешь соответствие темы видео целевой аудитории канала. Ответ СТРОГО JSON, без markdown.',
+        `Канал: ${channelName}\nНиша канала: ${niche}\nЦелевая аудитория: ${audience}\nПредложенная тема видео: ${topic}\n\nОцени, насколько эта тема подходит для данного канала и его аудитории.\n\nОтвет JSON:\n{"fit": "good" или "warning" или "poor", "message": "Объяснение на русском (1-2 предложения). Если warning/poor — объясни почему ЦА может не совпасть и предложи как адаптировать тему."}`
+      );
+
+      let fitResult = { fit: 'good', message: '' };
+      try {
+        const match = result.match(/\{[\s\S]*\}/);
+        if (match) fitResult = JSON.parse(match[0]);
+      } catch(e) {}
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...fitResult }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // ── Sources Management ──
+
+  // GET /api/project/:id/sources — List project sources (auto-populate from research)
+  if (pathname.match(/^\/api\/project\/[^/]+\/sources$/) && req.method === 'GET') {
+    const projectId = pathname.split('/')[3];
+    const filePath = path.join(DATA_DIR, projectId, 'sources.json');
+
+    // Auto-populate from research if sources empty/missing
+    if (!fs.existsSync(filePath) || JSON.parse(fs.readFileSync(filePath, 'utf8')).items.length === 0) {
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      if (fs.existsSync(stateFile)) {
+        try {
+          const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+          const research = state.steps?.research?.data;
+          if (research && (research._breakthroughs || research.competitors)) {
+            const items = [];
+            const seen = new Set();
+            // Add breakthroughs
+            for (const v of (research._breakthroughs || []).slice(0, 5)) {
+              if (!v.video_id || seen.has(v.video_id)) continue;
+              seen.add(v.video_id);
+              items.push({
+                id: String(Date.now()) + items.length,
+                type: 'youtube', url: `https://youtube.com/watch?v=${v.video_id}`,
+                title: v.title || '', status: 'pending', auto_added: true,
+                views: v.views || 0, breakthrough_score: v.breakthrough_score || 0,
+              });
+            }
+            // Add top competitors
+            for (const c of (research.competitors || []).slice(0, 3)) {
+              if (!c.video_id || seen.has(c.video_id)) continue;
+              seen.add(c.video_id);
+              items.push({
+                id: String(Date.now()) + items.length,
+                type: 'youtube', url: `https://youtube.com/watch?v=${c.video_id}`,
+                title: c.video_title || '', status: 'pending', auto_added: true,
+              });
+            }
+            if (items.length > 0) {
+              const projDir = path.join(DATA_DIR, projectId);
+              fs.mkdirSync(projDir, { recursive: true });
+              fs.writeFileSync(filePath, JSON.stringify({ items, extracted: null }, null, 2));
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, items: [], extracted: null }));
+    }
+    return;
+  }
+
+  // POST /api/project/:id/sources — Add source (url or text)
+  if (pathname.match(/^\/api\/project\/[^/]+\/sources$/) && req.method === 'POST') {
+    try {
+      const projectId = pathname.split('/')[3];
+      const body = JSON.parse(await readBody(req));
+      const filePath = path.join(DATA_DIR, projectId, 'sources.json');
+
+      // Load existing
+      let sourcesData = { items: [], extracted: null };
+      if (fs.existsSync(filePath)) {
+        sourcesData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      }
+
+      // Add new item
+      const newItem = {
+        id: String(Date.now()),
+        type: body.type || 'url', // 'url', 'text', or 'notebook'
+        url: body.url || '',
+        content: body.content || '',
+        notebook_id: body.notebook_id || '',
+        title: body.title || '',
+        status: 'pending',
+        added_at: new Date().toISOString(),
+      };
+      sourcesData.items.push(newItem);
+
+      // Ensure project dir exists
+      const projDir = path.join(DATA_DIR, projectId);
+      fs.mkdirSync(projDir, { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(sourcesData, null, 2));
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, item: newItem, total: sourcesData.items.length }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // DELETE /api/project/:id/sources/:sourceId — Remove source
+  if (pathname.match(/^\/api\/project\/[^/]+\/sources\/[^/]+$/) && req.method === 'DELETE') {
+    try {
+      const parts = pathname.split('/');
+      const projectId = parts[3];
+      const sourceId = parts[5];
+      const filePath = path.join(DATA_DIR, projectId, 'sources.json');
+
+      if (fs.existsSync(filePath)) {
+        const sourcesData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        sourcesData.items = sourcesData.items.filter(i => i.id !== sourceId);
+        fs.writeFileSync(filePath, JSON.stringify(sourcesData, null, 2));
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // Modify POST /api/new to accept channel_id — handled below in existing endpoint
 
   // POST /api/express/generate — Generate titles, descriptions for quick publish
   if (pathname === '/api/express/generate' && req.method === 'POST') {
@@ -524,7 +1015,61 @@ ${hasScript ? '- Описания должны точно отражать со�
     return;
   }
 
-  // POST /api/express/covers — Generate covers for quick publish
+  // POST /api/express/cover-prompts — Generate cover prompts WITHOUT images (for approval)
+  if (pathname === '/api/express/cover-prompts' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const topic = body.topic || '';
+      const title = body.title || topic;
+      const script = body.script || '';
+      const description = body.description || '';
+      const count = Math.min(body.count || 3, 5);
+
+      console.log('[Cover Prompts] Generating prompts for approval, topic:', topic, 'count:', count);
+
+      const promptResult = await callClaude(
+        `You generate creative prompts for YouTube thumbnail images. Return ONLY valid JSON, no markdown.`,
+        `Video title: "${title}"
+${script ? `Script excerpt: ${script.substring(0, 2000)}` : ''}
+${description ? `Description: ${description.substring(0, 500)}` : ''}
+
+Generate ${count} DIFFERENT creative prompts for YouTube thumbnail images.
+
+Return JSON array of objects:
+[
+  {
+    "prompt": "Full English prompt describing the visual scene (person pose, background, lighting, mood, effects)",
+    "text_on_image": "2-4 слова НА РУССКОМ для текста на обложке (КРУПНЫЙ, кликбейтный)",
+    "emotion": "emotion/mood (e.g. shocked, confident, excited)",
+    "style_hint": "visual style keywords (e.g. neon glow, cinematic, bright colors)",
+    "concept": "Краткое описание концепции на русском (1 предложение)"
+  }
+]
+
+Each prompt must have a DIFFERENT visual concept:
+- Different background (office, studio, dark, bright, outdoor, abstract)
+- Different pose (pointing, arms crossed, surprised face, thinking)
+- Different mood (dramatic, energetic, mysterious, confident)
+- Different color scheme`
+      );
+
+      let prompts = [];
+      const match = promptResult.match(/\[[\s\S]*\]/);
+      if (match) {
+        prompts = JSON.parse(match[0]);
+      }
+
+      console.log('[Cover Prompts] Generated', prompts.length, 'prompts');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, prompts }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // POST /api/express/covers — Generate covers for quick publish (accepts pre-approved prompts)
   if (pathname === '/api/express/covers' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
@@ -535,16 +1080,23 @@ ${hasScript ? '- Описания должны точно отражать со�
       const styleId = body.style_id || '';
       const count = Math.min(body.count || 3, 5);
 
-      // Generate smart cover prompts using Claude if we have context
+      // Use pre-approved prompts if provided, otherwise generate via Claude
       console.log('[Express Covers] Starting generation, topic:', topic, 'title:', title, 'count:', count);
       let coverPrompts = [];
-      const contextText = script || description || topic;
-      if (contextText.length > 30) {
-        try {
-          console.log('[Express Covers] Generating smart prompts via Claude...');
-          const promptResult = await callClaude(
-            `You generate creative prompts for YouTube thumbnail images. Return ONLY valid JSON array of strings, no markdown. Each prompt describes a visual scene for a thumbnail photo.`,
-            `Video title: "${title}"
+
+      if (body.prompts && body.prompts.length > 0) {
+        // Pre-approved prompts from the approval step
+        console.log('[Express Covers] Using', body.prompts.length, 'pre-approved prompts');
+        coverPrompts = body.prompts.map(p => typeof p === 'string' ? p : p.prompt || '');
+      } else {
+        // Fallback: generate via Claude
+        const contextText = script || description || topic;
+        if (contextText.length > 30) {
+          try {
+            console.log('[Express Covers] Generating smart prompts via Claude...');
+            const promptResult = await callClaude(
+              `You generate creative prompts for YouTube thumbnail images. Return ONLY valid JSON array of strings, no markdown. Each prompt describes a visual scene for a thumbnail photo.`,
+              `Video title: "${title}"
 ${script ? `Script excerpt: ${script.substring(0, 2000)}` : ''}
 ${description ? `Description: ${description.substring(0, 500)}` : ''}
 
@@ -556,14 +1108,15 @@ Generate ${count} DIFFERENT creative prompts for YouTube thumbnail images. Each 
 - Write in English, except text-on-image which should be in Russian
 
 Return JSON: ["prompt1", "prompt2", "prompt3"]`
-          );
-          const promptMatch = promptResult.match(/\[[\s\S]*\]/);
-          if (promptMatch) coverPrompts = JSON.parse(promptMatch[0]);
-        } catch(e) {
-          console.error('Cover prompt gen error:', e.message);
+            );
+            const promptMatch = promptResult.match(/\[[\s\S]*\]/);
+            if (promptMatch) coverPrompts = JSON.parse(promptMatch[0]);
+          } catch(e) {
+            console.error('Cover prompt gen error:', e.message);
+          }
         }
       }
-      console.log('[Express Covers] Got', coverPrompts.length, 'smart prompts, generating images...');
+      console.log('[Express Covers] Got', coverPrompts.length, 'prompts, generating images...');
 
       // Create temp express project dir
       const expressId = 'express-' + Date.now();
@@ -750,33 +1303,64 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
 
   // ── Split-Test API ──
 
-  // POST /api/splittest/start — Start a split-test
+  // POST /api/splittest/start — Start a split-test (supports legacy pairs + matrix mode)
   if (pathname === '/api/splittest/start' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
-      const { project_id, video_id, variants, rotation_hours, duration_hours } = body;
+      const { project_id, video_id, rotation_hours, duration_hours } = body;
 
-      if (!project_id || !video_id || !variants || variants.length < 2) {
-        throw new Error('Need project_id, video_id, and at least 2 variants');
+      if (!project_id || !video_id) {
+        throw new Error('Need project_id and video_id');
       }
 
-      // Resolve thumbnail paths from URLs to absolute paths
-      const resolvedVariants = variants.map(v => {
-        const resolved = { title: v.title || '' };
-        if (v.thumbnail) {
-          // thumbnail is like /api/file/express-xxx/thumbnails/custom_1.jpg
-          const thumbParts = v.thumbnail.replace('/api/file/', '').split('/');
-          const absPath = path.join(DATA_DIR, ...thumbParts);
-          if (fs.existsSync(absPath)) resolved.thumbnail = absPath;
-        }
-        return resolved;
-      });
+      // Helper: resolve thumbnail URL to absolute path
+      const resolveThumb = (url) => {
+        if (!url) return '';
+        const thumbParts = url.replace('/api/file/', '').split('/');
+        const absPath = path.join(DATA_DIR, ...thumbParts);
+        return fs.existsSync(absPath) ? absPath : '';
+      };
 
-      // Write variants config, then run Python splittest
+      let configData;
+
+      if (body.mode === 'matrix' && body.titles && body.thumbnails) {
+        // Matrix mode: titles × thumbnails
+        const titles = body.titles;
+        const thumbnails = body.thumbnails.map(resolveThumb);
+        const variants = [];
+        for (let ti = 0; ti < titles.length; ti++) {
+          for (let ci = 0; ci < thumbnails.length; ci++) {
+            if (variants.length >= 12) break;
+            variants.push({
+              title: titles[ti],
+              thumbnail: thumbnails[ci],
+              title_index: ti,
+              thumbnail_index: ci,
+            });
+          }
+        }
+        if (variants.length < 2) throw new Error('Need at least 2 variants (add more titles or thumbnails)');
+        configData = {
+          video_id, mode: 'matrix', titles, thumbnails,
+          variants, rotation_hours: rotation_hours || 6, duration_hours: duration_hours || 72
+        };
+      } else {
+        // Legacy pairs mode
+        const variants = body.variants || [];
+        if (variants.length < 2) throw new Error('Need at least 2 variants');
+        const resolvedVariants = variants.map(v => ({
+          title: v.title || '',
+          thumbnail: resolveThumb(v.thumbnail),
+        }));
+        configData = {
+          video_id, variants: resolvedVariants,
+          rotation_hours: rotation_hours || 6, duration_hours: duration_hours || 72
+        };
+      }
+
+      // Write config, then run Python splittest
       const configPath = path.join(DATA_DIR, project_id, 'splittest_config.json');
-      fs.writeFileSync(configPath, JSON.stringify({
-        video_id, variants: resolvedVariants, rotation_hours: rotation_hours || 6, duration_hours: duration_hours || 72
-      }));
+      fs.writeFileSync(configPath, JSON.stringify(configData));
 
       const output = await runAgent(['splittest-start', project_id]);
 
@@ -789,6 +1373,122 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // POST /api/project/:id/selected-titles — Save selected titles
+  if (pathname.match(/^\/api\/project\/[^/]+\/selected-titles$/) && req.method === 'POST') {
+    try {
+      const projectId = pathname.split('/')[3];
+      const body = JSON.parse(await readBody(req));
+      const filePath = path.join(DATA_DIR, projectId, 'selected_titles.json');
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/project/:id/selected-titles — Get selected titles
+  if (pathname.match(/^\/api\/project\/[^/]+\/selected-titles$/) && req.method === 'GET') {
+    const projectId = pathname.split('/')[3];
+    const filePath = path.join(DATA_DIR, projectId, 'selected_titles.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, titles: [], selectedIndices: [] }));
+    }
+    return;
+  }
+
+  // POST /api/project/:id/selected-angle — Save selected research angle
+  if (pathname.match(/^\/api\/project\/[^/]+\/selected-angle$/) && req.method === 'POST') {
+    try {
+      const projectId = pathname.split('/')[3];
+      const body = JSON.parse(await readBody(req));
+      const filePath = path.join(DATA_DIR, projectId, 'selected_angle.json');
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/project/:id/selected-angle — Get selected angle
+  if (pathname.match(/^\/api\/project\/[^/]+\/selected-angle$/) && req.method === 'GET') {
+    const projectId = pathname.split('/')[3];
+    const filePath = path.join(DATA_DIR, projectId, 'selected_angle.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, angle: null }));
+    }
+    return;
+  }
+
+  // POST /api/project/:id/selected-hook — Save selected hook
+  if (pathname.match(/^\/api\/project\/[^/]+\/selected-hook$/) && req.method === 'POST') {
+    try {
+      const projectId = pathname.split('/')[3];
+      const body = JSON.parse(await readBody(req));
+      const filePath = path.join(DATA_DIR, projectId, 'selected_hook.json');
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/project/:id/selected-hook — Get selected hook
+  if (pathname.match(/^\/api\/project\/[^/]+\/selected-hook$/) && req.method === 'GET') {
+    const projectId = pathname.split('/')[3];
+    const filePath = path.join(DATA_DIR, projectId, 'selected_hook.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, hookIndex: -1 }));
+    }
+    return;
+  }
+
+  // GET /api/project/:id/references — List reference thumbnails
+  if (pathname.match(/^\/api\/project\/[^/]+\/references$/) && req.method === 'GET') {
+    const projectId = pathname.split('/')[3];
+    const refsDir = path.join(DATA_DIR, projectId, 'references');
+    if (fs.existsSync(refsDir)) {
+      const files = fs.readdirSync(refsDir)
+        .filter(f => f.endsWith('.jpg') || f.endsWith('.png'))
+        .sort((a, b) => {
+          // Sort by view count (filename starts with Nk_)
+          const va = parseInt(a.split('k_')[0]) || 0;
+          const vb = parseInt(b.split('k_')[0]) || 0;
+          return vb - va;
+        })
+        .map(f => `/api/file/${projectId}/references/${f}`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, files }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, files: [] }));
     }
     return;
   }
@@ -852,7 +1552,9 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
   if (pathname === '/api/new' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
-      const output = await runAgent(['new', body.topic]);
+      const args = ['new', body.topic];
+      if (body.channel_id) args.push('--channel', body.channel_id);
+      const output = await runAgent(args);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, output }));
     } catch (err) {
