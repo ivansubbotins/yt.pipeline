@@ -42,6 +42,11 @@ class YouTubeAPI:
         if self._token_file.exists():
             with open(self._token_file, encoding="utf-8") as f:
                 token_data = json.load(f)
+            # Ensure client_id and client_secret are present
+            if "client_id" not in token_data:
+                token_data["client_id"] = YOUTUBE_CLIENT_ID
+            if "client_secret" not in token_data:
+                token_data["client_secret"] = YOUTUBE_CLIENT_SECRET
             creds = Credentials.from_authorized_user_info(token_data, SCOPES)
 
         if creds and creds.expired and creds.refresh_token:
