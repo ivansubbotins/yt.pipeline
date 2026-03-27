@@ -721,9 +721,11 @@ http.createServer(async (req, res) => {
   // GET /api/channels/:id/videos — Fetch channel's own videos
   if (pathname.match(/^\/api\/channels\/[^/]+\/videos$/) && req.method === 'GET') {
     try {
-      const channelId = pathname.split('/')[3];
+      let channelId = pathname.split('/')[3];
+      const isDefault = channelId === 'default';
       // Check cache first (TTL 24h)
-      const cacheFile = path.join(DATA_DIR, 'channels', channelId, 'videos_cache.json');
+      const cacheDir = isDefault ? PIPELINE_DIR : path.join(DATA_DIR, 'channels', channelId);
+      const cacheFile = path.join(cacheDir, 'videos_cache.json');
       if (fs.existsSync(cacheFile)) {
         const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
         const cachedAt = new Date(cached.cached_at || 0);
@@ -735,7 +737,7 @@ http.createServer(async (req, res) => {
         }
       }
       // Fetch fresh
-      const output = await runAgent(['channel-videos', channelId || '']);
+      const output = await runAgent(['channel-videos', isDefault ? '' : channelId]);
       let videos = [];
       try { videos = JSON.parse(output); } catch(e) {}
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -751,7 +753,7 @@ http.createServer(async (req, res) => {
   if (pathname.match(/^\/api\/channels\/[^/]+\/recommendations$/) && req.method === 'GET') {
     try {
       const channelId = pathname.split('/')[3];
-      const output = await runAgent(['recommend-topics', channelId || '']);
+      const output = await runAgent(['recommend-topics', channelId === 'default' ? '' : channelId]);
       let recommendations = {};
       try {
         const match = output.match(/\{[\s\S]*\}/);

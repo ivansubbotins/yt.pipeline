@@ -210,7 +210,7 @@ select.ctx-input { appearance: none; }
         <div class="settings-field"><label>Целевая аудитория</label><input class="ctx-input" id="ctx-target-audience" placeholder="Предприниматели, маркетологи, 25-45 лет"></div>
       </div>
     </div>
-    <div id="channelAnalyticsBtn" style="display:none;margin-top:10px;display:flex;gap:8px;">
+    <div id="channelAnalyticsBtn" style="margin-top:10px;display:flex;gap:8px;">
       <button class="btn btn-outline btn-sm" onclick="loadChannelVideos()">📊 Видео канала</button>
       <button class="btn btn-outline btn-sm" onclick="loadRecommendations()">💡 Рекомендации тем</button>
     </div>
@@ -2471,9 +2471,9 @@ async function checkAudienceFit() {
 
 // ── Channel Video Analytics ──
 async function loadChannelVideos() {
-  if (!currentChannelId) { toast('Выберите канал', true); return; }
+  const chId = currentChannelId || 'default';
   toast('Загрузка видео канала...');
-  const data = await api(`/api/channels/${currentChannelId}/videos`);
+  const data = await api(`/api/channels/${chId}/videos`);
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
 
   const videos = data.videos || [];
@@ -2511,9 +2511,9 @@ async function loadChannelVideos() {
 
 // ── Topic Recommendations ──
 async function loadRecommendations() {
-  if (!currentChannelId) { toast('Выберите канал', true); return; }
+  const chId2 = currentChannelId || 'default';
   toast('Генерирую рекомендации... (Claude AI)');
-  const data = await api(`/api/channels/${currentChannelId}/recommendations`);
+  const data = await api(`/api/channels/${chId2}/recommendations`);
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
 
   const recs = data.recommendations || [];
