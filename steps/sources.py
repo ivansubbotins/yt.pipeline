@@ -26,8 +26,49 @@ MAX_WORDS_PER_SOURCE = 5000
 MAX_TOTAL_WORDS = 15000
 
 
+SCRAPECREATORS_API_KEY = ""
+try:
+    import os as _os
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv()
+    SCRAPECREATORS_API_KEY = _os.getenv("SCRAPECREATORS_API_KEY", "")
+except Exception:
+    pass
+
+
+def _fetch_transcript_scrapecreators(video_id: str, url: str) -> dict | None:
+    """Fallback: fetch transcript via ScrapeCreators API."""
+    if not SCRAPECREATORS_API_KEY:
+        return None
+    try:
+        resp = requests.get(
+            "https://api.scrapecreators.com/v1/youtube/video/transcript",
+            headers={"x-api-key": SCRAPECREATORS_API_KEY},
+            params={"url": url, "language": "ru"},
+            timeout=30,
+        )
+        if resp.status_code != 200:
+            # Try without language filter
+            resp = requests.get(
+                "https://api.scrapecreators.com/v1/youtube/video/transcript",
+                headers={"x-api-key": SCRAPECREATORS_API_KEY},
+                params={"url": url},
+                timeout=30,
+            )
+        if resp.status_code == 200:
+            data = resp.json()
+            text = data.get("transcript_only_text", "")
+            if text:
+                logger.info(f"ScrapeCreators transcript: {len(text.split())} words for {video_id}")
+                return {"text": text, "source": "scrapecreators"}
+        return None
+    except Exception as e:
+        logger.warning(f"ScrapeCreators error: {e}")
+        return None
+
+
 def extract_youtube_transcript(url: str) -> dict:
-    """Extract transcript from a YouTube video. Free, no API key needed."""
+    """Extract transcript from a YouTube video. Free first, ScrapeCreators as fallback."""
     import re
     from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -82,6 +123,29 @@ def extract_youtube_transcript(url: str) -> dict:
         }
     except Exception as e:
         logger.warning(f"YouTube transcript error for {video_id}: {e}")
+        # Fallback to ScrapeCreators
+        logger.info(f"Trying ScrapeCreators fallback for {video_id}...")
+        sc_result = _fetch_transcript_scrapecreators(video_id, url)
+        if sc_result and sc_result.get("text"):
+            text = sc_result["text"]
+            word_count = len(text.split())
+            # Get title
+            title = ""
+            try:
+                resp = requests.get(f"https://www.youtube.com/watch?v={video_id}", headers=FETCH_HEADERS, timeout=10)
+                title_match = re.search(r'<title>(.*?)</title>', resp.text)
+                if title_match:
+                    title = title_match.group(1).replace(" - YouTube", "").strip()
+            except Exception:
+                pass
+            return {
+                "text": text,
+                "title": title or f"YouTube: {video_id}",
+                "video_id": video_id,
+                "word_count": word_count,
+                "duration_minutes": 0,
+                "source": "scrapecreators",
+            }
         return {"error": str(e), "text": "", "title": f"YouTube: {video_id}"}
 
 
