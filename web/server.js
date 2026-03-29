@@ -43,6 +43,40 @@ try {
   if (ytRedMatch) YOUTUBE_REDIRECT_URI = ytRedMatch[1].trim();
 } catch (e) {}
 
+// ── API Keys for external clients ──
+const API_KEYS = new Map(); // key -> { name, created }
+try {
+  const envContent = fs.readFileSync(path.join(PIPELINE_DIR, '.env'), 'utf8');
+  const apiKeysMatch = envContent.match(/API_KEYS=(.+)/);
+  if (apiKeysMatch) {
+    apiKeysMatch[1].trim().split(',').forEach(pair => {
+      const [name, key] = pair.trim().split(':');
+      if (name && key) API_KEYS.set(key.trim(), { name: name.trim(), created: Date.now() });
+    });
+    if (API_KEYS.size > 0) console.log(`[API] Loaded ${API_KEYS.size} API key(s)`);
+  }
+} catch(e) {}
+
+// ── Rate Limiting ──
+const rateLimits = new Map(); // apiKeyName -> { count, windowStart }
+const RATE_LIMIT_PER_MIN = 60;
+const RATE_WINDOW_MS = 60000;
+
+function checkRateLimit(apiKeyName) {
+  const now = Date.now();
+  let entry = rateLimits.get(apiKeyName);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    entry = { count: 0, windowStart: now };
+  }
+  entry.count++;
+  rateLimits.set(apiKeyName, entry);
+  return {
+    allowed: entry.count <= RATE_LIMIT_PER_MIN,
+    remaining: Math.max(0, RATE_LIMIT_PER_MIN - entry.count),
+    reset: Math.ceil((entry.windowStart + RATE_WINDOW_MS - now) / 1000),
+  };
+}
+
 // ── Auth: session tokens ──
 const crypto = require('crypto');
 const activeSessions = new Map(); // token -> { user, created }
@@ -135,16 +169,28 @@ function parseCookies(cookieHeader) {
 }
 
 function isAuthenticated(req) {
+  return getAuthInfo(req).authenticated;
+}
+
+function getAuthInfo(req) {
+  // 1. Check API key (Bearer token)
+  const authHeader = req.headers['authorization'] || '';
+  if (authHeader.startsWith('Bearer ')) {
+    const key = authHeader.slice(7);
+    const apiKey = API_KEYS.get(key);
+    if (apiKey) return { authenticated: true, type: 'api_key', name: apiKey.name, key };
+  }
+  // 2. Fall back to cookie session
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies['yt_session'];
-  if (!token) return false;
+  if (!token) return { authenticated: false };
   const session = activeSessions.get(token);
-  if (!session) return false;
+  if (!session) return { authenticated: false };
   if (Date.now() - session.created > SESSION_MAX_AGE) {
     activeSessions.delete(token);
-    return false;
+    return { authenticated: false };
   }
-  return true;
+  return { authenticated: true, type: 'session', name: session.user };
 }
 
 // Cleanup expired sessions every hour
@@ -185,6 +231,40 @@ function readClothingMeta() {
 function writeClothingMeta(presets) {
   ensureClothingDir();
   fs.writeFileSync(CLOTHING_META_FILE, JSON.stringify(presets, null, 2), 'utf8');
+}
+
+// ── Webhooks ──
+const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
+
+function readWebhooksFile() {
+  try { return fs.existsSync(WEBHOOKS_FILE) ? JSON.parse(fs.readFileSync(WEBHOOKS_FILE, 'utf8')) : []; }
+  catch { return []; }
+}
+function writeWebhooksFile(hooks) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(WEBHOOKS_FILE, JSON.stringify(hooks, null, 2));
+}
+
+function notifyWebhooks(event, projectId, data) {
+  const hooks = readWebhooksFile().filter(h => h.active && h.events.includes(event));
+  for (const hook of hooks) {
+    const payload = JSON.stringify({ event, timestamp: new Date().toISOString(), project_id: projectId, data });
+    const signature = crypto.createHmac('sha256', hook.secret || '').update(payload).digest('hex');
+    try {
+      const https = require('https');
+      const http = require('http');
+      const urlObj = new URL(hook.url);
+      const transport = urlObj.protocol === 'https:' ? https : http;
+      const req = transport.request(hook.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': 'sha256=' + signature, 'Content-Length': Buffer.byteLength(payload) },
+        timeout: 10000,
+      });
+      req.on('error', () => {}); // Fire and forget
+      req.write(payload);
+      req.end();
+    } catch(e) {}
+  }
 }
 
 // ── Anthropic API call ──
@@ -591,10 +671,405 @@ http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     });
     res.end();
     return;
+  }
+
+  // ══════════════════════════════════════════
+  // ══  REST API v1 (for external clients)  ══
+  // ══════════════════════════════════════════
+  if (pathname.startsWith('/api/v1/')) {
+    const auth = getAuthInfo(req);
+    if (!auth.authenticated) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or missing API key. Use Authorization: Bearer <key>' } }));
+      return;
+    }
+
+    // Rate limiting (API keys only)
+    if (auth.type === 'api_key') {
+      const rl = checkRateLimit(auth.name);
+      res.setHeader('X-RateLimit-Limit', RATE_LIMIT_PER_MIN);
+      res.setHeader('X-RateLimit-Remaining', rl.remaining);
+      res.setHeader('X-RateLimit-Reset', rl.reset);
+      if (!rl.allowed) {
+        res.writeHead(429, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: { code: 'RATE_LIMITED', message: `Rate limit exceeded. Retry in ${rl.reset}s` } }));
+        return;
+      }
+    }
+
+    const reqId = 'req_' + crypto.randomBytes(8).toString('hex');
+    const v1path = pathname.replace('/api/v1', '');
+    const json200 = (data) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, data, meta: { request_id: reqId, timestamp: new Date().toISOString() } })); };
+    const jsonErr = (code, msg, status = 400) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: { code, message: msg }, meta: { request_id: reqId } })); };
+
+    try {
+
+    // ── Projects ──
+
+    // GET /api/v1/projects
+    if (v1path === '/projects' && req.method === 'GET') {
+      const projects = listProjects();
+      return json200({ projects });
+    }
+
+    // POST /api/v1/projects
+    if (v1path === '/projects' && req.method === 'POST') {
+      const body = JSON.parse(await readBody(req));
+      if (!body.topic) return jsonErr('INVALID_INPUT', 'topic is required');
+      const args = ['new', body.topic];
+      if (body.channel_id) args.push('--channel', body.channel_id);
+      const output = await runAgent(args);
+      const idMatch = output.match(/([0-9]{8}-[\w-]+)/);
+      const projectId = idMatch ? idMatch[1] : null;
+      notifyWebhooks('project.created', projectId, { topic: body.topic });
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // GET /api/v1/projects/:id
+    if (v1path.match(/^\/projects\/[^/]+$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      if (!fs.existsSync(stateFile)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      return json200({ project: state });
+    }
+
+    // DELETE /api/v1/projects/:id
+    if (v1path.match(/^\/projects\/[^/]+$/) && req.method === 'DELETE') {
+      const projectId = v1path.split('/')[2];
+      const projDir = path.join(DATA_DIR, projectId);
+      if (!fs.existsSync(projDir)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      fs.rmSync(projDir, { recursive: true, force: true });
+      return json200({ deleted: projectId });
+    }
+
+    // ── Pipeline ──
+
+    // GET /api/v1/projects/:id/status
+    if (v1path.match(/^\/projects\/[^/]+\/status$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      if (!fs.existsSync(stateFile)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      return json200({ project_id: projectId, current_step: state.current_step, steps: state.steps });
+    }
+
+    // POST /api/v1/projects/:id/run
+    if (v1path.match(/^\/projects\/[^/]+\/run$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const output = await runAgent(['run', projectId]);
+      notifyWebhooks('step.completed', projectId, { step: 'all', output: output.substring(0, 500) });
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // POST /api/v1/projects/:id/steps/:step/run
+    if (v1path.match(/^\/projects\/[^/]+\/steps\/[^/]+\/run$/) && req.method === 'POST') {
+      const parts = v1path.split('/');
+      const projectId = parts[2];
+      const step = parts[4];
+      try {
+        const output = await runAgent(['step', projectId, step]);
+        notifyWebhooks('step.completed', projectId, { step });
+        return json200({ project_id: projectId, step, output: output.trim() });
+      } catch(e) {
+        notifyWebhooks('step.failed', projectId, { step, error: e.message });
+        return jsonErr('STEP_FAILED', e.message, 500);
+      }
+    }
+
+    // POST /api/v1/projects/:id/steps/:step/reset
+    if (v1path.match(/^\/projects\/[^/]+\/steps\/[^/]+\/reset$/) && req.method === 'POST') {
+      const parts = v1path.split('/');
+      const projectId = parts[2];
+      const step = parts[4];
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      if (!fs.existsSync(stateFile)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      if (state.steps[step]) {
+        state.steps[step].status = 'pending';
+        state.steps[step].data = {};
+        fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+      }
+      return json200({ project_id: projectId, step, status: 'pending' });
+    }
+
+    // ── Content Selection ──
+
+    // GET/PUT /api/v1/projects/:id/titles
+    if (v1path.match(/^\/projects\/[^/]+\/titles$/) && (req.method === 'GET' || req.method === 'PUT')) {
+      const projectId = v1path.split('/')[2];
+      const filePath = path.join(DATA_DIR, projectId, 'selected_titles.json');
+      if (req.method === 'GET') {
+        const data = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : { titles: [] };
+        return json200(data);
+      }
+      const body = JSON.parse(await readBody(req));
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      return json200({ saved: true });
+    }
+
+    // GET/PUT /api/v1/projects/:id/angle
+    if (v1path.match(/^\/projects\/[^/]+\/angle$/) && (req.method === 'GET' || req.method === 'PUT')) {
+      const projectId = v1path.split('/')[2];
+      const filePath = path.join(DATA_DIR, projectId, 'selected_angle.json');
+      if (req.method === 'GET') {
+        const data = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : { angle: null };
+        return json200(data);
+      }
+      const body = JSON.parse(await readBody(req));
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      return json200({ saved: true });
+    }
+
+    // GET/PUT /api/v1/projects/:id/hook
+    if (v1path.match(/^\/projects\/[^/]+\/hook$/) && (req.method === 'GET' || req.method === 'PUT')) {
+      const projectId = v1path.split('/')[2];
+      const filePath = path.join(DATA_DIR, projectId, 'selected_hook.json');
+      if (req.method === 'GET') {
+        const data = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : { hookIndex: -1 };
+        return json200(data);
+      }
+      const body = JSON.parse(await readBody(req));
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      return json200({ saved: true });
+    }
+
+    // ── Sources ──
+
+    // GET /api/v1/projects/:id/sources
+    if (v1path.match(/^\/projects\/[^/]+\/sources$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const filePath = path.join(DATA_DIR, projectId, 'sources.json');
+      const data = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : { items: [] };
+      return json200(data);
+    }
+
+    // POST /api/v1/projects/:id/sources
+    if (v1path.match(/^\/projects\/[^/]+\/sources$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const body = JSON.parse(await readBody(req));
+      const filePath = path.join(DATA_DIR, projectId, 'sources.json');
+      let sourcesData = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : { items: [] };
+      const newItem = { id: String(Date.now()), type: body.type || 'url', url: body.url || '', content: body.content || '', notebook_id: body.notebook_id || '', title: body.title || '', status: 'pending', added_at: new Date().toISOString() };
+      sourcesData.items.push(newItem);
+      const projDir = path.join(DATA_DIR, projectId);
+      fs.mkdirSync(projDir, { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(sourcesData, null, 2));
+      return json200({ item: newItem });
+    }
+
+    // DELETE /api/v1/projects/:id/sources/:sourceId
+    if (v1path.match(/^\/projects\/[^/]+\/sources\/[^/]+$/) && req.method === 'DELETE') {
+      const parts = v1path.split('/');
+      const projectId = parts[2];
+      const sourceId = parts[4];
+      const filePath = path.join(DATA_DIR, projectId, 'sources.json');
+      if (fs.existsSync(filePath)) {
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        data.items = data.items.filter(i => i.id !== sourceId);
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      }
+      return json200({ deleted: sourceId });
+    }
+
+    // ── Generated Content ──
+
+    // GET /api/v1/projects/:id/script
+    if (v1path.match(/^\/projects\/[^/]+\/script$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      if (!fs.existsSync(stateFile)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      return json200({ script: state.steps?.script?.data || null });
+    }
+
+    // GET /api/v1/projects/:id/teleprompter
+    if (v1path.match(/^\/projects\/[^/]+\/teleprompter$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const txtFile = path.join(DATA_DIR, projectId, 'teleprompter.txt');
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      let text = '';
+      if (fs.existsSync(txtFile)) text = fs.readFileSync(txtFile, 'utf8');
+      let data = null;
+      if (fs.existsSync(stateFile)) {
+        const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+        data = state.steps?.teleprompter?.data || null;
+      }
+      return json200({ text, data });
+    }
+
+    // GET /api/v1/projects/:id/description
+    if (v1path.match(/^\/projects\/[^/]+\/description$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const txtFile = path.join(DATA_DIR, projectId, 'description.txt');
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      let text = '';
+      if (fs.existsSync(txtFile)) text = fs.readFileSync(txtFile, 'utf8');
+      let data = null;
+      if (fs.existsSync(stateFile)) {
+        const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+        data = state.steps?.description?.data || null;
+      }
+      return json200({ text, data });
+    }
+
+    // GET /api/v1/projects/:id/covers
+    if (v1path.match(/^\/projects\/[^/]+\/covers$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const thumbDir = path.join(DATA_DIR, projectId, 'thumbnails');
+      let covers = [];
+      if (fs.existsSync(thumbDir)) {
+        covers = fs.readdirSync(thumbDir).filter(f => f.endsWith('.jpg') || f.endsWith('.png')).map(f => ({ filename: f, url: `/api/file/${projectId}/thumbnails/${f}` }));
+      }
+      return json200({ covers });
+    }
+
+    // ── Manual Steps ──
+
+    // POST /api/v1/projects/:id/shooting-done
+    if (v1path.match(/^\/projects\/[^/]+\/shooting-done$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const output = await runAgent(['shot-done', projectId]);
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // POST /api/v1/projects/:id/editing-done
+    if (v1path.match(/^\/projects\/[^/]+\/editing-done$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const body = JSON.parse(await readBody(req));
+      const args = ['edit-done', projectId];
+      if (body.video_file) args.push(body.video_file);
+      const output = await runAgent(args);
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // ── Publishing ──
+
+    // POST /api/v1/projects/:id/publish
+    if (v1path.match(/^\/projects\/[^/]+\/publish$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const body = JSON.parse(await readBody(req));
+      const args = ['publish', projectId, '--approve'];
+      if (body.schedule) args.push('--schedule', body.schedule);
+      if (body.playlist_id) args.push('--playlist', body.playlist_id);
+      if (body.category_id) args.push('--category', body.category_id);
+      const output = await runAgent(args);
+      notifyWebhooks('publish.completed', projectId, { output: output.substring(0, 500) });
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // GET /api/v1/playlists
+    if (v1path === '/playlists' && req.method === 'GET') {
+      const output = await runAgent(['playlists']);
+      let playlists = [];
+      try { const m = output.match(/\[[\s\S]*\]/); if (m) playlists = JSON.parse(m[0]); } catch(e) {}
+      return json200({ playlists });
+    }
+
+    // ── Split Tests ──
+
+    // POST /api/v1/projects/:id/splittest
+    if (v1path.match(/^\/projects\/[^/]+\/splittest$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const output = await runAgent(['splittest-start', projectId]);
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // GET /api/v1/projects/:id/splittest
+    if (v1path.match(/^\/projects\/[^/]+\/splittest$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const testFile = path.join(DATA_DIR, projectId, 'splittest.json');
+      if (!fs.existsSync(testFile)) return json200({ test: null });
+      return json200({ test: JSON.parse(fs.readFileSync(testFile, 'utf8')) });
+    }
+
+    // POST /api/v1/projects/:id/splittest/stop
+    if (v1path.match(/^\/projects\/[^/]+\/splittest\/stop$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const body = JSON.parse(await readBody(req));
+      const method = body.method || 'auto';
+      const args = ['splittest-finish', projectId, method];
+      if (body.winner_index !== undefined) args.push(String(body.winner_index));
+      const output = await runAgent(args);
+      notifyWebhooks('splittest.completed', projectId, { method, output: output.substring(0, 500) });
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // ── Channels ──
+
+    // GET /api/v1/channels
+    if (v1path === '/channels' && req.method === 'GET') {
+      const channelsDir = path.join(DATA_DIR, 'channels');
+      let channels = [];
+      if (fs.existsSync(channelsDir)) {
+        channels = fs.readdirSync(channelsDir).filter(d => fs.existsSync(path.join(channelsDir, d, 'context.json'))).map(d => {
+          const ctx = JSON.parse(fs.readFileSync(path.join(channelsDir, d, 'context.json'), 'utf8'));
+          return { id: d, name: ctx.name || d, niche: ctx.niche || '', audience: ctx.audience || '' };
+        });
+      }
+      return json200({ channels });
+    }
+
+    // GET /api/v1/channels/:id
+    if (v1path.match(/^\/channels\/[^/]+$/) && req.method === 'GET') {
+      const channelId = v1path.split('/')[2];
+      if (channelId === 'default') {
+        const ctx = fs.existsSync(CONTEXT_FILE) ? JSON.parse(fs.readFileSync(CONTEXT_FILE, 'utf8')) : {};
+        return json200({ channel: ctx });
+      }
+      const ctxFile = path.join(DATA_DIR, 'channels', channelId, 'context.json');
+      if (!fs.existsSync(ctxFile)) return jsonErr('NOT_FOUND', 'Channel not found', 404);
+      return json200({ channel: JSON.parse(fs.readFileSync(ctxFile, 'utf8')) });
+    }
+
+    // ── Webhooks ──
+
+    // GET /api/v1/webhooks
+    if (v1path === '/webhooks' && req.method === 'GET') {
+      const hooks = readWebhooksFile();
+      return json200({ webhooks: hooks.filter(h => h.api_key_name === auth.name) });
+    }
+
+    // POST /api/v1/webhooks
+    if (v1path === '/webhooks' && req.method === 'POST') {
+      const body = JSON.parse(await readBody(req));
+      if (!body.url) return jsonErr('INVALID_INPUT', 'url is required');
+      const hooks = readWebhooksFile();
+      const hook = {
+        id: 'wh_' + crypto.randomBytes(8).toString('hex'),
+        url: body.url,
+        events: body.events || ['step.completed', 'step.failed', 'project.created', 'publish.completed'],
+        secret: body.secret || crypto.randomBytes(16).toString('hex'),
+        api_key_name: auth.name,
+        active: true,
+        created_at: new Date().toISOString(),
+      };
+      hooks.push(hook);
+      writeWebhooksFile(hooks);
+      return json200({ webhook: hook });
+    }
+
+    // DELETE /api/v1/webhooks/:id
+    if (v1path.match(/^\/webhooks\/[^/]+$/) && req.method === 'DELETE') {
+      const hookId = v1path.split('/')[2];
+      let hooks = readWebhooksFile();
+      hooks = hooks.filter(h => !(h.id === hookId && h.api_key_name === auth.name));
+      writeWebhooksFile(hooks);
+      return json200({ deleted: hookId });
+    }
+
+    // 404 for unknown v1 paths
+    return jsonErr('NOT_FOUND', `Unknown endpoint: ${req.method} ${pathname}`, 404);
+
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR', message: err.message }, meta: { request_id: reqId } }));
+      return;
+    }
   }
 
   // ── Auth check for everything else ──
