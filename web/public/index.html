@@ -1444,12 +1444,13 @@ async function refreshDetail() {
       const dd = stepState.data || {};
       const langs = dd.languages || [];
       const allLangs = {
-        en: { name: 'Английский', flag: '🇺🇸', provider: 'ElevenLabs' },
-        es: { name: 'Испанский', flag: '🇪🇸', provider: 'ElevenLabs' },
-        pt: { name: 'Португальский', flag: '🇧🇷', provider: 'Edge TTS' },
-        de: { name: 'Немецкий', flag: '🇩🇪', provider: 'Edge TTS' },
-        ko: { name: 'Корейский', flag: '🇰🇷', provider: 'Edge TTS' },
-        ja: { name: 'Японский', flag: '🇯🇵', provider: 'Edge TTS' },
+        en: { name: 'English', flag: '🇺🇸', provider: 'ElevenLabs TTS' },
+        es: { name: 'Spanish', flag: '🇪🇸', provider: 'ElevenLabs TTS' },
+        pt: { name: 'Portuguese', flag: '🇧🇷', provider: 'ElevenLabs TTS' },
+        de: { name: 'German', flag: '🇩🇪', provider: 'ElevenLabs TTS' },
+        ko: { name: 'Korean', flag: '🇰🇷', provider: 'ElevenLabs TTS' },
+        ja: { name: 'Japanese', flag: '🇯🇵', provider: 'ElevenLabs TTS' },
+        zh: { name: 'Chinese', flag: '🇨🇳', provider: 'ElevenLabs TTS' },
       };
 
       if (status === 'pending' || status === 'failed') {
@@ -1499,7 +1500,10 @@ async function refreshDetail() {
                   <div style="font-size:10px;color:var(--muted);">${l.provider || info.provider}${l.translated_title ? ' • ' + esc(l.translated_title) : ''}</div>
                 </div>
                 <span style="color:${isOk ? 'var(--green)' : 'var(--red)'};font-size:13px;">${isOk ? '✅' : '❌ ' + esc(l.error || '')}</span>
-                ${isOk ? `<button class="btn btn-outline btn-xs" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}')">⬇ Скачать</button>` : ''}
+                ${isOk ? `
+                  <audio controls style="height:28px;max-width:150px;" src="/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}" preload="none"></audio>
+                  <button class="btn btn-outline btn-xs" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}')">⬇</button>
+                ` : ''}
               </div>`;
             }).join('')}
           </div>

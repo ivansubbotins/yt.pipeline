@@ -33,8 +33,12 @@ FAL_KEY = os.getenv("FAL_KEY", "")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")  # Cloned voice ID
 
-# KrillinAI (self-hosted dubbing server)
+# KrillinAI (self-hosted dubbing server — legacy, kept for subtitle tasks)
 KRILLIN_BASE_URL = os.getenv("KRILLIN_BASE_URL", "http://127.0.0.1:8888")
+
+# VPS SSH (for Demucs vocal separation)
+VPS_SSH_HOST = os.getenv("VPS_SSH_HOST", "subbota-inc.ru")
+VPS_SSH_USER = os.getenv("VPS_SSH_USER", "iovanas")
 
 # Pipeline defaults
 DEFAULT_VIDEO_MIN_LENGTH_MINUTES = 10

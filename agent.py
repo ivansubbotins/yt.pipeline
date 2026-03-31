@@ -119,6 +119,19 @@ def cmd_step(args):
     print(f"Результат: {list(result.keys()) if isinstance(result, dict) else result}")
 
 
+def cmd_dub(args):
+    pipe = Pipeline(args.project_id)
+    languages = [l.strip() for l in args.languages.split(",") if l.strip()] or None
+    result = pipe.dub(languages=languages)
+    completed = result.get("completed", 0)
+    total = result.get("total", 0)
+    failed = result.get("failed", 0)
+    print(f"Дублирование завершено: {completed}/{total} языков готово, {failed} ошибок")
+    for lang in result.get("languages", []):
+        status = "✅" if lang["status"] == "completed" else "❌"
+        print(f"  {status} {lang['lang_name']} ({lang['lang_code']})")
+
+
 def cmd_status(args):
     state = PipelineState(args.project_id)
     print(state.summary())
@@ -534,6 +547,11 @@ def main():
     # auth
     subparsers.add_parser("auth", help="Авторизация YouTube API")
 
+    # dub
+    p_dub = subparsers.add_parser("dub", help="Запустить дублирование видео")
+    p_dub.add_argument("project_id", help="ID проекта")
+    p_dub.add_argument("--languages", default="", help="Языки через запятую (en,es,pt,de,ko,ja,zh)")
+
     # split-test
     # Channel commands
     p_chvid = subparsers.add_parser("channel-videos", help="Выгрузить видео с канала")
@@ -570,6 +588,7 @@ def main():
         "edit-done": cmd_edit_done,
         "generate-cover-custom": cmd_generate_cover_custom,
         "publish": cmd_publish,
+        "dub": cmd_dub,
         "playlists": cmd_playlists,
         "auth": cmd_auth,
         "channel-videos": cmd_channel_videos,

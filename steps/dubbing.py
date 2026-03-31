@@ -1,94 +1,137 @@
 """Step 11: Dubbing — translate and dub video into multiple languages.
 
-Hybrid approach:
-- ElevenLabs API (voice clone) for EN + ES — premium quality
-- KrillinAI / Edge TTS for PT, DE, KO, JA — free, good quality
+Pipeline:
+1. FFmpeg — extract audio from video
+2. faster-whisper — transcribe Russian audio with timestamps
+3. Demucs (VPS via SSH) — separate vocals from background
+4. Claude — translate each segment to target language
+5. ElevenLabs TTS — generate speech per segment with voice clone
+6. FFmpeg — combine background + TTS segments at timestamps
+7. FFmpeg — merge dubbed audio with original video
 """
 
 import json
 import logging
+import subprocess
 import time
 import urllib.request
-import urllib.parse
 from pathlib import Path
 
 from steps.base import BaseStep
 
 logger = logging.getLogger(__name__)
 
-# Language config: code -> (name_ru, tts_provider, edge_voice)
+# All languages use ElevenLabs multilingual_v2 with Ivan's voice clone
 LANGUAGES = {
-    "en": ("Английский", "elevenlabs", "en-US-GuyNeural"),
-    "es": ("Испанский", "elevenlabs", "es-ES-AlvaroNeural"),
-    "pt": ("Португальский", "edge", "pt-BR-AntonioNeural"),
-    "de": ("Немецкий", "edge", "de-DE-ConradNeural"),
-    "ko": ("Корейский", "edge", "ko-KR-InJoonNeural"),
-    "ja": ("Японский", "edge", "ja-JP-KeitaNeural"),
+    "en": "English",
+    "es": "Spanish",
+    "pt": "Portuguese",
+    "de": "German",
+    "ko": "Korean",
+    "ja": "Japanese",
+    "zh": "Chinese",
 }
+
+ELEVENLABS_MODEL = "eleven_multilingual_v2"
+ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 
 
 class DubbingStep(BaseStep):
     step_name = "dubbing"
 
     def execute(self) -> dict:
-        from config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, KRILLIN_BASE_URL
+        from config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID
 
         content_plan = self.get_previous_step_data("content_plan")
         description_data = self.get_previous_step_data("description")
 
-        # Get video file
         video_file = self._find_video_file()
         logger.info(f"Dubbing source video: {video_file}")
 
-        # Get selected languages from dubbing config (or all)
         dubbing_config = self._load_dubbing_config()
         selected_langs = dubbing_config.get("languages", list(LANGUAGES.keys()))
 
+        dubbing_dir = self.state.project_dir / "dubbing"
+        dubbing_dir.mkdir(parents=True, exist_ok=True)
+
+        # ── Shared steps (run once, reuse for all languages) ──
+
+        # 1. Extract audio
+        audio_path = dubbing_dir / "audio.wav"
+        self._extract_audio(video_file, audio_path)
+
+        # 2. Transcribe Russian
+        transcript_path = dubbing_dir / "transcript_ru.json"
+        segments = self._transcribe(audio_path, transcript_path)
+
+        # 3. Separate vocals from background (demucs)
+        background_path = dubbing_dir / "background.wav"
+        self._separate_audio(audio_path, background_path)
+
+        # Get video duration for audio alignment
+        video_duration = self._get_duration(video_file)
+
+        # ── Per-language steps ──
         results = []
         for lang_code in selected_langs:
             if lang_code not in LANGUAGES:
                 logger.warning(f"Unknown language: {lang_code}, skipping")
                 continue
 
-            lang_name, tts_provider, edge_voice = LANGUAGES[lang_code]
-            logger.info(f"Dubbing to {lang_name} ({lang_code}) via {tts_provider}")
+            lang_name = LANGUAGES[lang_code]
+            lang_dir = dubbing_dir / lang_code
+            lang_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"=== Dubbing to {lang_name} ({lang_code}) ===")
+
+            self._save_progress(dubbing_dir, lang_code, "started", {})
 
             try:
-                result = self._dub_single_language(
-                    video_file=video_file,
-                    lang_code=lang_code,
-                    lang_name=lang_name,
-                    tts_provider=tts_provider,
-                    edge_voice=edge_voice,
-                    krillin_url=KRILLIN_BASE_URL,
-                    elevenlabs_key=ELEVENLABS_API_KEY,
-                    elevenlabs_voice=ELEVENLABS_VOICE_ID,
+                # 4. Translate segments
+                self._save_progress(dubbing_dir, lang_code, "translating", {})
+                translated = self._translate_segments(segments, lang_code, lang_dir)
+
+                # 5. Generate TTS per segment
+                self._save_progress(dubbing_dir, lang_code, "generating_tts", {"total_segments": len(translated)})
+                tts_files = self._generate_tts(
+                    translated, lang_code, lang_dir,
+                    api_key=ELEVENLABS_API_KEY,
+                    voice_id=ELEVENLABS_VOICE_ID,
                 )
 
-                # Translate title + description
-                translated = self._translate_metadata(
+                # 6. Combine background + TTS
+                self._save_progress(dubbing_dir, lang_code, "combining_audio", {})
+                combined_path = lang_dir / "combined.wav"
+                self._combine_audio(tts_files, translated, background_path, combined_path, video_duration)
+
+                # 7. Merge with video
+                self._save_progress(dubbing_dir, lang_code, "muxing_video", {})
+                final_path = lang_dir / "final.mp4"
+                self._mux_video(video_file, combined_path, final_path)
+
+                # 8. Translate metadata
+                self._save_progress(dubbing_dir, lang_code, "translating_metadata", {})
+                metadata = self._translate_metadata(
                     lang_code=lang_code,
                     title=description_data.get("title", content_plan.get("title", self.state.topic)),
                     description=description_data.get("description", ""),
                     tags=description_data.get("tags", []),
                 )
-                result["translated_title"] = translated["title"]
-                result["translated_description"] = translated["description"]
-                result["translated_tags"] = translated["tags"]
+                with open(lang_dir / "metadata.json", "w", encoding="utf-8") as f:
+                    json.dump(metadata, f, ensure_ascii=False, indent=2)
 
-                # Save translated metadata to files
-                lang_dir = self.state.project_dir / "dubbing" / lang_code
-                lang_dir.mkdir(parents=True, exist_ok=True)
-                meta_file = lang_dir / "metadata.json"
-                with open(meta_file, "w", encoding="utf-8") as f:
-                    json.dump(translated, f, ensure_ascii=False, indent=2)
-
-                result["status"] = "completed"
-                results.append(result)
-                logger.info(f"✓ {lang_name} ({lang_code}) — done")
+                self._save_progress(dubbing_dir, lang_code, "completed", {})
+                results.append({
+                    "lang_code": lang_code,
+                    "lang_name": lang_name,
+                    "status": "completed",
+                    "output_file": str(final_path),
+                    "translated_title": metadata.get("title", ""),
+                })
+                logger.info(f"=== {lang_name} ({lang_code}) DONE ===")
 
             except Exception as e:
-                logger.error(f"✗ {lang_name} ({lang_code}) — failed: {e}")
+                logger.error(f"=== {lang_name} ({lang_code}) FAILED: {e} ===")
+                self._save_progress(dubbing_dir, lang_code, "failed", {"error": str(e)})
                 results.append({
                     "lang_code": lang_code,
                     "lang_name": lang_name,
@@ -107,336 +150,315 @@ class DubbingStep(BaseStep):
             "video_source": video_file,
         }
 
-    def _dub_single_language(
-        self,
-        video_file: str,
-        lang_code: str,
-        lang_name: str,
-        tts_provider: str,
-        edge_voice: str,
-        krillin_url: str,
-        elevenlabs_key: str,
-        elevenlabs_voice: str,
-    ) -> dict:
-        """Dub video into a single language using the appropriate provider."""
-        lang_dir = self.state.project_dir / "dubbing" / lang_code
-        lang_dir.mkdir(parents=True, exist_ok=True)
+    # ── Step 1: Extract Audio ──
 
-        if tts_provider == "elevenlabs" and elevenlabs_key:
-            return self._dub_via_elevenlabs(
-                video_file=video_file,
-                lang_code=lang_code,
-                lang_name=lang_name,
-                output_dir=lang_dir,
-                api_key=elevenlabs_key,
-                voice_id=elevenlabs_voice,
+    def _extract_audio(self, video_path: str, output_path: Path):
+        """Extract mono 16kHz audio from video for transcription."""
+        if output_path.exists():
+            logger.info(f"Audio already extracted: {output_path}")
+            return
+        logger.info("Extracting audio from video...")
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", video_path, "-vn",
+             "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+             str(output_path)],
+            check=True, capture_output=True, timeout=120,
+        )
+        logger.info(f"Audio extracted: {output_path}")
+
+    # ── Step 2: Transcribe ──
+
+    def _transcribe(self, audio_path: Path, output_path: Path) -> list[dict]:
+        """Transcribe Russian audio using faster-whisper."""
+        if output_path.exists():
+            logger.info(f"Transcript already exists: {output_path}")
+            with open(output_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+
+        logger.info("Transcribing Russian audio with faster-whisper...")
+        from faster_whisper import WhisperModel
+
+        model = WhisperModel("medium", device="cpu", compute_type="int8")
+        raw_segments, info = model.transcribe(str(audio_path), language="ru")
+
+        segments = []
+        for seg in raw_segments:
+            segments.append({
+                "start": round(seg.start, 3),
+                "end": round(seg.end, 3),
+                "text": seg.text.strip(),
+            })
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(segments, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"Transcribed: {len(segments)} segments, {info.duration:.0f}s")
+        return segments
+
+    # ── Step 3: Separate Audio (Demucs) ──
+
+    def _separate_audio(self, audio_path: Path, output_path: Path):
+        """Separate vocals from background using Demucs via SSH on VPS."""
+        if output_path.exists():
+            logger.info(f"Background audio already separated: {output_path}")
+            return
+
+        from config import VPS_SSH_HOST, VPS_SSH_USER
+
+        logger.info("Separating vocals from background via Demucs on VPS...")
+
+        remote_input = "/tmp/dubbing_input.wav"
+        remote_output = "/tmp/dubbing_background.wav"
+
+        # Upload audio to VPS
+        subprocess.run(
+            ["scp", str(audio_path), f"{VPS_SSH_USER}@{VPS_SSH_HOST}:{remote_input}"],
+            check=True, capture_output=True, timeout=60,
+        )
+
+        # Run demucs on VPS via Python (bypasses torchaudio/torchcodec issues)
+        demucs_script = f"""
+import torch, numpy as np, os, soundfile as sf
+from demucs.pretrained import get_model
+from demucs.apply import apply_model
+
+model = get_model("htdemucs")
+model.eval()
+wav_np, sr = sf.read("{remote_input}")
+if wav_np.ndim == 1:
+    wav_np = np.stack([wav_np, wav_np])
+else:
+    wav_np = wav_np.T
+wav = torch.from_numpy(wav_np).float()
+if wav.shape[0] == 1:
+    wav = wav.repeat(2, 1)
+ref = wav.mean(0)
+wav_norm = (wav - ref.mean()) / ref.std()
+with torch.no_grad():
+    sources = apply_model(model, wav_norm[None], device="cpu")[0]
+vocals_idx = model.sources.index("vocals")
+no_vocals = sources.sum(0) - sources[vocals_idx]
+no_vocals = no_vocals * ref.std() + ref.mean()
+sf.write("{remote_output}", no_vocals.numpy().T, sr)
+print("DEMUCS_OK")
+"""
+        result = subprocess.run(
+            ["ssh", f"{VPS_SSH_USER}@{VPS_SSH_HOST}",
+             f"python3 -u -c '{demucs_script}'"],
+            capture_output=True, timeout=600, text=True,
+        )
+
+        if "DEMUCS_OK" not in result.stdout:
+            # Fallback: use original audio with reduced volume
+            logger.warning(f"Demucs failed: {result.stderr[:300]}. Using original audio as fallback.")
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", str(audio_path), "-filter:a", "volume=0.15",
+                 str(output_path)],
+                check=True, capture_output=True, timeout=30,
             )
-        else:
-            # Use KrillinAI with Edge TTS (free)
-            return self._dub_via_krillin(
-                video_file=video_file,
-                lang_code=lang_code,
-                lang_name=lang_name,
-                edge_voice=edge_voice,
-                output_dir=lang_dir,
-                krillin_url=krillin_url,
-            )
+            return
 
-    # ── ElevenLabs Dubbing API ──
+        # Download result
+        subprocess.run(
+            ["scp", f"{VPS_SSH_USER}@{VPS_SSH_HOST}:{remote_output}", str(output_path)],
+            check=True, capture_output=True, timeout=60,
+        )
 
-    def _dub_via_elevenlabs(
+        # Cleanup remote files
+        subprocess.run(
+            ["ssh", f"{VPS_SSH_USER}@{VPS_SSH_HOST}",
+             f"rm -f {remote_input} {remote_output}"],
+            capture_output=True, timeout=10,
+        )
+
+        logger.info(f"Background separated: {output_path}")
+
+    # ── Step 4: Translate Segments ──
+
+    def _translate_segments(self, segments: list[dict], lang_code: str, output_dir: Path) -> list[dict]:
+        """Translate timestamped segments to target language via Claude."""
+        transcript_path = output_dir / "transcript.json"
+        if transcript_path.exists():
+            logger.info(f"Translation already exists: {transcript_path}")
+            with open(transcript_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+
+        lang_name = LANGUAGES[lang_code]
+        logger.info(f"Translating {len(segments)} segments to {lang_name}...")
+
+        segments_text = "\n".join(
+            f'{i+1}. [{s["start"]:.1f}-{s["end"]:.1f}] {s["text"]}'
+            for i, s in enumerate(segments)
+        )
+
+        system = f"You are a professional translator specializing in {lang_name}. Translate naturally for YouTube audience."
+        prompt = f"""Translate these Russian speech segments to {lang_name}.
+Keep translations concise — they will be spoken aloud and must roughly fit the original timing.
+Return ONLY a valid JSON array with the same structure.
+
+Segments:
+{segments_text}
+
+Return JSON: [{{"start": 0.0, "end": 4.8, "text": "{lang_name} text"}}]"""
+
+        response = self.ask_claude(system=system, prompt=prompt)
+
+        try:
+            start = response.index("[")
+            end = response.rindex("]") + 1
+            translated = json.loads(response[start:end])
+        except (ValueError, json.JSONDecodeError) as e:
+            raise RuntimeError(f"Failed to parse translation: {e}")
+
+        with open(transcript_path, "w", encoding="utf-8") as f:
+            json.dump(translated, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"Translated: {len(translated)} segments")
+        return translated
+
+    # ── Step 5: Generate TTS ──
+
+    def _generate_tts(
         self,
-        video_file: str,
+        segments: list[dict],
         lang_code: str,
-        lang_name: str,
         output_dir: Path,
         api_key: str,
         voice_id: str,
-    ) -> dict:
-        """Dub using ElevenLabs Dubbing API (high quality voice clone)."""
-        import io
-        import mimetypes
+    ) -> list[Path]:
+        """Generate TTS audio for each segment using ElevenLabs voice clone."""
+        logger.info(f"Generating TTS for {len(segments)} segments...")
+        tts_files = []
 
-        base_url = "https://api.elevenlabs.io/v1"
+        for i, seg in enumerate(segments):
+            out_file = output_dir / f"tts_{i}.mp3"
 
-        # ElevenLabs language codes
-        el_lang_map = {"en": "en", "es": "es", "pt": "pt", "de": "de", "ko": "ko", "ja": "ja"}
-        target_lang = el_lang_map.get(lang_code, lang_code)
+            # Resume support: skip if already generated
+            if out_file.exists() and out_file.stat().st_size > 0:
+                tts_files.append(out_file)
+                continue
 
-        # Step 1: Create dubbing project
-        logger.info(f"  ElevenLabs: creating dubbing project for {lang_code}...")
-        boundary = f"----PipelineBoundary{int(time.time())}"
-        body = self._build_multipart_body(
-            boundary=boundary,
-            fields={
-                "source_lang": "ru",
-                "target_lang": target_lang,
-                "num_speakers": "1",
-                "watermark": "false",
-            },
-            file_field="file",
-            file_path=video_file,
-        )
+            text = seg["text"]
+            logger.info(f"  TTS [{i+1}/{len(segments)}]: {text[:50]}...")
 
-        req = urllib.request.Request(
-            f"{base_url}/dubbing",
-            data=body,
-            headers={
-                "xi-api-key": api_key,
-                "Content-Type": f"multipart/form-data; boundary={boundary}",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=600) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
+            tts_data = json.dumps({
+                "text": text,
+                "model_id": ELEVENLABS_MODEL,
+                "voice_settings": {
+                    "stability": 0.5,
+                    "similarity_boost": 0.75,
+                    "style": 0.0,
+                    "use_speaker_boost": True,
+                },
+            }).encode("utf-8")
 
-        dubbing_id = result["dubbing_id"]
-        expected_duration = result.get("expected_duration_sec", 0)
-        logger.info(f"  ElevenLabs: dubbing_id={dubbing_id}, expected ~{expected_duration}s")
-
-        # Step 2: Poll for completion
-        dubbed_file = self._poll_elevenlabs_dubbing(
-            base_url=base_url,
-            api_key=api_key,
-            dubbing_id=dubbing_id,
-            target_lang=target_lang,
-            output_dir=output_dir,
-            timeout=1800,  # 30 min max
-        )
-
-        return {
-            "lang_code": lang_code,
-            "lang_name": lang_name,
-            "provider": "elevenlabs",
-            "dubbing_id": dubbing_id,
-            "output_file": str(dubbed_file),
-        }
-
-    def _poll_elevenlabs_dubbing(
-        self,
-        base_url: str,
-        api_key: str,
-        dubbing_id: str,
-        target_lang: str,
-        output_dir: Path,
-        timeout: int = 1800,
-    ) -> Path:
-        """Poll ElevenLabs dubbing status until complete, then download."""
-        start = time.time()
-        poll_interval = 15  # seconds
-
-        while time.time() - start < timeout:
             req = urllib.request.Request(
-                f"{base_url}/dubbing/{dubbing_id}",
-                headers={"xi-api-key": api_key},
+                f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}",
+                data=tts_data,
+                headers={
+                    "xi-api-key": api_key,
+                    "Content-Type": "application/json",
+                    "Accept": "audio/mpeg",
+                },
+                method="POST",
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                status_data = json.loads(resp.read().decode("utf-8"))
 
-            status = status_data.get("status", "unknown")
-            logger.info(f"  ElevenLabs: status={status}")
+            # Retry logic for rate limits
+            for attempt in range(3):
+                try:
+                    with urllib.request.urlopen(req, timeout=60) as resp:
+                        with open(out_file, "wb") as f:
+                            while True:
+                                chunk = resp.read(8192)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                    break
+                except urllib.error.HTTPError as e:
+                    if e.code == 429 and attempt < 2:
+                        wait = (attempt + 1) * 10
+                        logger.warning(f"  Rate limited, waiting {wait}s...")
+                        time.sleep(wait)
+                    else:
+                        raise
 
-            if status == "dubbed":
-                # Download the dubbed audio/video
-                output_file = output_dir / f"dubbed_{target_lang}.mp4"
-                dl_req = urllib.request.Request(
-                    f"{base_url}/dubbing/{dubbing_id}/audio/{target_lang}",
-                    headers={"xi-api-key": api_key},
-                )
-                with urllib.request.urlopen(dl_req, timeout=300) as dl_resp:
-                    with open(output_file, "wb") as f:
-                        while True:
-                            chunk = dl_resp.read(8192)
-                            if not chunk:
-                                break
-                            f.write(chunk)
-                logger.info(f"  ElevenLabs: downloaded {output_file}")
-                return output_file
+            tts_files.append(out_file)
 
-            elif status in ("failed", "error"):
-                error_msg = status_data.get("error", "Unknown error")
-                raise RuntimeError(f"ElevenLabs dubbing failed: {error_msg}")
+        logger.info(f"TTS generated: {len(tts_files)} files")
+        return tts_files
 
-            time.sleep(poll_interval)
+    # ── Step 6: Combine Audio ──
 
-        raise TimeoutError(f"ElevenLabs dubbing timed out after {timeout}s")
-
-    # ── KrillinAI (Edge TTS) Dubbing ──
-
-    def _dub_via_krillin(
+    def _combine_audio(
         self,
-        video_file: str,
-        lang_code: str,
-        lang_name: str,
-        edge_voice: str,
-        output_dir: Path,
-        krillin_url: str,
-    ) -> dict:
-        """Dub using KrillinAI self-hosted server (Edge TTS — free).
+        tts_files: list[Path],
+        segments: list[dict],
+        background_path: Path,
+        output_path: Path,
+        video_duration: float,
+    ):
+        """Combine background audio + TTS segments placed at correct timestamps."""
+        if output_path.exists():
+            logger.info(f"Combined audio already exists: {output_path}")
+            return
 
-        KrillinAI API:
-          POST /api/file              — upload video file -> {"data": {"file_path": ["local:./uploads/..."]}}
-          POST /api/capability/subtitleTask — start task (JSON body) -> {"data": {"task_id": "..."}}
-          GET  /api/capability/subtitleTask?taskId=... — poll status -> {"data": {"process_percent": N, "speech_download_url": "...", "subtitle_info": [...]}}
-          GET  /api/file/<path>        — download result file
-        """
-        # Step 1: Upload video file
-        logger.info(f"  KrillinAI: uploading video for {lang_code}...")
-        boundary = f"----KrillinBoundary{int(time.time())}"
-        body = self._build_multipart_body(
-            boundary=boundary,
-            fields={},
-            file_field="file",
-            file_path=video_file,
-        )
+        logger.info("Combining background + TTS segments...")
 
-        req = urllib.request.Request(
-            f"{krillin_url}/api/file",
-            data=body,
-            headers={
-                "Content-Type": f"multipart/form-data; boundary={boundary}",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=300) as resp:
-            upload_result = json.loads(resp.read().decode("utf-8"))
+        # Build FFmpeg filter: place each TTS segment at its timestamp
+        inputs = ["-i", str(background_path)]
+        filter_parts = ["[0:a]aformat=sample_rates=44100:channel_layouts=stereo[bg]"]
 
-        if upload_result.get("error", 0) != 0:
-            raise RuntimeError(f"KrillinAI upload failed: {upload_result.get('msg', 'unknown')}")
-
-        file_paths = upload_result.get("data", {}).get("file_path", [])
-        uploaded_path = file_paths[0] if file_paths else ""
-        logger.info(f"  KrillinAI: uploaded as {uploaded_path}")
-
-        # Step 2: Create subtitle/dubbing task
-        logger.info(f"  KrillinAI: creating task for {lang_code}...")
-        task_body = json.dumps({
-            "url": uploaded_path,
-            "origin_lang": "ru",
-            "target_lang": lang_code,
-            "tts": 1,  # 1 = enable TTS dubbing, 2 = subtitles only
-            "tts_voice_code": edge_voice,
-            "bilingual": 2,  # 1 = bilingual subs, 2 = target language only
-            "translation_subtitle_pos": 2,  # 2 = bottom
-            "modal_filter": 2,  # 2 = keep filler words
-            "embed_subtitle_video_type": "none",  # none/horizontal/vertical
-            "origin_language_word_one_line": 12,
-            "replace": [],
-            "language": "en",  # UI language
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            f"{krillin_url}/api/capability/subtitleTask",
-            data=task_body,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            task_result = json.loads(resp.read().decode("utf-8"))
-
-        if task_result.get("error", 0) != 0:
-            raise RuntimeError(f"KrillinAI task creation failed: {task_result.get('msg', 'unknown')}")
-
-        task_id = task_result.get("data", {}).get("task_id", "")
-        logger.info(f"  KrillinAI: task_id={task_id}")
-
-        # Step 3: Poll for completion
-        task_data = self._poll_krillin_task(
-            krillin_url=krillin_url,
-            task_id=task_id,
-            timeout=3600,  # 1 hour max
-        )
-
-        # Step 4: Download dubbed audio (tts_final_audio.wav)
-        speech_url = task_data.get("speech_download_url", "")
-        audio_file = output_dir / f"dubbed_{lang_code}.wav"
-        dubbed_file = output_dir / f"dubbed_{lang_code}.mp4"
-        if speech_url:
-            dl_url = speech_url if speech_url.startswith("http") else f"{krillin_url}{speech_url}"
-            req = urllib.request.Request(dl_url)
-            with urllib.request.urlopen(req, timeout=300) as dl_resp:
-                with open(audio_file, "wb") as f:
-                    while True:
-                        chunk = dl_resp.read(8192)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-            logger.info(f"  KrillinAI: downloaded dubbed audio to {audio_file}")
-
-            # Merge dubbed audio with original video using FFmpeg
-            import subprocess
-            try:
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", video_file, "-i", str(audio_file),
-                     "-c:v", "copy", "-map", "0:v:0", "-map", "1:a:0",
-                     "-shortest", str(dubbed_file)],
-                    check=True, capture_output=True, timeout=600,
-                )
-                logger.info(f"  KrillinAI: merged video+audio to {dubbed_file}")
-            except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                logger.warning(f"  FFmpeg merge failed: {e}. Audio-only file available at {audio_file}")
-                # Fallback: keep just the audio file
-                dubbed_file = audio_file
-
-        # Step 5: Download subtitles
-        srt_file = None
-        subtitle_info = task_data.get("subtitle_info", [])
-        for sub in subtitle_info:
-            sub_url = sub.get("download_url", "")
-            if sub_url:
-                srt_file = output_dir / f"subtitles_{lang_code}.srt"
-                dl_url = sub_url if sub_url.startswith("http") else f"{krillin_url}{sub_url}"
-                req = urllib.request.Request(dl_url)
-                with urllib.request.urlopen(req, timeout=30) as dl_resp:
-                    with open(srt_file, "wb") as f:
-                        f.write(dl_resp.read())
-                logger.info(f"  KrillinAI: subtitles saved to {srt_file}")
-                break  # take first subtitle file
-
-        # Video info (translated title/description from KrillinAI)
-        video_info = task_data.get("video_info", {})
-
-        return {
-            "lang_code": lang_code,
-            "lang_name": lang_name,
-            "provider": "krillin",
-            "task_id": task_id,
-            "output_file": str(dubbed_file),
-            "srt_file": str(srt_file) if srt_file else None,
-            "krillin_translated_title": video_info.get("translated_title", ""),
-            "krillin_translated_description": video_info.get("translated_description", ""),
-        }
-
-    def _poll_krillin_task(
-        self,
-        krillin_url: str,
-        task_id: str,
-        timeout: int = 3600,
-    ) -> dict:
-        """Poll KrillinAI task status until complete. Returns task data dict."""
-        start = time.time()
-        poll_interval = 10
-
-        while time.time() - start < timeout:
-            req = urllib.request.Request(
-                f"{krillin_url}/api/capability/subtitleTask?taskId={task_id}",
+        for i, (tts_file, seg) in enumerate(zip(tts_files, segments)):
+            inputs.extend(["-i", str(tts_file)])
+            delay_ms = int(seg["start"] * 1000)
+            idx = i + 1  # input index (0 is background)
+            filter_parts.append(
+                f"[{idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,"
+                f"adelay={delay_ms}|{delay_ms}[tts{i}]"
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
 
-            if result.get("error", 0) != 0:
-                raise RuntimeError(f"KrillinAI status check failed: {result.get('msg', 'unknown')}")
+        # Mix: background (80%) + all TTS segments (130%)
+        tts_inputs = "".join(f"[tts{i}]" for i in range(len(tts_files)))
+        filter_parts.append(
+            f"{tts_inputs}amix=inputs={len(tts_files)}:normalize=0,volume=1.3[voice]"
+        )
+        filter_parts.append(
+            "[bg]volume=0.8[bg_vol]"
+        )
+        filter_parts.append(
+            "[bg_vol][voice]amix=inputs=2:duration=longest:normalize=0[out]"
+        )
 
-            data = result.get("data", {})
-            progress = data.get("process_percent", 0)
-            logger.info(f"  KrillinAI: progress={progress}%")
+        filter_str = ";".join(filter_parts)
 
-            if progress >= 100:
-                return data
+        cmd = (
+            ["ffmpeg", "-y"] + inputs +
+            ["-filter_complex", filter_str, "-map", "[out]",
+             "-t", str(video_duration), str(output_path)]
+        )
 
-            time.sleep(poll_interval)
+        result = subprocess.run(cmd, capture_output=True, timeout=120)
+        if result.returncode != 0:
+            raise RuntimeError(f"FFmpeg combine failed: {result.stderr.decode('utf-8', errors='replace')[:500]}")
 
-        raise TimeoutError(f"KrillinAI task timed out after {timeout}s")
+        logger.info(f"Combined audio: {output_path}")
+
+    # ── Step 7: Merge Video + Audio ──
+
+    def _mux_video(self, video_path: str, audio_path: Path, output_path: Path):
+        """Merge dubbed audio with original video."""
+        if output_path.exists():
+            logger.info(f"Final video already exists: {output_path}")
+            return
+
+        logger.info("Merging audio with video...")
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", video_path, "-i", str(audio_path),
+             "-c:v", "copy", "-map", "0:v:0", "-map", "1:a:0",
+             "-shortest", str(output_path)],
+            check=True, capture_output=True, timeout=300,
+        )
+        logger.info(f"Final video: {output_path}")
 
     # ── Translate Metadata ──
 
@@ -448,15 +470,13 @@ class DubbingStep(BaseStep):
         tags: list[str],
     ) -> dict:
         """Translate video title, description and tags via Claude."""
-        lang_name = LANGUAGES.get(lang_code, (lang_code,))[0]
+        lang_name = LANGUAGES.get(lang_code, lang_code)
 
-        prompt = f"""Translate the following YouTube video metadata from Russian to {lang_name} ({lang_code}).
+        prompt = f"""Translate the following YouTube video metadata from Russian to {lang_name}.
 
 RULES:
 - Keep the tone engaging and YouTube-friendly
 - Adapt cultural references for the target audience
-- Keep hashtags in the target language
-- Tags should be relevant keywords in the target language
 - DO NOT translate channel names, brand names, or URLs
 - Keep emojis as-is
 
@@ -476,29 +496,27 @@ Respond ONLY with valid JSON:
   "tags": ["tag1", "tag2", ...]
 }}"""
 
-        system = f"You are a professional YouTube video translator specializing in {lang_name}. Translate naturally, not literally."
+        system = f"You are a professional YouTube translator specializing in {lang_name}. Translate naturally, not literally."
         response = self.ask_claude(system=system, prompt=prompt)
 
-        # Parse JSON from response
         try:
-            # Find JSON in response
             start = response.index("{")
             end = response.rindex("}") + 1
             return json.loads(response[start:end])
         except (ValueError, json.JSONDecodeError) as e:
-            logger.warning(f"Failed to parse translation JSON: {e}")
+            logger.warning(f"Failed to parse metadata translation: {e}")
             return {"title": title, "description": description, "tags": tags}
 
     # ── Utilities ──
 
     def _find_video_file(self) -> str:
-        """Locate the source video file (same logic as publish step)."""
+        """Locate the source video file."""
         # Check editing step
         video_file = self.state.get_step("editing").get("data", {}).get("video_file")
         if video_file and Path(video_file).exists():
             return video_file
 
-        # Check publish step (might have the uploaded video path)
+        # Check publish step
         publish_data = self.state.get_step("publish").get("data", {})
         video_file = publish_data.get("video_file")
         if video_file and Path(video_file).exists():
@@ -517,13 +535,12 @@ Respond ONLY with valid JSON:
         )
 
     def _load_dubbing_config(self) -> dict:
-        """Load dubbing configuration (selected languages, voices, etc.)."""
+        """Load dubbing configuration (selected languages)."""
         config_file = self.state.project_dir / "dubbing_config.json"
         if config_file.exists():
             with open(config_file, "r", encoding="utf-8") as f:
                 return json.load(f)
 
-        # Check channel-level config
         channel_id = self.state.channel_id
         if channel_id:
             from config import CHANNELS_DIR
@@ -532,105 +549,36 @@ Respond ONLY with valid JSON:
                 with open(channel_config, "r", encoding="utf-8") as f:
                     return json.load(f)
 
-        # Default: all languages
-        return {"languages": list(LANGUAGES.keys()), "auto_publish": False}
+        return {"languages": list(LANGUAGES.keys())}
 
-    def _build_multipart_body(
-        self,
-        boundary: str,
-        fields: dict[str, str],
-        file_field: str,
-        file_path: str,
-    ) -> bytes:
-        """Build multipart/form-data body for file upload."""
-        import mimetypes
-
-        lines = []
-        for key, value in fields.items():
-            lines.append(f"--{boundary}".encode())
-            lines.append(f'Content-Disposition: form-data; name="{key}"'.encode())
-            lines.append(b"")
-            lines.append(value.encode())
-
-        # File part
-        filename = Path(file_path).name
-        content_type = mimetypes.guess_type(file_path)[0] or "application/octet-stream"
-        lines.append(f"--{boundary}".encode())
-        lines.append(
-            f'Content-Disposition: form-data; name="{file_field}"; filename="{filename}"'.encode()
+    def _get_duration(self, video_path: str) -> float:
+        """Get video duration in seconds via ffprobe."""
+        result = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", video_path],
+            capture_output=True, text=True, timeout=10,
         )
-        lines.append(f"Content-Type: {content_type}".encode())
-        lines.append(b"")
+        return float(result.stdout.strip())
 
-        with open(file_path, "rb") as f:
-            file_data = f.read()
+    def _save_progress(self, dubbing_dir: Path, lang_code: str, stage: str, data: dict):
+        """Save dubbing progress for UI polling."""
+        state_file = dubbing_dir / "dubbing_state.json"
+        state = {}
+        if state_file.exists():
+            with open(state_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+        state[lang_code] = {"stage": stage, "updated_at": time.time(), **data}
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
 
-        lines.append(file_data)
-        lines.append(f"--{boundary}--".encode())
 
-        # Join with CRLF
-        body = b"\r\n".join(lines)
-        return body
-
-
-# ── Standalone dubbing functions for API use ──
-
-def dub_single_video(
-    video_path: str,
-    lang_code: str,
-    output_dir: str,
-    provider: str = "auto",
-) -> dict:
-    """Dub a single video file without pipeline context.
-
-    Used by API endpoints for on-demand dubbing.
-    """
-    from config import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, KRILLIN_BASE_URL
-
-    if lang_code not in LANGUAGES:
-        raise ValueError(f"Unsupported language: {lang_code}. Supported: {list(LANGUAGES.keys())}")
-
-    lang_name, default_provider, edge_voice = LANGUAGES[lang_code]
-
-    if provider == "auto":
-        provider = default_provider
-
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    # Use a dummy step instance for the dubbing methods
-    # (This is a convenience wrapper — real pipeline uses DubbingStep)
-    step = DubbingStep.__new__(DubbingStep)
-
-    if provider == "elevenlabs" and ELEVENLABS_API_KEY:
-        return step._dub_via_elevenlabs(
-            video_file=video_path,
-            lang_code=lang_code,
-            lang_name=lang_name,
-            output_dir=output_path,
-            api_key=ELEVENLABS_API_KEY,
-            voice_id=ELEVENLABS_VOICE_ID,
-        )
-    else:
-        return step._dub_via_krillin(
-            video_file=video_path,
-            lang_code=lang_code,
-            lang_name=lang_name,
-            edge_voice=edge_voice,
-            output_dir=output_path,
-            krillin_url=KRILLIN_BASE_URL,
-        )
-
+# ── Standalone functions for API use ──
 
 def get_available_languages() -> dict:
-    """Return available dubbing languages with their config."""
+    """Return available dubbing languages."""
     from config import ELEVENLABS_API_KEY
-    result = {}
-    for code, (name, provider, voice) in LANGUAGES.items():
-        result[code] = {
-            "name": name,
-            "provider": provider,
-            "edge_voice": voice,
-            "available": True if provider == "edge" else bool(ELEVENLABS_API_KEY),
-        }
-    return result
+    has_key = bool(ELEVENLABS_API_KEY)
+    return {
+        code: {"name": name, "provider": "ElevenLabs TTS", "available": has_key}
+        for code, name in LANGUAGES.items()
+    }

@@ -1000,20 +1000,27 @@ http.createServer(async (req, res) => {
       const dubbingDir = path.join(DATA_DIR, projectId, 'dubbing');
       const langResults = {};
       if (fs.existsSync(dubbingDir)) {
-        fs.readdirSync(dubbingDir).filter(d => fs.statSync(path.join(dubbingDir, d)).isDirectory()).forEach(lang => {
+        fs.readdirSync(dubbingDir).filter(d => {
+          const p = path.join(dubbingDir, d);
+          return fs.statSync(p).isDirectory() && d.length <= 3;
+        }).forEach(lang => {
           const metaFile = path.join(dubbingDir, lang, 'metadata.json');
-          const videoFile = path.join(dubbingDir, lang, `dubbed_${lang}.mp4`);
-          const srtFile = path.join(dubbingDir, lang, `subtitles_${lang}.srt`);
+          const videoFile = path.join(dubbingDir, lang, 'final.mp4');
+          const combinedFile = path.join(dubbingDir, lang, 'combined.wav');
           langResults[lang] = {
             has_video: fs.existsSync(videoFile),
+            has_audio: fs.existsSync(combinedFile),
             has_metadata: fs.existsSync(metaFile),
-            has_subtitles: fs.existsSync(srtFile),
             metadata: fs.existsSync(metaFile) ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : null,
           };
         });
       }
 
-      return json200({ dubbing: dubStep, config, languages: langResults });
+      // Read dubbing progress
+      const progressFile = path.join(dubbingDir, 'dubbing_state.json');
+      const progress = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progressFile, 'utf8')) : {};
+
+      return json200({ dubbing: dubStep, config, languages: langResults, progress });
     }
 
     // GET /api/v1/projects/:id/dubbing/:lang — download dubbed video
@@ -1021,7 +1028,7 @@ http.createServer(async (req, res) => {
       const parts = v1path.split('/');
       const projectId = parts[2];
       const lang = parts[4];
-      const videoFile = path.join(DATA_DIR, projectId, 'dubbing', lang, `dubbed_${lang}.mp4`);
+      const videoFile = path.join(DATA_DIR, projectId, 'dubbing', lang, 'final.mp4');
       if (!fs.existsSync(videoFile)) return jsonErr('NOT_FOUND', `Dubbed video not found for ${lang}`, 404);
       const stat = fs.statSync(videoFile);
       res.writeHead(200, {
@@ -1051,12 +1058,13 @@ http.createServer(async (req, res) => {
     if (v1path === '/dubbing/languages' && req.method === 'GET') {
       return json200({
         languages: {
-          en: { name: 'Английский', provider: 'elevenlabs', edge_voice: 'en-US-GuyNeural' },
-          es: { name: 'Испанский', provider: 'elevenlabs', edge_voice: 'es-ES-AlvaroNeural' },
-          pt: { name: 'Португальский', provider: 'edge', edge_voice: 'pt-BR-AntonioNeural' },
-          de: { name: 'Немецкий', provider: 'edge', edge_voice: 'de-DE-ConradNeural' },
-          ko: { name: 'Корейский', provider: 'edge', edge_voice: 'ko-KR-InJoonNeural' },
-          ja: { name: 'Японский', provider: 'edge', edge_voice: 'ja-JP-KeitaNeural' },
+          en: { name: 'English', provider: 'ElevenLabs TTS' },
+          es: { name: 'Spanish', provider: 'ElevenLabs TTS' },
+          pt: { name: 'Portuguese', provider: 'ElevenLabs TTS' },
+          de: { name: 'German', provider: 'ElevenLabs TTS' },
+          ko: { name: 'Korean', provider: 'ElevenLabs TTS' },
+          ja: { name: 'Japanese', provider: 'ElevenLabs TTS' },
+          zh: { name: 'Chinese', provider: 'ElevenLabs TTS' },
         }
       });
     }
