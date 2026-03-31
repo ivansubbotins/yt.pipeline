@@ -33,6 +33,7 @@ PIPELINE_STEPS = [
     "shooting",      # ручной этап — Иван
     "editing",       # ручной этап — монтажёр
     "publish",
+    "dubbing",
 ]
 
 

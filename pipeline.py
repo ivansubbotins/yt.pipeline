@@ -14,6 +14,7 @@ from steps.teleprompter import TeleprompterStep
 from steps.covers import CoversStep
 from steps.description import DescriptionStep
 from steps.publish import PublishStep
+from steps.dubbing import DubbingStep
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ STEP_CLASSES = {
     "covers": CoversStep,
     "description": DescriptionStep,
     "publish": PublishStep,
+    "dubbing": DubbingStep,
 }
 
 # Steps that require human action
@@ -135,6 +137,22 @@ class Pipeline:
         result = self.run_step("publish")
         self.state.advance()
         return result
+
+    def dub(self, languages: list[str] | None = None) -> dict:
+        """Run dubbing step. Optionally override language selection.
+
+        Args:
+            languages: List of language codes (e.g. ['en', 'es']). None = use config.
+        """
+        if languages:
+            # Save language selection to project dubbing config
+            import json
+            config_file = self.state.project_dir / "dubbing_config.json"
+            config = {"languages": languages, "auto_publish": False}
+            with open(config_file, "w", encoding="utf-8") as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+
+        return self.run_step("dubbing")
 
     def review(self) -> str:
         """Generate a review summary of all completed steps for Ivan."""

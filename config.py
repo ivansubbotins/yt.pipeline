@@ -29,6 +29,13 @@ RECRAFT_API_KEY = os.getenv("RECRAFT_API_KEY", "")
 # fal.ai API (Nano Banana 2 — primary thumbnail generation)
 FAL_KEY = os.getenv("FAL_KEY", "")
 
+# ElevenLabs API (voice cloning for dubbing — EN, ES)
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")  # Cloned voice ID
+
+# KrillinAI (self-hosted dubbing server)
+KRILLIN_BASE_URL = os.getenv("KRILLIN_BASE_URL", "http://127.0.0.1:8888")
+
 # Pipeline defaults
 DEFAULT_VIDEO_MIN_LENGTH_MINUTES = 10
 DEFAULT_VIDEOS_PER_MONTH = 4

@@ -970,6 +970,97 @@ http.createServer(async (req, res) => {
       return json200({ playlists });
     }
 
+    // ── Dubbing ──
+
+    // POST /api/v1/projects/:id/dubbing — start dubbing
+    if (v1path.match(/^\/projects\/[^/]+\/dubbing$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const body = JSON.parse(await readBody(req));
+      const languages = body.languages || []; // e.g. ["en", "es", "pt"]
+      const args = ['dub', projectId];
+      if (languages.length > 0) args.push('--languages', languages.join(','));
+      const output = await runAgent(args);
+      notifyWebhooks('dubbing.completed', projectId, { languages, output: output.substring(0, 500) });
+      return json200({ project_id: projectId, output: output.trim() });
+    }
+
+    // GET /api/v1/projects/:id/dubbing — dubbing status
+    if (v1path.match(/^\/projects\/[^/]+\/dubbing$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const stateFile = path.join(DATA_DIR, projectId, 'state.json');
+      if (!fs.existsSync(stateFile)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+      const dubStep = state.steps?.dubbing || { status: 'pending', data: {} };
+
+      // Also read dubbing config if exists
+      const configFile = path.join(DATA_DIR, projectId, 'dubbing_config.json');
+      const config = fs.existsSync(configFile) ? JSON.parse(fs.readFileSync(configFile, 'utf8')) : null;
+
+      // Read per-language results
+      const dubbingDir = path.join(DATA_DIR, projectId, 'dubbing');
+      const langResults = {};
+      if (fs.existsSync(dubbingDir)) {
+        fs.readdirSync(dubbingDir).filter(d => fs.statSync(path.join(dubbingDir, d)).isDirectory()).forEach(lang => {
+          const metaFile = path.join(dubbingDir, lang, 'metadata.json');
+          const videoFile = path.join(dubbingDir, lang, `dubbed_${lang}.mp4`);
+          const srtFile = path.join(dubbingDir, lang, `subtitles_${lang}.srt`);
+          langResults[lang] = {
+            has_video: fs.existsSync(videoFile),
+            has_metadata: fs.existsSync(metaFile),
+            has_subtitles: fs.existsSync(srtFile),
+            metadata: fs.existsSync(metaFile) ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : null,
+          };
+        });
+      }
+
+      return json200({ dubbing: dubStep, config, languages: langResults });
+    }
+
+    // GET /api/v1/projects/:id/dubbing/:lang — download dubbed video
+    if (v1path.match(/^\/projects\/[^/]+\/dubbing\/[a-z]{2}$/) && req.method === 'GET') {
+      const parts = v1path.split('/');
+      const projectId = parts[2];
+      const lang = parts[4];
+      const videoFile = path.join(DATA_DIR, projectId, 'dubbing', lang, `dubbed_${lang}.mp4`);
+      if (!fs.existsSync(videoFile)) return jsonErr('NOT_FOUND', `Dubbed video not found for ${lang}`, 404);
+      const stat = fs.statSync(videoFile);
+      res.writeHead(200, {
+        'Content-Type': 'video/mp4',
+        'Content-Length': stat.size,
+        'Content-Disposition': `attachment; filename="dubbed_${lang}.mp4"`,
+      });
+      fs.createReadStream(videoFile).pipe(res);
+      return;
+    }
+
+    // POST /api/v1/projects/:id/dubbing/:lang/publish — publish dubbed video to YouTube
+    if (v1path.match(/^\/projects\/[^/]+\/dubbing\/[a-z]{2}\/publish$/) && req.method === 'POST') {
+      const parts = v1path.split('/');
+      const projectId = parts[2];
+      const lang = parts[4];
+      const body = JSON.parse(await readBody(req));
+      const args = ['publish-dubbed', projectId, lang];
+      if (body.schedule) args.push('--schedule', body.schedule);
+      if (body.channel_id) args.push('--channel', body.channel_id);
+      const output = await runAgent(args);
+      notifyWebhooks('dubbing.published', projectId, { lang, output: output.substring(0, 500) });
+      return json200({ project_id: projectId, lang, output: output.trim() });
+    }
+
+    // GET /api/v1/dubbing/languages — available languages
+    if (v1path === '/dubbing/languages' && req.method === 'GET') {
+      return json200({
+        languages: {
+          en: { name: 'Английский', provider: 'elevenlabs', edge_voice: 'en-US-GuyNeural' },
+          es: { name: 'Испанский', provider: 'elevenlabs', edge_voice: 'es-ES-AlvaroNeural' },
+          pt: { name: 'Португальский', provider: 'edge', edge_voice: 'pt-BR-AntonioNeural' },
+          de: { name: 'Немецкий', provider: 'edge', edge_voice: 'de-DE-ConradNeural' },
+          ko: { name: 'Корейский', provider: 'edge', edge_voice: 'ko-KR-InJoonNeural' },
+          ja: { name: 'Японский', provider: 'edge', edge_voice: 'ja-JP-KeitaNeural' },
+        }
+      });
+    }
+
     // ── Split Tests ──
 
     // POST /api/v1/projects/:id/splittest
@@ -2427,6 +2518,11 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
   if (pathname === '/api/run-step' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
+      // For dubbing step: save language config before running
+      if (body.step === 'dubbing' && body.languages && body.languages.length > 0) {
+        const configFile = path.join(DATA_DIR, body.project_id, 'dubbing_config.json');
+        fs.writeFileSync(configFile, JSON.stringify({ languages: body.languages, auto_publish: false }, null, 2), 'utf8');
+      }
       const output = await runAgent(['step', body.project_id, body.step]);
       const state = readState(body.project_id);
       res.writeHead(200, { 'Content-Type': 'application/json' });
