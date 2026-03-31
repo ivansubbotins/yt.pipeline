@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Pipeline — Админка</title>
+<title>YouTube Pipeline</title>
 <link rel="stylesheet" href="/shared.css">
 <style>
 /* Header removed — using sidebar now */
@@ -101,6 +101,922 @@ select.ctx-input { appearance: none; }
   .run-all-bar { flex-wrap: wrap; }
 }
 </style>
+<script>
+// ── i18n ──
+const LANG = localStorage.getItem('yt_lang') || 'ru';
+document.documentElement.lang = LANG;
+const T = {
+  ru: {
+    // Page
+    page_title: 'YouTube Pipeline — Админка',
+    // Nav
+    nav_main: 'Главная',
+    nav_express: 'Express',
+    nav_settings: 'Настройки',
+    nav_new_project: '+ Новый проект',
+    nav_logout: 'Выйти',
+    // Projects list
+    projects_title: 'Проекты',
+    btn_new_project: '+ Новый проект',
+    empty_projects: 'Нет проектов. Нажми «+ Новый проект» чтобы начать.',
+    // Detail view
+    btn_run_all: '▶ Запустить все авто-шаги',
+    btn_run_all_title: 'Запускает шаги по порядку, но требует одобрения между этапами',
+    btn_custom_cover: '🎨 Кастомная обложка',
+    btn_cover_editor: '🖼 Cover Editor',
+    btn_refresh: '↻ Обновить',
+    // New project modal
+    modal_new_title: 'Новый видео-проект',
+    label_channel: 'Канал',
+    channel_default: '— Канал по умолчанию —',
+    topic_placeholder: 'Тема видео...',
+    btn_cancel: 'Отмена',
+    btn_create: 'Создать',
+    // Settings
+    settings_channels: 'Каналы',
+    current_channel: 'Текущий канал',
+    btn_add_channel: '+ Добавить канал',
+    select_or_create_channel: 'Выберите или создайте канал',
+    label_niche: 'Ниша канала',
+    niche_placeholder: 'Бизнес, маркетинг, AI',
+    label_target_audience: 'Целевая аудитория',
+    target_audience_placeholder: 'Предприниматели, маркетологи, 25-45 лет',
+    btn_channel_videos: '📊 Видео канала',
+    btn_recommendations: '💡 Рекомендации тем',
+    channel_videos_title: '📊 Видео канала',
+    recommendations_title: '💡 Рекомендации тем',
+    // Wizard
+    wizard_title: 'Быстрая настройка канала',
+    wizard_desc: 'Ответьте на вопросы — AI сгенерирует описание, баннер и аватар канала.',
+    wiz_channel_name: 'Название канала',
+    wiz_channel_name_ph: 'Иван Субботин',
+    wiz_niche: 'Ниша',
+    wiz_niche_ph: 'Маркетинг, AI, бизнес',
+    wiz_audience: 'Для кого канал (ЦА)',
+    wiz_audience_ph: 'Предприниматели, маркетологи 25-45',
+    wiz_expertise: 'Экспертиза автора',
+    wiz_expertise_ph: '13 лет в маркетинге, основатель агентства',
+    wiz_tone: 'Тон подачи',
+    wiz_tone_ph: 'Экспертный, но дружелюбный',
+    wiz_goals: 'Цели канала',
+    wiz_goals_ph: 'Обучение, лидогенерация, личный бренд',
+    wiz_visual_style: 'Стиль визуала',
+    wiz_style_modern: 'Современный минимализм',
+    wiz_style_bold: 'Яркий креативный',
+    wiz_style_corp: 'Деловой/корпоративный',
+    wiz_style_neon: 'Неон на тёмном',
+    wiz_style_warm: 'Тёплый дружелюбный',
+    wiz_avatar: 'Аватар',
+    wiz_avatar_logo: 'Логотип/иконка',
+    wiz_avatar_photo: 'Фото эксперта (стилизованное)',
+    wiz_avatar_illustration: 'Иллюстрация',
+    btn_generate_all: 'Сгенерировать всё',
+    btn_only_desc: 'Только описание',
+    btn_only_banner: 'Только баннер',
+    btn_only_avatar: 'Только аватар',
+    wiz_desc_label: 'Описание канала',
+    btn_copy: '📋 Скопировать',
+    wiz_banner_label: 'Баннер канала (2560×1440)',
+    wiz_banner_text_label: 'Текст на баннере:',
+    wiz_banner_prompt_label: 'Промпт для генерации:',
+    btn_copy_prompt: '📋 Скопировать промпт',
+    btn_gen_banner: '🎨 Сгенерировать баннер',
+    btn_download_banner: '⬇ Скачать баннер',
+    wiz_avatar_label: 'Аватар канала (800×800)',
+    btn_gen_avatar: '🎨 Сгенерировать аватар',
+    btn_download_avatar: '⬇ Скачать аватар',
+    // Author
+    settings_author: 'Автор',
+    label_name: 'Имя',
+    name_ph: 'Иван',
+    label_full_name: 'Полное имя',
+    full_name_ph: 'Иван Субботин',
+    label_who: 'Кто он',
+    who_ph: 'Предприниматель, маркетолог',
+    label_expertise: 'Экспертиза (через запятую)',
+    expertise_ph: 'маркетинг, AI, бизнес',
+    label_experience: 'Опыт',
+    experience_ph: '10 лет в маркетинге, основатель...',
+    label_tone: 'Тон подачи',
+    tone_ph: 'экспертный, но дружелюбный',
+    // Links
+    settings_links: 'Ссылки для описания видео',
+    links_desc: 'Автоматически вставляются в описание каждого видео. UTM-метки генерируются автоматически.',
+    label_type: 'Тип',
+    type_youtube: '▶ YouTube',
+    type_telegram: '✈ Telegram',
+    type_website: '🌐 Сайт',
+    type_instagram: '📷 Instagram',
+    type_vk: '💬 VK',
+    type_other: '🔗 Другое',
+    label_link_name: 'Название',
+    link_name_ph: 'Мой Telegram-канал',
+    label_url: 'URL',
+    url_ph: 'https://t.me/channel',
+    label_emoji: 'Эмодзи',
+    label_utm: 'UTM-метки',
+    btn_add: '+ Добавить',
+    utm_defaults: 'UTM по умолчанию',
+    utm_campaign_ph: 'авто из названия',
+    // CTA
+    settings_cta: 'CTA и рекламные вставки',
+    label_lead_magnet: 'Лидмагнит',
+    label_voiceover_text: 'Текст для озвучки',
+    lead_magnet_ph: 'Забирайте бесплатный гайд...',
+    label_placement: 'Размещение',
+    placement_intro: 'В начале',
+    placement_hook: 'В хуке',
+    placement_outro: 'В конце',
+    label_mid_roll: 'Рекламная вставка',
+    mid_roll_ph: 'У меня есть закрытая группа...',
+    label_after_block: 'После блока №',
+    label_end_screen: 'Концовка',
+    end_screen_ph: 'Ставьте лайк и подписывайтесь!',
+    label_hashtags: 'Хэштеги',
+    hashtags_ph: 'ИмяКанала, Маркетинг',
+    label_tags: 'Теги',
+    tags_ph: 'имя канала, маркетинг',
+    // Personas
+    settings_personas: 'Персоны для обложек',
+    personas_desc: 'Добавьте лица людей, которые могут появиться на обложках: эксперт, известные личности, спикеры. При генерации обложки вы выберете кого разместить.',
+    persona_name_ph: 'Сергей Галицкий',
+    label_role: 'Роль / кто это',
+    persona_role_ph: 'Основатель Магнита',
+    label_photo: 'Фото',
+    label_ai_desc: 'Описание для AI (как выглядит, что носит)',
+    persona_desc_ph: 'Мужчина ~55 лет, короткая стрижка, в деловом костюме',
+    btn_add_persona: '+ Добавить персону',
+    // Expert photo & styles
+    settings_photo_styles: 'Фото и стили обложек',
+    label_expert_photo: 'Фото эксперта (для обложек)',
+    expert_photo_hint: 'Фон будет удалён автоматически',
+    label_style_refs: 'Стили-референсы',
+    label_image: 'Картинка',
+    label_style_name: 'Название',
+    style_name_ph: 'Неон синий',
+    label_style_prompt: 'Промпт-подсказка',
+    style_prompt_ph: 'neon blue glow...',
+    btn_add_style: '+ Добавить',
+    // 2FA
+    settings_2fa: '🔒 Двухфакторная аутентификация (2FA)',
+    twofa_scan_qr: 'Отсканируйте QR-код в Google Authenticator (или Authy):',
+    twofa_manual: 'Или введите секрет вручную:',
+    twofa_verify_ph: 'Введите 6-значный код',
+    btn_verify_enable: 'Подтвердить и включить',
+    twofa_disable_ph: 'Код 2FA для отключения',
+    btn_disable_2fa: 'Отключить 2FA',
+    btn_save: 'Сохранить изменения',
+    // Cover modal
+    cover_modal_title: '🎨 Кастомная обложка',
+    label_personas_on_cover: 'Персоны на обложке',
+    label_style_ref: 'Стиль-референс',
+    label_prompt: 'Промпт (на английском — описание полной сцены)',
+    cover_prompt_ph: "A man pointing at the camera with surprised expression, neon blue glow behind him, bold text says 'ШОК', YouTube thumbnail style, 16:9...",
+    label_cover_text: 'Текст на обложке (русский, 2-4 слова)',
+    cover_text_ph: 'СЕКРЕТ УСПЕХА',
+    label_neon_color: 'Цвет неона',
+    btn_generate_cover: '🎨 Сгенерировать',
+    // STEPS
+    step_research: 'Исследование',
+    step_research_desc: 'Анализ темы, ключевые слова, конкуренты',
+    step_sources: 'Источники',
+    step_sources_desc: 'Статьи, факты, цитаты для контента',
+    step_content_plan: 'Контент-план',
+    step_content_plan_desc: 'Структура видео, хук, CTA',
+    step_references: 'Референсы',
+    step_references_desc: 'Анализ конкурентов, скачивание обложек',
+    step_script: 'Сценарий',
+    step_script_desc: 'Блоки сценария с таймкодами',
+    step_teleprompter: 'Телесуфлёр',
+    step_teleprompter_desc: 'Текст для телесуфлёра',
+    step_covers: 'Обложки',
+    step_covers_desc: 'Генерация 3 вариантов обложек',
+    step_description: 'Описание',
+    step_description_desc: 'SEO описание + теги + хэштеги',
+    step_shooting: 'Съёмка',
+    step_shooting_desc: 'Ручной этап — съёмка видео',
+    step_editing: 'Монтаж',
+    step_editing_desc: 'Ручной этап — монтаж',
+    step_publish: 'Публикация',
+    step_publish_desc: 'Загрузка на YouTube',
+    step_dubbing: 'Дублирование',
+    step_dubbing_desc: 'Перевод и озвучка на другие языки',
+    // Status labels
+    status_pending: '⬜ Ожидает',
+    status_in_progress: '🔄 Выполняется',
+    status_completed: '✅ Готово',
+    status_waiting: '⏳ Ожидание',
+    status_failed: '❌ Ошибка',
+    status_approved: '👍 Подтверждено',
+    // Buttons
+    btn_locked: '🔒 Заблокировано',
+    btn_run: '▶ Запустить',
+    btn_restart: '🔄 Перезапустить',
+    btn_shot_done: '✓ Съёмка готова',
+    btn_edit_done: '✓ Монтаж готов',
+    btn_start_dubbing: '🌍 Запустить дублирование',
+    btn_data: '📋 Данные',
+    // Research
+    videos_found: 'Видео найдено',
+    avg_views_ru: 'Ср. просмотры RU',
+    avg_views_en: 'Ср. просмотры EN',
+    min_suffix: 'мин',
+    avg_duration: 'Ср. длительность',
+    rec_prefix: 'Рек.:',
+    best_video: 'Самое залетевшее видео',
+    views_suffix: 'просмотров',
+    subs_on_channel: 'подписчиков на канале',
+    breakthrough_label: 'Прорывные ролики — маленький канал, огромные просмотры',
+    breakthrough_desc: 'Каналы до 50K подписчиков с непропорционально большими просмотрами. Это самые ценные сигналы — тема залетает независимо от размера канала.',
+    days_ago: 'дн. назад',
+    weeks_ago: 'нед. назад',
+    months_ago: 'мес. назад',
+    year_plus: '1+ год',
+    views_per_day: 'просм/день',
+    views_short: 'просм.',
+    subs_short: 'подп.',
+    breakthrough_badge: 'ПРОРЫВ',
+    all_competitors: 'Все конкуренты',
+    angle_question: 'О чём будем снимать видео?',
+    angle_desc: 'Выберите угол подачи. AI проанализировал конкурентов и предлагает варианты — от самого перспективного к менее очевидным.',
+    ai_recommendation: 'Рекомендация AI',
+    max_views_potential: 'Максимальный потенциал просмотров',
+    variant_prefix: 'Вариант',
+    gaps_title: 'Что упускают конкуренты',
+    rec_titles: 'Рекомендованные заголовки',
+    // Sources
+    source_url_ph: 'Вставьте URL статьи или YouTube-видео...',
+    btn_add_source: '+ Добавить',
+    btn_add_text: '+ Текст',
+    btn_add_notebook: '+ NotebookLM',
+    source_yt_hint: 'YouTube-ссылки определяются автоматически — транскрипт скачивается бесплатно',
+    notebook_title: 'Подключить NotebookLM',
+    notebook_desc: 'Создайте блокнот в NotebookLM, добавьте YouTube-видео/PDF/статьи, и вставьте ID блокнота.',
+    notebook_auth_hint: 'Авторизация живёт ~12-24ч. Если истекла — запустите',
+    notebook_auth_cmd: 'в терминале.',
+    notebook_id_ph: 'ID блокнота NotebookLM...',
+    notebook_name_ph: 'Название (необязательно)',
+    btn_connect: 'Подключить',
+    source_text_title_ph: 'Название заметки...',
+    source_text_ph: 'Вставьте текст, заметки, факты...',
+    btn_add_text_confirm: 'Добавить текст',
+    extracted_data: 'Извлечённые данные',
+    sources_summary: 'РЕЗЮМЕ ИСТОЧНИКОВ',
+    label_fact: 'Факт',
+    label_quote: 'Цитата',
+    label_stat: 'Статистика',
+    source_label: 'Источник:',
+    key_insights: 'Ключевые инсайты',
+    add_sources_hint: 'Добавьте источники и нажмите "Запустить" чтобы извлечь факты и цитаты.',
+    // References
+    checking_photo: 'Проверяю фото...',
+    photo_not_uploaded: 'Фото не загружено!',
+    photo_upload_settings: 'Загрузите в Настройках.',
+    photo_uploaded: '✓ Фото загружено',
+    cover_analysis: 'Анализ обложек конкурентов',
+    covers_suffix: 'обложек',
+    label_fonts: 'Шрифты',
+    fonts_styles: 'Стили:',
+    fonts_length: 'Длина:',
+    fonts_position: 'Позиция:',
+    fonts_case: 'Регистр:',
+    label_colors: 'Цвета',
+    colors_contrast: 'Контраст:',
+    colors_bg: 'Фон:',
+    label_composition: 'Композиция',
+    comp_face: 'Лицо:',
+    comp_face_pos: 'Позиция:',
+    comp_face_size: 'Размер:',
+    label_clickbait: 'Кликбейт-элементы',
+    competitor_covers: 'Обложки конкурентов',
+    cover_concepts: 'Концепции обложек',
+    concept_prefix: 'Концепт',
+    recommended_badge: 'РЕКОМЕНДОВАННЫЙ',
+    scene_prompt: 'Сцена (промпт)',
+    emotion_style: 'Эмоция и стиль',
+    emotion_label: 'Эмоция:',
+    style_label: 'Стиль:',
+    expert_label: 'Эксперт:',
+    text_label: 'Текст:',
+    inspired_by: 'Вдохновлено:',
+    growing_channel_tip: 'СОВЕТ ДЛЯ РАСТУЩЕГО КАНАЛА',
+    growing_channel_text: 'Без узнаваемого лица обложка должна компенсировать другими элементами: крупный контрастный текст (2-3 слова), яркая эмоция на лице, интригующий визуал. Используйте стрелки, обводки, эффект «до/после». Топовые каналы показали: максимальный CTR = крупное лицо + 2-3 слова КАПСОМ + яркий фон.',
+    no_covers: 'Нет обложек',
+    // Content plan
+    video_titles: 'Заголовки видео',
+    chars_suffix: 'символов',
+    hook_first_30: 'Хук — первые 30 секунд',
+    hook_select_desc: 'Выберите один вариант хука для вашего видео.',
+    hook_recommended: 'Рекомендованный',
+    video_structure: 'Структура видео',
+    total_duration: 'Общий хрон.:',
+    cover_label: 'Обложка',
+    emotion_of_cover: 'Эмоция обложки',
+    why_plan_works: 'ПОЧЕМУ ЭТОТ ПЛАН СРАБОТАЕТ',
+    // Script
+    blocks_label: 'Блоков',
+    duration_label: 'Хронометраж',
+    tone_label: 'Тон:',
+    key_messages: 'КЛЮЧЕВЫЕ СООБЩЕНИЯ',
+    climax_setup: 'Подводка к кульминации:',
+    pacing: 'Темп:',
+    // Teleprompter
+    words_real: 'Слов (реально)',
+    duration_wpm: 'Хронометраж (150 сл/мин)',
+    scenes_label: 'Сцен',
+    btn_copy_all_text: '📋 Скопировать весь текст',
+    text_too_short: 'Текст слишком короткий для видео 10+ минут. Нужно минимум 1500 слов',
+    text_now: 'сейчас',
+    regenerate_hint: 'Перегенерируйте телесуфлёр.',
+    scene_prefix: 'Сцена',
+    words_suffix: 'слов',
+    pacing_label: 'Ритм:',
+    // Dubbing
+    audio_track_title: '🎵 Аудиодорожка (от монтажёра)',
+    audio_track_desc: 'Загрузите MP3 или WAV аудио из финального видео. Видео не нужно — только звук.',
+    btn_upload: '⬆ Загрузить',
+    select_languages: '🌍 Выберите языки для дублирования',
+    done_label: 'Готово',
+    errors_label: 'Ошибки',
+    // Files
+    covers_section: '🎨 Обложки',
+    teleprompter_section: '📝 Телесуфлёр',
+    description_section: '📄 Описание для YouTube',
+    // Toast / confirm messages
+    project_created: 'Проект создан!',
+    error_generic: 'Ошибка',
+    load_error: 'Не удалось загрузить',
+    step_done: 'выполнен!',
+    step_prefix: 'Шаг',
+    select_angle_first: 'Сначала выберите угол подачи в разделе "Исследование" выше!',
+    working: 'Работаю...',
+    creating: 'Создаю...',
+    resetting: 'Сброс...',
+    restart_confirm: 'Перезапустить шаг',
+    restart_confirm_suffix: 'Текущие данные будут сброшены.',
+    step_restarted: 'перезапущен!',
+    reset_error: 'Ошибка сброса',
+    run_error: 'Ошибка запуска',
+    running_all: 'Запуск всех шагов...',
+    all_done: 'Все авто-шаги выполнены!',
+    shot_marked: 'Съёмка отмечена!',
+    edit_marked: 'Монтаж отмечен!',
+    select_language: 'Выберите хотя бы один язык',
+    dubbing_confirm: 'Запустить дублирование на',
+    dubbing_confirm_langs: 'языков?',
+    dubbing_time: 'Это может занять 10-30 минут.',
+    dubbing_running: 'Дублирование...',
+    dubbing_done: 'Дублирование завершено!',
+    dubbing_error: 'Ошибка дублирования',
+    select_audio_file: 'Выберите аудиофайл (MP3/WAV)',
+    uploading: '⬆ Загрузка...',
+    audio_uploaded: 'Аудио загружено!',
+    upload_error: 'Ошибка загрузки',
+    network_error: 'Ошибка сети',
+    settings_saved: 'Настройки сохранены!',
+    uploading_photo: 'Загружаю фото...',
+    expert_photo_uploaded: 'Фото эксперта загружено!',
+    photo_upload_error: 'Ошибка загрузки фото: ',
+    no_styles: 'Нет загруженных стилей. Добавьте референс-обложки выше.',
+    select_image: 'Выберите картинку',
+    enter_style_name: 'Введите название стиля',
+    uploading_style: 'Загружаю стиль...',
+    style_added: 'Стиль добавлен!',
+    delete_style_confirm: 'Удалить этот стиль?',
+    style_deleted: 'Стиль удалён',
+    no_personas: 'Нет персон. Добавьте в Настройках.',
+    enter_prompt: 'Введите промпт',
+    open_project: 'Откройте проект',
+    generating: 'Генерирую...',
+    cover_generated: 'Обложка сгенерирована!',
+    generation_error: 'Ошибка генерации',
+    yt_added: 'YouTube-видео добавлено! Транскрипт скачается при запуске.',
+    source_added: 'Источник добавлен!',
+    enter_text: 'Введите текст',
+    text_added: 'Текст добавлен!',
+    delete_source_confirm: 'Удалить этот источник?',
+    source_deleted: 'Источник удалён',
+    enter_notebook_id: 'Введите ID блокнота NotebookLM',
+    notebook_connected: 'NotebookLM блокнот подключён!',
+    all_text_copied: 'Весь текст скопирован!',
+    copy_error: 'Ошибка копирования',
+    scene_copied: 'Сцена скопирована!',
+    desc_copied: 'Описание скопировано!',
+    copied: 'Скопировано!',
+    no_personas_list: 'Нет добавленных персон. Добавьте эксперта или известную личность.',
+    enter_name: 'Введите имя',
+    persona_added: 'добавлена!',
+    persona_prefix: 'Персона',
+    delete_persona_confirm: 'Удалить эту персону?',
+    persona_deleted: 'Персона удалена',
+    twofa_enabled: '✓ 2FA включена',
+    twofa_google: 'Google Authenticator',
+    twofa_disabled: '✗ 2FA отключена',
+    btn_setup_2fa: 'Настроить 2FA',
+    enter_6_digit: 'Введите 6-значный код',
+    twofa_on: '2FA включена! При следующем входе потребуется код.',
+    wrong_code: 'Неверный код',
+    enter_current_2fa: 'Введите текущий код 2FA',
+    twofa_off: '2FA отключена',
+    channel_prompt_name: 'Название канала (будет отображаться в списке):',
+    channel_prompt_niche: 'Ниша канала (например: бизнес, маркетинг, AI):',
+    channel_prompt_audience: 'Целевая аудитория (например: предприниматели 25-45):',
+    channel_prompt_url: 'YouTube URL канала (необязательно):',
+    channel_created: 'создан!',
+    channel_prefix: 'Канал',
+    main_channel: 'Основной канал',
+    default_channel: 'Канал по умолчанию',
+    niche_label: 'Ниша:',
+    ta_label: 'ЦА:',
+    ta_not_set: 'не задана',
+    niche_not_set: 'Ниша не указана',
+    channel_settings_saved: 'Настройки канала сохранены!',
+    loading_videos: 'Загрузка видео канала...',
+    no_videos: 'Нет видео',
+    total_videos: 'Всего',
+    videos_label: 'видео',
+    avg_views: 'Ср. просмотры:',
+    videos_loaded: 'видео загружено',
+    generating_recs: 'Генерирую рекомендации... (Claude AI)',
+    top_themes: 'Темы, которые залетают:',
+    bad_themes: 'Темы, которые не работают:',
+    recommended_topics: 'Рекомендованные темы',
+    appeal_high: 'ВЫСОКИЙ',
+    appeal_medium: 'СРЕДНИЙ',
+    recs_ready: 'Рекомендации готовы!',
+    enter_channel_name: 'Введите название канала',
+    generating_desc: 'описание',
+    generating_banner: 'баннер',
+    generating_avatar: 'аватар',
+    generating_prefix: 'Генерирую',
+    generate_prompt_first: 'Сначала сгенерируйте промпт',
+    generating_img: 'Генерирую',
+    generating_img_time: 'Это может занять 30-60 сек',
+    banner_generated: 'Баннер сгенерирован!',
+    avatar_generated: 'Аватар сгенерирован!',
+    done: 'Готово!',
+    no_links: 'Нет ссылок. Добавьте ссылки для описания видео.',
+    enter_url: 'Введите URL',
+    link_added: 'Ссылка добавлена',
+    no_styles_modal: 'Нет стилей. Загрузите в настройках.',
+    from_research: 'из Research',
+    current_step: 'Текущий шаг:',
+    prev_step_hint: 'Сначала завершите предыдущий шаг',
+    edit_title_prompt: 'Редактировать заголовок:',
+    delete_title_confirm: 'Удалить этот заголовок?',
+    related_to: 'Связано с:',
+    cta_subscribe: 'Подписывайтесь на канал и нажмите колокольчик!',
+    cta_like: 'Ставьте лайк и напишите в комментариях',
+    // Language
+    lang_label: 'Язык',
+  },
+  en: {
+    page_title: 'YouTube Pipeline — Admin',
+    nav_main: 'Home',
+    nav_express: 'Express',
+    nav_settings: 'Settings',
+    nav_new_project: '+ New project',
+    nav_logout: 'Logout',
+    projects_title: 'Projects',
+    btn_new_project: '+ New project',
+    empty_projects: 'No projects. Click "+ New project" to start.',
+    btn_run_all: '▶ Run all auto-steps',
+    btn_run_all_title: 'Runs steps in order, requires approval between stages',
+    btn_custom_cover: '🎨 Custom cover',
+    btn_cover_editor: '🖼 Cover Editor',
+    btn_refresh: '↻ Refresh',
+    modal_new_title: 'New video project',
+    label_channel: 'Channel',
+    channel_default: '— Default channel —',
+    topic_placeholder: 'Video topic...',
+    btn_cancel: 'Cancel',
+    btn_create: 'Create',
+    settings_channels: 'Channels',
+    current_channel: 'Current channel',
+    btn_add_channel: '+ Add channel',
+    select_or_create_channel: 'Select or create a channel',
+    label_niche: 'Channel niche',
+    niche_placeholder: 'Business, marketing, AI',
+    label_target_audience: 'Target audience',
+    target_audience_placeholder: 'Entrepreneurs, marketers, 25-45 y.o.',
+    btn_channel_videos: '📊 Channel videos',
+    btn_recommendations: '💡 Topic recommendations',
+    channel_videos_title: '📊 Channel videos',
+    recommendations_title: '💡 Topic recommendations',
+    wizard_title: 'Quick channel setup',
+    wizard_desc: 'Answer the questions — AI will generate description, banner and avatar.',
+    wiz_channel_name: 'Channel name',
+    wiz_channel_name_ph: 'John Smith',
+    wiz_niche: 'Niche',
+    wiz_niche_ph: 'Marketing, AI, business',
+    wiz_audience: 'Target audience',
+    wiz_audience_ph: 'Entrepreneurs, marketers 25-45',
+    wiz_expertise: 'Author expertise',
+    wiz_expertise_ph: '13 years in marketing, agency founder',
+    wiz_tone: 'Tone of voice',
+    wiz_tone_ph: 'Expert but friendly',
+    wiz_goals: 'Channel goals',
+    wiz_goals_ph: 'Education, lead gen, personal brand',
+    wiz_visual_style: 'Visual style',
+    wiz_style_modern: 'Modern minimalism',
+    wiz_style_bold: 'Bold creative',
+    wiz_style_corp: 'Business / corporate',
+    wiz_style_neon: 'Neon on dark',
+    wiz_style_warm: 'Warm friendly',
+    wiz_avatar: 'Avatar',
+    wiz_avatar_logo: 'Logo / icon',
+    wiz_avatar_photo: 'Expert photo (stylized)',
+    wiz_avatar_illustration: 'Illustration',
+    btn_generate_all: 'Generate all',
+    btn_only_desc: 'Description only',
+    btn_only_banner: 'Banner only',
+    btn_only_avatar: 'Avatar only',
+    wiz_desc_label: 'Channel description',
+    btn_copy: '📋 Copy',
+    wiz_banner_label: 'Channel banner (2560×1440)',
+    wiz_banner_text_label: 'Banner text:',
+    wiz_banner_prompt_label: 'Generation prompt:',
+    btn_copy_prompt: '📋 Copy prompt',
+    btn_gen_banner: '🎨 Generate banner',
+    btn_download_banner: '⬇ Download banner',
+    wiz_avatar_label: 'Channel avatar (800×800)',
+    btn_gen_avatar: '🎨 Generate avatar',
+    btn_download_avatar: '⬇ Download avatar',
+    settings_author: 'Author',
+    label_name: 'Name',
+    name_ph: 'John',
+    label_full_name: 'Full name',
+    full_name_ph: 'John Smith',
+    label_who: 'Who they are',
+    who_ph: 'Entrepreneur, marketer',
+    label_expertise: 'Expertise (comma-separated)',
+    expertise_ph: 'marketing, AI, business',
+    label_experience: 'Experience',
+    experience_ph: '10 years in marketing, founder...',
+    label_tone: 'Tone of voice',
+    tone_ph: 'expert but friendly',
+    settings_links: 'Video description links',
+    links_desc: 'Automatically inserted into every video description. UTM tags are generated automatically.',
+    label_type: 'Type',
+    type_youtube: '▶ YouTube',
+    type_telegram: '✈ Telegram',
+    type_website: '🌐 Website',
+    type_instagram: '📷 Instagram',
+    type_vk: '💬 VK',
+    type_other: '🔗 Other',
+    label_link_name: 'Name',
+    link_name_ph: 'My Telegram channel',
+    label_url: 'URL',
+    url_ph: 'https://t.me/channel',
+    label_emoji: 'Emoji',
+    label_utm: 'UTM tags',
+    btn_add: '+ Add',
+    utm_defaults: 'Default UTM',
+    utm_campaign_ph: 'auto from title',
+    settings_cta: 'CTA & ad inserts',
+    label_lead_magnet: 'Lead magnet',
+    label_voiceover_text: 'Voiceover text',
+    lead_magnet_ph: 'Get your free guide...',
+    label_placement: 'Placement',
+    placement_intro: 'Intro',
+    placement_hook: 'Hook',
+    placement_outro: 'Outro',
+    label_mid_roll: 'Mid-roll ad',
+    mid_roll_ph: 'I have a private group...',
+    label_after_block: 'After block #',
+    label_end_screen: 'End screen',
+    end_screen_ph: 'Like and subscribe!',
+    label_hashtags: 'Hashtags',
+    hashtags_ph: 'ChannelName, Marketing',
+    label_tags: 'Tags',
+    tags_ph: 'channel name, marketing',
+    settings_personas: 'Cover personas',
+    personas_desc: 'Add faces for covers: experts, celebrities, speakers. You will choose who to place when generating a cover.',
+    persona_name_ph: 'Elon Musk',
+    label_role: 'Role / who',
+    persona_role_ph: 'CEO of Tesla',
+    label_photo: 'Photo',
+    label_ai_desc: 'AI description (appearance, clothing)',
+    persona_desc_ph: 'Man ~55 years, short haircut, business suit',
+    btn_add_persona: '+ Add persona',
+    settings_photo_styles: 'Photos & cover styles',
+    label_expert_photo: 'Expert photo (for covers)',
+    expert_photo_hint: 'Background will be removed automatically',
+    label_style_refs: 'Style references',
+    label_image: 'Image',
+    label_style_name: 'Name',
+    style_name_ph: 'Neon blue',
+    label_style_prompt: 'Prompt hint',
+    style_prompt_ph: 'neon blue glow...',
+    btn_add_style: '+ Add',
+    settings_2fa: '🔒 Two-factor authentication (2FA)',
+    twofa_scan_qr: 'Scan QR code in Google Authenticator (or Authy):',
+    twofa_manual: 'Or enter secret manually:',
+    twofa_verify_ph: 'Enter 6-digit code',
+    btn_verify_enable: 'Verify and enable',
+    twofa_disable_ph: '2FA code to disable',
+    btn_disable_2fa: 'Disable 2FA',
+    btn_save: 'Save changes',
+    cover_modal_title: '🎨 Custom cover',
+    label_personas_on_cover: 'Personas on cover',
+    label_style_ref: 'Style reference',
+    label_prompt: 'Prompt (English — full scene description)',
+    cover_prompt_ph: "A man pointing at the camera with surprised expression, neon blue glow behind him, bold text says 'WOW', YouTube thumbnail style, 16:9...",
+    label_cover_text: 'Cover text (2-4 words)',
+    cover_text_ph: 'SECRET OF SUCCESS',
+    label_neon_color: 'Neon color',
+    btn_generate_cover: '🎨 Generate',
+    step_research: 'Research',
+    step_research_desc: 'Topic analysis, keywords, competitors',
+    step_sources: 'Sources',
+    step_sources_desc: 'Articles, facts, quotes for content',
+    step_content_plan: 'Content plan',
+    step_content_plan_desc: 'Video structure, hook, CTA',
+    step_references: 'References',
+    step_references_desc: 'Competitor analysis, thumbnail download',
+    step_script: 'Script',
+    step_script_desc: 'Script blocks with timecodes',
+    step_teleprompter: 'Teleprompter',
+    step_teleprompter_desc: 'Teleprompter text',
+    step_covers: 'Covers',
+    step_covers_desc: 'Generate 3 cover variants',
+    step_description: 'Description',
+    step_description_desc: 'SEO description + tags + hashtags',
+    step_shooting: 'Shooting',
+    step_shooting_desc: 'Manual step — video shooting',
+    step_editing: 'Editing',
+    step_editing_desc: 'Manual step — editing',
+    step_publish: 'Publish',
+    step_publish_desc: 'Upload to YouTube',
+    step_dubbing: 'Dubbing',
+    step_dubbing_desc: 'Translation and voiceover to other languages',
+    status_pending: '⬜ Pending',
+    status_in_progress: '🔄 In progress',
+    status_completed: '✅ Done',
+    status_waiting: '⏳ Waiting',
+    status_failed: '❌ Error',
+    status_approved: '👍 Approved',
+    btn_locked: '🔒 Locked',
+    btn_run: '▶ Run',
+    btn_restart: '🔄 Restart',
+    btn_shot_done: '✓ Shooting done',
+    btn_edit_done: '✓ Editing done',
+    btn_start_dubbing: '🌍 Start dubbing',
+    btn_data: '📋 Data',
+    videos_found: 'Videos found',
+    avg_views_ru: 'Avg views RU',
+    avg_views_en: 'Avg views EN',
+    min_suffix: 'min',
+    avg_duration: 'Avg duration',
+    rec_prefix: 'Rec.:',
+    best_video: 'Best performing video',
+    views_suffix: 'views',
+    subs_on_channel: 'subscribers',
+    breakthrough_label: 'Breakthrough videos — small channel, huge views',
+    breakthrough_desc: 'Channels under 50K subscribers with disproportionately high views. Most valuable signals — topic works regardless of channel size.',
+    days_ago: 'd ago',
+    weeks_ago: 'w ago',
+    months_ago: 'mo ago',
+    year_plus: '1+ year',
+    views_per_day: 'views/day',
+    views_short: 'views',
+    subs_short: 'subs',
+    breakthrough_badge: 'BREAKTHROUGH',
+    all_competitors: 'All competitors',
+    angle_question: 'What angle for the video?',
+    angle_desc: 'Choose an angle. AI analyzed competitors and suggests options — from most promising to less obvious.',
+    ai_recommendation: 'AI Recommendation',
+    max_views_potential: 'Maximum view potential',
+    variant_prefix: 'Option',
+    gaps_title: 'What competitors miss',
+    rec_titles: 'Recommended titles',
+    source_url_ph: 'Paste article or YouTube video URL...',
+    btn_add_source: '+ Add',
+    btn_add_text: '+ Text',
+    btn_add_notebook: '+ NotebookLM',
+    source_yt_hint: 'YouTube links are auto-detected — transcript is downloaded for free',
+    notebook_title: 'Connect NotebookLM',
+    notebook_desc: 'Create a notebook in NotebookLM, add YouTube/PDF/articles, and paste notebook ID.',
+    notebook_auth_hint: 'Auth lasts ~12-24h. If expired — run',
+    notebook_auth_cmd: 'in terminal.',
+    notebook_id_ph: 'NotebookLM notebook ID...',
+    notebook_name_ph: 'Name (optional)',
+    btn_connect: 'Connect',
+    source_text_title_ph: 'Note title...',
+    source_text_ph: 'Paste text, notes, facts...',
+    btn_add_text_confirm: 'Add text',
+    extracted_data: 'Extracted data',
+    sources_summary: 'SOURCES SUMMARY',
+    label_fact: 'Fact',
+    label_quote: 'Quote',
+    label_stat: 'Statistic',
+    source_label: 'Source:',
+    key_insights: 'Key insights',
+    add_sources_hint: 'Add sources and click "Run" to extract facts and quotes.',
+    checking_photo: 'Checking photo...',
+    photo_not_uploaded: 'Photo not uploaded!',
+    photo_upload_settings: 'Upload in Settings.',
+    photo_uploaded: '✓ Photo uploaded',
+    cover_analysis: 'Competitor cover analysis',
+    covers_suffix: 'covers',
+    label_fonts: 'Fonts',
+    fonts_styles: 'Styles:',
+    fonts_length: 'Length:',
+    fonts_position: 'Position:',
+    fonts_case: 'Case:',
+    label_colors: 'Colors',
+    colors_contrast: 'Contrast:',
+    colors_bg: 'Background:',
+    label_composition: 'Composition',
+    comp_face: 'Face:',
+    comp_face_pos: 'Position:',
+    comp_face_size: 'Size:',
+    label_clickbait: 'Clickbait elements',
+    competitor_covers: 'Competitor covers',
+    cover_concepts: 'Cover concepts',
+    concept_prefix: 'Concept',
+    recommended_badge: 'RECOMMENDED',
+    scene_prompt: 'Scene (prompt)',
+    emotion_style: 'Emotion & style',
+    emotion_label: 'Emotion:',
+    style_label: 'Style:',
+    expert_label: 'Expert:',
+    text_label: 'Text:',
+    inspired_by: 'Inspired by:',
+    growing_channel_tip: 'TIP FOR GROWING CHANNELS',
+    growing_channel_text: 'Without a recognizable face, covers must compensate with: large contrast text (2-3 words), bright facial emotion, intriguing visuals. Use arrows, outlines, before/after effect. Top channels show: max CTR = large face + 2-3 CAPS words + bright background.',
+    no_covers: 'No covers',
+    video_titles: 'Video titles',
+    chars_suffix: 'characters',
+    hook_first_30: 'Hook — first 30 seconds',
+    hook_select_desc: 'Choose one hook option for your video.',
+    hook_recommended: 'Recommended',
+    video_structure: 'Video structure',
+    total_duration: 'Total duration:',
+    cover_label: 'Cover',
+    emotion_of_cover: 'Cover emotion',
+    why_plan_works: 'WHY THIS PLAN WILL WORK',
+    blocks_label: 'Blocks',
+    duration_label: 'Duration',
+    tone_label: 'Tone:',
+    key_messages: 'KEY MESSAGES',
+    climax_setup: 'Climax setup:',
+    pacing: 'Pacing:',
+    words_real: 'Words (actual)',
+    duration_wpm: 'Duration (150 wpm)',
+    scenes_label: 'Scenes',
+    btn_copy_all_text: '📋 Copy all text',
+    text_too_short: 'Text too short for 10+ min video. Need at least 1500 words',
+    text_now: 'currently',
+    regenerate_hint: 'Regenerate teleprompter.',
+    scene_prefix: 'Scene',
+    words_suffix: 'words',
+    pacing_label: 'Pacing:',
+    audio_track_title: '🎵 Audio track (from editor)',
+    audio_track_desc: 'Upload MP3 or WAV audio from final video. No video needed — audio only.',
+    btn_upload: '⬆ Upload',
+    select_languages: '🌍 Select languages for dubbing',
+    done_label: 'Done',
+    errors_label: 'Errors',
+    covers_section: '🎨 Covers',
+    teleprompter_section: '📝 Teleprompter',
+    description_section: '📄 YouTube Description',
+    project_created: 'Project created!',
+    error_generic: 'Error',
+    load_error: 'Failed to load',
+    step_done: 'done!',
+    step_prefix: 'Step',
+    select_angle_first: 'First select an angle in the "Research" section above!',
+    working: 'Working...',
+    creating: 'Creating...',
+    resetting: 'Resetting...',
+    restart_confirm: 'Restart step',
+    restart_confirm_suffix: 'Current data will be reset.',
+    step_restarted: 'restarted!',
+    reset_error: 'Reset error',
+    run_error: 'Run error',
+    running_all: 'Running all steps...',
+    all_done: 'All auto-steps completed!',
+    shot_marked: 'Shooting marked done!',
+    edit_marked: 'Editing marked done!',
+    select_language: 'Select at least one language',
+    dubbing_confirm: 'Start dubbing for',
+    dubbing_confirm_langs: 'languages?',
+    dubbing_time: 'This may take 10-30 minutes.',
+    dubbing_running: 'Dubbing...',
+    dubbing_done: 'Dubbing completed!',
+    dubbing_error: 'Dubbing error',
+    select_audio_file: 'Select audio file (MP3/WAV)',
+    uploading: '⬆ Uploading...',
+    audio_uploaded: 'Audio uploaded!',
+    upload_error: 'Upload error',
+    network_error: 'Network error',
+    settings_saved: 'Settings saved!',
+    uploading_photo: 'Uploading photo...',
+    expert_photo_uploaded: 'Expert photo uploaded!',
+    photo_upload_error: 'Photo upload error: ',
+    no_styles: 'No styles uploaded. Add reference covers above.',
+    select_image: 'Select an image',
+    enter_style_name: 'Enter style name',
+    uploading_style: 'Uploading style...',
+    style_added: 'Style added!',
+    delete_style_confirm: 'Delete this style?',
+    style_deleted: 'Style deleted',
+    no_personas: 'No personas. Add in Settings.',
+    enter_prompt: 'Enter prompt',
+    open_project: 'Open a project',
+    generating: 'Generating...',
+    cover_generated: 'Cover generated!',
+    generation_error: 'Generation error',
+    yt_added: 'YouTube video added! Transcript will download on run.',
+    source_added: 'Source added!',
+    enter_text: 'Enter text',
+    text_added: 'Text added!',
+    delete_source_confirm: 'Delete this source?',
+    source_deleted: 'Source deleted',
+    enter_notebook_id: 'Enter NotebookLM notebook ID',
+    notebook_connected: 'NotebookLM notebook connected!',
+    all_text_copied: 'All text copied!',
+    copy_error: 'Copy error',
+    scene_copied: 'Scene copied!',
+    desc_copied: 'Description copied!',
+    copied: 'Copied!',
+    no_personas_list: 'No personas added. Add an expert or public figure.',
+    enter_name: 'Enter name',
+    persona_added: 'added!',
+    persona_prefix: 'Persona',
+    delete_persona_confirm: 'Delete this persona?',
+    persona_deleted: 'Persona deleted',
+    twofa_enabled: '✓ 2FA enabled',
+    twofa_google: 'Google Authenticator',
+    twofa_disabled: '✗ 2FA disabled',
+    btn_setup_2fa: 'Set up 2FA',
+    enter_6_digit: 'Enter 6-digit code',
+    twofa_on: '2FA enabled! Code will be required on next login.',
+    wrong_code: 'Wrong code',
+    enter_current_2fa: 'Enter current 2FA code',
+    twofa_off: '2FA disabled',
+    channel_prompt_name: 'Channel name (shown in list):',
+    channel_prompt_niche: 'Channel niche (e.g. business, marketing, AI):',
+    channel_prompt_audience: 'Target audience (e.g. entrepreneurs 25-45):',
+    channel_prompt_url: 'YouTube channel URL (optional):',
+    channel_created: 'created!',
+    channel_prefix: 'Channel',
+    main_channel: 'Main channel',
+    default_channel: 'Default channel',
+    niche_label: 'Niche:',
+    ta_label: 'TA:',
+    ta_not_set: 'not set',
+    niche_not_set: 'Niche not set',
+    channel_settings_saved: 'Channel settings saved!',
+    loading_videos: 'Loading channel videos...',
+    no_videos: 'No videos',
+    total_videos: 'Total',
+    videos_label: 'videos',
+    avg_views: 'Avg views:',
+    videos_loaded: 'videos loaded',
+    generating_recs: 'Generating recommendations... (Claude AI)',
+    top_themes: 'Themes that perform well:',
+    bad_themes: 'Themes that underperform:',
+    recommended_topics: 'Recommended topics',
+    appeal_high: 'HIGH',
+    appeal_medium: 'MEDIUM',
+    recs_ready: 'Recommendations ready!',
+    enter_channel_name: 'Enter channel name',
+    generating_desc: 'description',
+    generating_banner: 'banner',
+    generating_avatar: 'avatar',
+    generating_prefix: 'Generating',
+    generate_prompt_first: 'Generate prompt first',
+    generating_img: 'Generating',
+    generating_img_time: 'This may take 30-60 sec',
+    banner_generated: 'Banner generated!',
+    avatar_generated: 'Avatar generated!',
+    done: 'Done!',
+    no_links: 'No links. Add links for video description.',
+    enter_url: 'Enter URL',
+    link_added: 'Link added',
+    no_styles_modal: 'No styles. Upload in settings.',
+    from_research: 'from Research',
+    current_step: 'Current step:',
+    prev_step_hint: 'Complete previous step first',
+    edit_title_prompt: 'Edit title:',
+    delete_title_confirm: 'Delete this title?',
+    related_to: 'Related to:',
+    cta_subscribe: 'Subscribe and hit the bell!',
+    cta_like: 'Like and comment',
+    lang_label: 'Language',
+  }
+};
+function t(k) { return (T[LANG] || T.ru)[k] || T.ru[k] || k; }
+function setLang(l) { localStorage.setItem('yt_lang', l); location.reload(); }
+document.addEventListener('DOMContentLoaded', () => {
+  document.title = t('page_title');
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+  document.querySelectorAll('[data-t-title]').forEach(el => { el.title = t(el.dataset.tTitle); });
+  document.querySelectorAll('[data-t-placeholder]').forEach(el => { el.placeholder = t(el.dataset.tPlaceholder); });
+});
+</script>
 </head>
 <body>
 <div class="app-layout">
@@ -113,21 +1029,25 @@ select.ctx-input { appearance: none; }
   </div>
   <div class="sidebar-nav">
     <a href="#" onclick="showList(); setActiveNav(this)" class="active" id="navMain">
-      <span class="nav-icon">🏠</span> Главная
+      <span class="nav-icon">🏠</span> <span data-t="nav_main">Главная</span>
     </a>
     <a href="/express.html" id="navExpress">
-      <span class="nav-icon">⚡</span> Express
+      <span class="nav-icon">⚡</span> <span data-t="nav_express">Express</span>
     </a>
     <a href="#" onclick="showSettings(); setActiveNav(this)" id="navSettings">
-      <span class="nav-icon">⚙</span> Настройки
+      <span class="nav-icon">⚙</span> <span data-t="nav_settings">Настройки</span>
     </a>
   </div>
   <div class="sidebar-bottom">
     <a href="#" onclick="showModal()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);font-size:13px;color:var(--accent);text-decoration:none;border:1px dashed var(--border);justify-content:center;font-weight:600;">
-      + Новый проект
+      <span data-t="nav_new_project">+ Новый проект</span>
     </a>
+    <div style="display:flex;gap:4px;padding:4px 12px;margin-top:6px;">
+      <button onclick="setLang('ru')" style="flex:1;padding:4px;border-radius:4px;border:1px solid ${LANG==='ru'?'var(--accent)':'var(--border)'};background:${LANG==='ru'?'rgba(59,130,246,0.15)':'transparent'};color:var(--text);cursor:pointer;font-size:11px;font-weight:600;">RU</button>
+      <button onclick="setLang('en')" style="flex:1;padding:4px;border-radius:4px;border:1px solid ${LANG==='en'?'var(--accent)':'var(--border)'};background:${LANG==='en'?'rgba(59,130,246,0.15)':'transparent'};color:var(--text);cursor:pointer;font-size:11px;font-weight:600;">EN</button>
+    </div>
     <a href="/api/logout" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-top:6px;border-radius:var(--radius-lg);font-size:12px;color:var(--muted);text-decoration:none;">
-      <span class="nav-icon">🚪</span> Выйти
+      <span class="nav-icon">🚪</span> <span data-t="nav_logout">Выйти</span>
     </a>
   </div>
 </nav>
@@ -138,11 +1058,11 @@ select.ctx-input { appearance: none; }
 <!-- Projects List View -->
 <div class="container" id="listView">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2 style="font-size:20px;">Проекты</h2>
-    <button class="btn btn-blue" onclick="showModal()">+ Новый проект</button>
+    <h2 style="font-size:20px;" data-t="projects_title">Проекты</h2>
+    <button class="btn btn-blue" onclick="showModal()" data-t="btn_new_project">+ Новый проект</button>
   </div>
   <div id="projectsList" class="projects-grid"></div>
-  <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
+  <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;" data-t="empty_projects">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
 </div>
 
 <!-- Project Detail View -->
@@ -153,10 +1073,10 @@ select.ctx-input { appearance: none; }
     <span id="detailMeta" style="color:var(--muted); font-size:12px;"></span>
   </div>
   <div class="run-all-bar">
-    <button class="btn btn-outline" id="btnRunAll" onclick="runAll()" title="Запускает шаги по порядку, но требует одобрения между этапами" style="opacity:0.6;">▶ Запустить все авто-шаги</button>
-    <button class="btn btn-outline btn-sm" onclick="showCoverModal()">🎨 Кастомная обложка</button>
-    <button class="btn btn-outline btn-sm" onclick="openEditor()">🖼 Cover Editor</button>
-    <button class="btn btn-outline btn-sm" onclick="refreshDetail()">↻ Обновить</button>
+    <button class="btn btn-outline" id="btnRunAll" onclick="runAll()" data-t-title="btn_run_all_title" title="Запускает шаги по порядку, но требует одобрения между этапами" style="opacity:0.6;" data-t="btn_run_all">▶ Запустить все авто-шаги</button>
+    <button class="btn btn-outline btn-sm" onclick="showCoverModal()" data-t="btn_custom_cover">🎨 Кастомная обложка</button>
+    <button class="btn btn-outline btn-sm" onclick="openEditor()" data-t="btn_cover_editor">🖼 Cover Editor</button>
+    <button class="btn btn-outline btn-sm" onclick="refreshDetail()" data-t="btn_refresh">↻ Обновить</button>
   </div>
   <div class="steps-timeline" id="stepsTimeline"></div>
 
@@ -166,20 +1086,20 @@ select.ctx-input { appearance: none; }
 <!-- New Project Modal -->
 <div class="modal-overlay" id="newModal">
   <div class="modal">
-    <h2>Новый видео-проект</h2>
+    <h2 data-t="modal_new_title">Новый видео-проект</h2>
     <div style="margin-bottom:10px;">
-      <label>Канал</label>
+      <label data-t="label_channel">Канал</label>
       <select id="channelSelectNew" style="padding:8px 10px;">
-        <option value="">— Канал по умолчанию —</option>
+        <option value="" data-t="channel_default">— Канал по умолчанию —</option>
       </select>
     </div>
     <div style="margin-bottom:10px;">
-      <input type="text" id="topicInput" placeholder="Тема видео..." autofocus>
+      <input type="text" id="topicInput" data-t-placeholder="topic_placeholder" placeholder="Тема видео..." autofocus>
     </div>
     <div id="audienceFitAlert" style="display:none;border-radius:6px;padding:10px;font-size:12px;margin-bottom:10px;line-height:1.4;"></div>
     <div class="actions">
-      <button class="btn btn-outline" onclick="hideModal()">Отмена</button>
-      <button class="btn btn-red" id="btnCreate" onclick="createProject()">Создать</button>
+      <button class="btn btn-outline" onclick="hideModal()" data-t="btn_cancel">Отмена</button>
+      <button class="btn btn-red" id="btnCreate" onclick="createProject()" data-t="btn_create">Создать</button>
     </div>
   </div>
 </div>
@@ -189,87 +1109,87 @@ select.ctx-input { appearance: none; }
 
   <!-- Channels -->
   <div class="settings-section">
-    <h3>Каналы</h3>
+    <h3 data-t="settings_channels">Каналы</h3>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
-      <div style="flex-shrink:0;font-size:12px;color:var(--muted);font-weight:500;">Текущий канал</div>
+      <div style="flex-shrink:0;font-size:12px;color:var(--muted);font-weight:500;" data-t="current_channel">Текущий канал</div>
       <select id="channelSelect" style="flex:1;padding:10px 14px;font-size:13px;" onchange="loadChannelContext()">
       </select>
-      <button class="btn btn-blue" onclick="showAddChannelModal()">+ Добавить канал</button>
+      <button class="btn btn-blue" onclick="showAddChannelModal()" data-t="btn_add_channel">+ Добавить канал</button>
     </div>
     <div id="channelCurrentInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);">
       <div style="width:40px;height:40px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid var(--accent);">📺</div>
       <div>
         <div id="channelDisplayName" style="font-size:14px;font-weight:600;">—</div>
-        <div id="channelDisplayNiche" style="font-size:11px;color:var(--muted);">Выберите или создайте канал</div>
+        <div id="channelDisplayNiche" style="font-size:11px;color:var(--muted);" data-t="select_or_create_channel">Выберите или создайте канал</div>
       </div>
     </div>
     <div id="channelNicheInfo" style="font-size:12px;color:var(--muted);display:none;margin-bottom:8px;"></div>
     <div id="channelMetaFields" style="display:none;">
       <div class="settings-row">
-        <div class="settings-field"><label>Ниша канала</label><input class="ctx-input" id="ctx-niche" placeholder="Бизнес, маркетинг, AI"></div>
-        <div class="settings-field"><label>Целевая аудитория</label><input class="ctx-input" id="ctx-target-audience" placeholder="Предприниматели, маркетологи, 25-45 лет"></div>
+        <div class="settings-field"><label data-t="label_niche">Ниша канала</label><input class="ctx-input" id="ctx-niche" data-t-placeholder="niche_placeholder" placeholder="Бизнес, маркетинг, AI"></div>
+        <div class="settings-field"><label data-t="label_target_audience">Целевая аудитория</label><input class="ctx-input" id="ctx-target-audience" data-t-placeholder="target_audience_placeholder" placeholder="Предприниматели, маркетологи, 25-45 лет"></div>
       </div>
     </div>
     <div id="channelAnalyticsBtn" style="margin-top:10px;display:flex;gap:8px;">
-      <button class="btn btn-outline btn-sm" onclick="loadChannelVideos()">📊 Видео канала</button>
-      <button class="btn btn-outline btn-sm" onclick="loadRecommendations()">💡 Рекомендации тем</button>
+      <button class="btn btn-outline btn-sm" onclick="loadChannelVideos()" data-t="btn_channel_videos">📊 Видео канала</button>
+      <button class="btn btn-outline btn-sm" onclick="loadRecommendations()" data-t="btn_recommendations">💡 Рекомендации тем</button>
     </div>
   </div>
 
   <!-- Video analytics -->
   <div class="settings-section" id="channelVideosSection" style="display:none;">
-    <h3>📊 Видео канала</h3>
+    <h3 data-t="channel_videos_title">📊 Видео канала</h3>
     <div id="channelVideosList"></div>
   </div>
 
   <!-- Recommendations -->
   <div class="settings-section" id="channelRecsSection" style="display:none;">
-    <h3>💡 Рекомендации тем</h3>
+    <h3 data-t="recommendations_title">💡 Рекомендации тем</h3>
     <div id="channelRecsList"></div>
   </div>
 
   <!-- Channel Setup Wizard -->
   <div class="settings-section" id="channelWizardSection">
-    <h3>Быстрая настройка канала</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Ответьте на вопросы — AI сгенерирует описание, баннер и аватар канала.</p>
+    <h3 data-t="wizard_title">Быстрая настройка канала</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;" data-t="wizard_desc">Ответьте на вопросы — AI сгенерирует описание, баннер и аватар канала.</p>
 
     <!-- Step 1: Questions -->
     <div id="wizardQuestions">
       <div class="settings-row">
-        <div class="settings-field"><label>Название канала</label><input class="ctx-input" id="wizName" placeholder="Иван Субботин"></div>
-        <div class="settings-field"><label>Ниша</label><input class="ctx-input" id="wizNiche" placeholder="Маркетинг, AI, бизнес"></div>
+        <div class="settings-field"><label data-t="wiz_channel_name">Название канала</label><input class="ctx-input" id="wizName" data-t-placeholder="wiz_channel_name_ph" placeholder="Иван Субботин"></div>
+        <div class="settings-field"><label data-t="wiz_niche">Ниша</label><input class="ctx-input" id="wizNiche" data-t-placeholder="wiz_niche_ph" placeholder="Маркетинг, AI, бизнес"></div>
       </div>
       <div class="settings-row">
-        <div class="settings-field"><label>Для кого канал (ЦА)</label><input class="ctx-input" id="wizAudience" placeholder="Предприниматели, маркетологи 25-45"></div>
-        <div class="settings-field"><label>Экспертиза автора</label><input class="ctx-input" id="wizExpertise" placeholder="13 лет в маркетинге, основатель агентства"></div>
+        <div class="settings-field"><label data-t="wiz_audience">Для кого канал (ЦА)</label><input class="ctx-input" id="wizAudience" data-t-placeholder="wiz_audience_ph" placeholder="Предприниматели, маркетологи 25-45"></div>
+        <div class="settings-field"><label data-t="wiz_expertise">Экспертиза автора</label><input class="ctx-input" id="wizExpertise" data-t-placeholder="wiz_expertise_ph" placeholder="13 лет в маркетинге, основатель агентства"></div>
       </div>
       <div class="settings-row">
-        <div class="settings-field"><label>Тон подачи</label><input class="ctx-input" id="wizTone" placeholder="Экспертный, но дружелюбный"></div>
-        <div class="settings-field"><label>Цели канала</label><input class="ctx-input" id="wizGoals" placeholder="Обучение, лидогенерация, личный бренд"></div>
+        <div class="settings-field"><label data-t="wiz_tone">Тон подачи</label><input class="ctx-input" id="wizTone" data-t-placeholder="wiz_tone_ph" placeholder="Экспертный, но дружелюбный"></div>
+        <div class="settings-field"><label data-t="wiz_goals">Цели канала</label><input class="ctx-input" id="wizGoals" data-t-placeholder="wiz_goals_ph" placeholder="Обучение, лидогенерация, личный бренд"></div>
       </div>
       <div class="settings-row">
-        <div class="settings-field"><label>Стиль визуала</label>
+        <div class="settings-field"><label data-t="wiz_visual_style">Стиль визуала</label>
           <select class="ctx-input" id="wizStyle">
-            <option value="modern-minimal">Современный минимализм</option>
-            <option value="bold-creative">Яркий креативный</option>
-            <option value="corporate">Деловой/корпоративный</option>
-            <option value="neon-dark">Неон на тёмном</option>
-            <option value="warm-friendly">Тёплый дружелюбный</option>
+            <option value="modern-minimal" data-t="wiz_style_modern">Современный минимализм</option>
+            <option value="bold-creative" data-t="wiz_style_bold">Яркий креативный</option>
+            <option value="corporate" data-t="wiz_style_corp">Деловой/корпоративный</option>
+            <option value="neon-dark" data-t="wiz_style_neon">Неон на тёмном</option>
+            <option value="warm-friendly" data-t="wiz_style_warm">Тёплый дружелюбный</option>
           </select>
         </div>
-        <div class="settings-field"><label>Аватар</label>
+        <div class="settings-field"><label data-t="wiz_avatar">Аватар</label>
           <select class="ctx-input" id="wizAvatarType">
-            <option value="logo">Логотип/иконка</option>
-            <option value="photo">Фото эксперта (стилизованное)</option>
-            <option value="illustration">Иллюстрация</option>
+            <option value="logo" data-t="wiz_avatar_logo">Логотип/иконка</option>
+            <option value="photo" data-t="wiz_avatar_photo">Фото эксперта (стилизованное)</option>
+            <option value="illustration" data-t="wiz_avatar_illustration">Иллюстрация</option>
           </select>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="btn btn-blue" onclick="runWizard('all')" id="btnWizardAll">Сгенерировать всё</button>
-        <button class="btn btn-outline btn-sm" onclick="runWizard('description')">Только описание</button>
-        <button class="btn btn-outline btn-sm" onclick="runWizard('banner')">Только баннер</button>
-        <button class="btn btn-outline btn-sm" onclick="runWizard('avatar')">Только аватар</button>
+        <button class="btn btn-blue" onclick="runWizard('all')" id="btnWizardAll" data-t="btn_generate_all">Сгенерировать всё</button>
+        <button class="btn btn-outline btn-sm" onclick="runWizard('description')" data-t="btn_only_desc">Только описание</button>
+        <button class="btn btn-outline btn-sm" onclick="runWizard('banner')" data-t="btn_only_banner">Только баннер</button>
+        <button class="btn btn-outline btn-sm" onclick="runWizard('avatar')" data-t="btn_only_avatar">Только аватар</button>
       </div>
     </div>
 
@@ -278,12 +1198,12 @@ select.ctx-input { appearance: none; }
 
       <!-- Description -->
       <div id="wizDescResult" style="display:none;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:6px;">Описание канала</div>
+        <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:6px;" data-t="wiz_desc_label">Описание канала</div>
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
           <div id="wizDescText" style="font-size:13px;line-height:1.6;white-space:pre-wrap;"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
             <span id="wizDescChars" style="font-size:10px;color:var(--muted);"></span>
-            <button class="btn btn-outline btn-xs" onclick="copyWizDesc()">📋 Скопировать</button>
+            <button class="btn btn-outline btn-xs" onclick="copyWizDesc()" data-t="btn_copy">📋 Скопировать</button>
           </div>
         </div>
         <div id="wizShortDesc" style="margin-top:6px;font-size:11px;color:var(--text2);"></div>
@@ -292,40 +1212,40 @@ select.ctx-input { appearance: none; }
 
       <!-- Banner -->
       <div id="wizBannerResult" style="display:none;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px;">Баннер канала (2560×1440)</div>
+        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px;" data-t="wiz_banner_label">Баннер канала (2560×1440)</div>
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
           <div id="wizBannerLayout" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizBannerColors"></div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Текст на баннере:</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;" data-t="wiz_banner_text_label">Текст на баннере:</div>
           <div id="wizBannerText" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Промпт для генерации:</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;" data-t="wiz_banner_prompt_label">Промпт для генерации:</div>
           <div id="wizBannerPrompt" style="font-size:11px;color:var(--text2);background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;white-space:pre-wrap;"></div>
           <div style="display:flex;gap:6px;margin-top:6px;">
-            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizBannerPrompt').textContent)">📋 Скопировать промпт</button>
-            <button class="btn btn-blue btn-xs" onclick="generateWizardImage('banner')" id="btnGenBanner">🎨 Сгенерировать баннер</button>
+            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizBannerPrompt').textContent)" data-t="btn_copy_prompt">📋 Скопировать промпт</button>
+            <button class="btn btn-blue btn-xs" onclick="generateWizardImage('banner')" id="btnGenBanner" data-t="btn_gen_banner">🎨 Сгенерировать баннер</button>
           </div>
           <div id="wizBannerImage" style="display:none;margin-top:10px;">
             <img id="wizBannerImg" style="width:100%;border-radius:8px;border:1px solid var(--border);">
-            <a id="wizBannerDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;" download="banner.jpg">⬇ Скачать баннер</a>
+            <a id="wizBannerDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;" download="banner.jpg" data-t="btn_download_banner">⬇ Скачать баннер</a>
           </div>
         </div>
       </div>
 
       <!-- Avatar -->
       <div id="wizAvatarResult" style="display:none;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">Аватар канала (800×800)</div>
+        <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;" data-t="wiz_avatar_label">Аватар канала (800×800)</div>
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
           <div id="wizAvatarDesc" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizAvatarColors"></div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Промпт для генерации:</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;" data-t="wiz_banner_prompt_label">Промпт для генерации:</div>
           <div id="wizAvatarPrompt" style="font-size:11px;color:var(--text2);background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;white-space:pre-wrap;"></div>
           <div style="display:flex;gap:6px;margin-top:6px;">
-            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizAvatarPrompt').textContent)">📋 Скопировать промпт</button>
-            <button class="btn btn-purple btn-xs" onclick="generateWizardImage('avatar')" id="btnGenAvatar" style="background:var(--purple);">🎨 Сгенерировать аватар</button>
+            <button class="btn btn-outline btn-xs" onclick="copyText(document.getElementById('wizAvatarPrompt').textContent)" data-t="btn_copy_prompt">📋 Скопировать промпт</button>
+            <button class="btn btn-purple btn-xs" onclick="generateWizardImage('avatar')" id="btnGenAvatar" style="background:var(--purple);" data-t="btn_gen_avatar">🎨 Сгенерировать аватар</button>
           </div>
           <div id="wizAvatarImage" style="display:none;margin-top:10px;">
             <img id="wizAvatarImg" style="width:200px;height:200px;border-radius:50%;border:3px solid var(--border);object-fit:cover;">
-            <a id="wizAvatarDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;display:block;" download="avatar.jpg">⬇ Скачать аватар</a>
+            <a id="wizAvatarDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;display:block;" download="avatar.jpg" data-t="btn_download_avatar">⬇ Скачать аватар</a>
           </div>
         </div>
       </div>
@@ -335,73 +1255,73 @@ select.ctx-input { appearance: none; }
 
   <!-- Author -->
   <div class="settings-section">
-    <h3>Автор</h3>
+    <h3 data-t="settings_author">Автор</h3>
     <div class="settings-row">
-      <div class="settings-field"><label>Имя</label><input class="ctx-input" id="ctx-author-name" placeholder="Иван"></div>
-      <div class="settings-field"><label>Полное имя</label><input class="ctx-input" id="ctx-author-full_name" placeholder="Иван Субботин"></div>
-      <div class="settings-field"><label>Кто он</label><input class="ctx-input" id="ctx-author-who" placeholder="Предприниматель, маркетолог"></div>
+      <div class="settings-field"><label data-t="label_name">Имя</label><input class="ctx-input" id="ctx-author-name" data-t-placeholder="name_ph" placeholder="Иван"></div>
+      <div class="settings-field"><label data-t="label_full_name">Полное имя</label><input class="ctx-input" id="ctx-author-full_name" data-t-placeholder="full_name_ph" placeholder="Иван Субботин"></div>
+      <div class="settings-field"><label data-t="label_who">Кто он</label><input class="ctx-input" id="ctx-author-who" data-t-placeholder="who_ph" placeholder="Предприниматель, маркетолог"></div>
     </div>
     <div class="settings-row">
-      <div class="settings-field"><label>Экспертиза (через запятую)</label><input class="ctx-input" id="ctx-author-expertise" placeholder="маркетинг, AI, бизнес"></div>
+      <div class="settings-field"><label data-t="label_expertise">Экспертиза (через запятую)</label><input class="ctx-input" id="ctx-author-expertise" data-t-placeholder="expertise_ph" placeholder="маркетинг, AI, бизнес"></div>
     </div>
     <div class="settings-row">
-      <div class="settings-field"><label>Опыт</label><input class="ctx-input" id="ctx-author-experience" placeholder="10 лет в маркетинге, основатель..."></div>
-      <div class="settings-field"><label>Тон подачи</label><input class="ctx-input" id="ctx-author-tone" placeholder="экспертный, но дружелюбный"></div>
+      <div class="settings-field"><label data-t="label_experience">Опыт</label><input class="ctx-input" id="ctx-author-experience" data-t-placeholder="experience_ph" placeholder="10 лет в маркетинге, основатель..."></div>
+      <div class="settings-field"><label data-t="label_tone">Тон подачи</label><input class="ctx-input" id="ctx-author-tone" data-t-placeholder="tone_ph" placeholder="экспертный, но дружелюбный"></div>
     </div>
   </div>
 
   <!-- Dynamic Links + UTM -->
   <div class="settings-section">
-    <h3>Ссылки для описания видео</h3>
-    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Автоматически вставляются в описание каждого видео. UTM-метки генерируются автоматически.</p>
+    <h3 data-t="settings_links">Ссылки для описания видео</h3>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;" data-t="links_desc">Автоматически вставляются в описание каждого видео. UTM-метки генерируются автоматически.</p>
 
     <div id="dynamicLinksList" style="margin-bottom:12px;"></div>
 
     <div style="background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:12px;">
       <div class="settings-row">
         <div class="settings-field">
-          <label>Тип</label>
+          <label data-t="label_type">Тип</label>
           <select class="ctx-input" id="newLinkType" style="margin-top:0;">
-            <option value="youtube">▶ YouTube</option>
-            <option value="telegram">✈ Telegram</option>
-            <option value="website">🌐 Сайт</option>
-            <option value="instagram">📷 Instagram</option>
-            <option value="vk">💬 VK</option>
-            <option value="other">🔗 Другое</option>
+            <option value="youtube" data-t="type_youtube">▶ YouTube</option>
+            <option value="telegram" data-t="type_telegram">✈ Telegram</option>
+            <option value="website" data-t="type_website">🌐 Сайт</option>
+            <option value="instagram" data-t="type_instagram">📷 Instagram</option>
+            <option value="vk" data-t="type_vk">💬 VK</option>
+            <option value="other" data-t="type_other">🔗 Другое</option>
           </select>
         </div>
         <div class="settings-field">
-          <label>Название</label>
-          <input class="ctx-input" id="newLinkLabel" placeholder="Мой Telegram-канал">
+          <label data-t="label_link_name">Название</label>
+          <input class="ctx-input" id="newLinkLabel" data-t-placeholder="link_name_ph" placeholder="Мой Telegram-канал">
         </div>
         <div class="settings-field">
-          <label>URL</label>
+          <label data-t="label_url">URL</label>
           <input class="ctx-input" id="newLinkUrl" placeholder="https://t.me/channel">
         </div>
       </div>
       <div class="settings-row" style="margin-top:8px;">
         <div class="settings-field">
-          <label>Эмодзи</label>
+          <label data-t="label_emoji">Эмодзи</label>
           <input class="ctx-input" id="newLinkEmoji" placeholder="📌" style="width:60px;" maxlength="4">
         </div>
         <div class="settings-field">
           <label style="display:flex;align-items:center;gap:6px;margin-top:12px;">
-            <input type="checkbox" id="newLinkUtm" checked style="width:auto;"> UTM-метки
+            <input type="checkbox" id="newLinkUtm" checked style="width:auto;"> <span data-t="label_utm">UTM-метки</span>
           </label>
         </div>
         <div class="settings-field" style="display:flex;align-items:flex-end;">
-          <button class="btn btn-blue btn-sm" onclick="addDynamicLink()">+ Добавить</button>
+          <button class="btn btn-blue btn-sm" onclick="addDynamicLink()" data-t="btn_add">+ Добавить</button>
         </div>
       </div>
     </div>
 
     <!-- UTM defaults -->
     <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;">
-      <div style="font-size:12px;font-weight:600;margin-bottom:8px;">UTM по умолчанию</div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;" data-t="utm_defaults">UTM по умолчанию</div>
       <div class="settings-row">
         <div class="settings-field"><label>utm_source</label><input class="ctx-input" id="utmSource" value="youtube"></div>
         <div class="settings-field"><label>utm_medium</label><input class="ctx-input" id="utmMedium" value="video_description"></div>
-        <div class="settings-field"><label>utm_campaign</label><input class="ctx-input" id="utmCampaign" placeholder="авто из названия"></div>
+        <div class="settings-field"><label>utm_campaign</label><input class="ctx-input" id="utmCampaign" data-t-placeholder="utm_campaign_ph" placeholder="авто из названия"></div>
       </div>
     </div>
 
@@ -414,30 +1334,30 @@ select.ctx-input { appearance: none; }
 
   <!-- CTA & Вставки -->
   <div class="settings-section">
-    <h3>CTA и рекламные вставки</h3>
+    <h3 data-t="settings_cta">CTA и рекламные вставки</h3>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
       <!-- Lead Magnet -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-lead_magnet-enabled" style="width:auto;margin-right:6px;"> Лидмагнит</label>
+          <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-lead_magnet-enabled" style="width:auto;margin-right:6px;"> <span data-t="label_lead_magnet">Лидмагнит</span></label>
         </div>
-        <div class="settings-field"><label>Текст для озвучки</label><input class="ctx-input" id="ctx-cta-lead_magnet-text" placeholder="Забирайте бесплатный гайд..."></div>
+        <div class="settings-field"><label data-t="label_voiceover_text">Текст для озвучки</label><input class="ctx-input" id="ctx-cta-lead_magnet-text" data-t-placeholder="lead_magnet_ph" placeholder="Забирайте бесплатный гайд..."></div>
         <div class="settings-row" style="margin-top:8px;">
-          <div class="settings-field"><label>URL</label><input class="ctx-input" id="ctx-cta-lead_magnet-url" placeholder="https://t.me/bot"></div>
-          <div class="settings-field"><label>Размещение</label><select class="ctx-input" id="ctx-cta-lead_magnet-placement"><option value="intro">В начале</option><option value="hook">В хуке</option><option value="outro">В конце</option></select></div>
+          <div class="settings-field"><label data-t="label_url">URL</label><input class="ctx-input" id="ctx-cta-lead_magnet-url" placeholder="https://t.me/bot"></div>
+          <div class="settings-field"><label data-t="label_placement">Размещение</label><select class="ctx-input" id="ctx-cta-lead_magnet-placement"><option value="intro" data-t="placement_intro">В начале</option><option value="hook" data-t="placement_hook">В хуке</option><option value="outro" data-t="placement_outro">В конце</option></select></div>
         </div>
       </div>
 
       <!-- Mid-Roll -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-mid_roll-enabled" style="width:auto;margin-right:6px;"> Рекламная вставка</label>
+          <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-mid_roll-enabled" style="width:auto;margin-right:6px;"> <span data-t="label_mid_roll">Рекламная вставка</span></label>
         </div>
-        <div class="settings-field"><label>Текст для озвучки</label><input class="ctx-input" id="ctx-cta-mid_roll-text" placeholder="У меня есть закрытая группа..."></div>
+        <div class="settings-field"><label data-t="label_voiceover_text">Текст для озвучки</label><input class="ctx-input" id="ctx-cta-mid_roll-text" data-t-placeholder="mid_roll_ph" placeholder="У меня есть закрытая группа..."></div>
         <div class="settings-row" style="margin-top:8px;">
-          <div class="settings-field"><label>URL</label><input class="ctx-input" id="ctx-cta-mid_roll-url" placeholder="https://t.me/group"></div>
-          <div class="settings-field"><label>После блока №</label><input class="ctx-input" type="number" id="ctx-cta-mid_roll-placement_after_block" value="3" min="1" max="6"></div>
+          <div class="settings-field"><label data-t="label_url">URL</label><input class="ctx-input" id="ctx-cta-mid_roll-url" placeholder="https://t.me/group"></div>
+          <div class="settings-field"><label data-t="label_after_block">После блока №</label><input class="ctx-input" type="number" id="ctx-cta-mid_roll-placement_after_block" value="3" min="1" max="6"></div>
         </div>
       </div>
     </div>
@@ -445,95 +1365,95 @@ select.ctx-input { appearance: none; }
     <!-- End Screen -->
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
       <div class="settings-row">
-        <div class="settings-field"><label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-end_screen-enabled" checked style="width:auto;margin-right:6px;"> Концовка</label><input class="ctx-input" id="ctx-cta-end_screen-text" placeholder="Ставьте лайк и подписывайтесь!" style="margin-top:8px;"></div>
-        <div class="settings-field"><label>Хэштеги</label><input class="ctx-input" id="ctx-hashtags_always" placeholder="ИмяКанала, Маркетинг"></div>
-        <div class="settings-field"><label>Теги</label><input class="ctx-input" id="ctx-tags_always" placeholder="имя канала, маркетинг"></div>
+        <div class="settings-field"><label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-end_screen-enabled" checked style="width:auto;margin-right:6px;"> <span data-t="label_end_screen">Концовка</span></label><input class="ctx-input" id="ctx-cta-end_screen-text" data-t-placeholder="end_screen_ph" placeholder="Ставьте лайк и подписывайтесь!" style="margin-top:8px;"></div>
+        <div class="settings-field"><label data-t="label_hashtags">Хэштеги</label><input class="ctx-input" id="ctx-hashtags_always" data-t-placeholder="hashtags_ph" placeholder="ИмяКанала, Маркетинг"></div>
+        <div class="settings-field"><label data-t="label_tags">Теги</label><input class="ctx-input" id="ctx-tags_always" data-t-placeholder="tags_ph" placeholder="имя канала, маркетинг"></div>
       </div>
     </div>
   </div>
 
   <!-- Personas for thumbnails -->
   <div class="settings-section">
-    <h3>Персоны для обложек</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Добавьте лица людей, которые могут появиться на обложках: эксперт, известные личности, спикеры. При генерации обложки вы выберете кого разместить.</p>
+    <h3 data-t="settings_personas">Персоны для обложек</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;" data-t="personas_desc">Добавьте лица людей, которые могут появиться на обложках: эксперт, известные личности, спикеры. При генерации обложки вы выберете кого разместить.</p>
 
     <div id="personasList" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
 
     <div style="background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:14px;">
       <div class="settings-row">
         <div class="settings-field">
-          <label>Имя</label>
-          <input class="ctx-input" id="personaName" placeholder="Сергей Галицкий">
+          <label data-t="label_name">Имя</label>
+          <input class="ctx-input" id="personaName" data-t-placeholder="persona_name_ph" placeholder="Сергей Галицкий">
         </div>
         <div class="settings-field">
-          <label>Роль / кто это</label>
-          <input class="ctx-input" id="personaRole" placeholder="Основатель Магнита">
+          <label data-t="label_role">Роль / кто это</label>
+          <input class="ctx-input" id="personaRole" data-t-placeholder="persona_role_ph" placeholder="Основатель Магнита">
         </div>
         <div class="settings-field">
-          <label>Фото</label>
+          <label data-t="label_photo">Фото</label>
           <input type="file" id="personaPhoto" accept="image/*" style="margin-top:4px;">
         </div>
       </div>
       <div class="settings-field" style="margin-top:8px;">
-        <label>Описание для AI (как выглядит, что носит)</label>
-        <input class="ctx-input" id="personaDesc" placeholder="Мужчина ~55 лет, короткая стрижка, в деловом костюме">
+        <label data-t="label_ai_desc">Описание для AI (как выглядит, что носит)</label>
+        <input class="ctx-input" id="personaDesc" data-t-placeholder="persona_desc_ph" placeholder="Мужчина ~55 лет, короткая стрижка, в деловом костюме">
       </div>
-      <button class="btn btn-blue btn-sm" onclick="addPersona()" style="margin-top:10px;">+ Добавить персону</button>
+      <button class="btn btn-blue btn-sm" onclick="addPersona()" style="margin-top:10px;" data-t="btn_add_persona">+ Добавить персону</button>
     </div>
   </div>
 
   <!-- Expert Photo & Styles -->
   <div class="settings-section">
-    <h3>Фото и стили обложек</h3>
+    <h3 data-t="settings_photo_styles">Фото и стили обложек</h3>
     <div class="settings-row">
       <div class="settings-field">
-        <label>Фото эксперта (для обложек)</label>
+        <label data-t="label_expert_photo">Фото эксперта (для обложек)</label>
         <input type="file" id="expertPhotoInput" accept="image/*" style="margin-top:4px;">
-        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Фон будет удалён автоматически</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;" data-t="expert_photo_hint">Фон будет удалён автоматически</p>
         <div id="expertPreview" style="margin-top:8px;"></div>
       </div>
     </div>
 
     <div style="margin-top:16px;">
-      <label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;margin-bottom:8px;">Стили-референсы</label>
+      <label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;margin-bottom:8px;" data-t="label_style_refs">Стили-референсы</label>
       <div id="stylesGallery" class="styles-grid"></div>
       <div style="margin-top:12px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-        <div><label>Картинка</label><input type="file" id="styleFileInput" accept="image/*"></div>
-        <div style="flex:1;min-width:120px;"><label>Название</label><input class="ctx-input" id="styleNameInput" placeholder="Неон синий"></div>
-        <div style="flex:1;min-width:160px;"><label>Промпт-подсказка</label><input class="ctx-input" id="stylePromptInput" placeholder="neon blue glow..."></div>
-        <button class="btn btn-blue btn-sm" onclick="uploadStyle()">+ Добавить</button>
+        <div><label data-t="label_image">Картинка</label><input type="file" id="styleFileInput" accept="image/*"></div>
+        <div style="flex:1;min-width:120px;"><label data-t="label_style_name">Название</label><input class="ctx-input" id="styleNameInput" data-t-placeholder="style_name_ph" placeholder="Неон синий"></div>
+        <div style="flex:1;min-width:160px;"><label data-t="label_style_prompt">Промпт-подсказка</label><input class="ctx-input" id="stylePromptInput" placeholder="neon blue glow..."></div>
+        <button class="btn btn-blue btn-sm" onclick="uploadStyle()" data-t="btn_add_style">+ Добавить</button>
       </div>
     </div>
   </div>
 
     <!-- 2FA Settings -->
     <div class="settings-section">
-      <h3 style="margin-bottom:12px;">🔒 Двухфакторная аутентификация (2FA)</h3>
+      <h3 style="margin-bottom:12px;" data-t="settings_2fa">🔒 Двухфакторная аутентификация (2FA)</h3>
       <div id="twoFaStatus"></div>
       <div id="twoFaSetup" style="display:none;">
         <div style="margin-bottom:10px;">
-          <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">Отсканируйте QR-код в Google Authenticator (или Authy):</p>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:8px;" data-t="twofa_scan_qr">Отсканируйте QR-код в Google Authenticator (или Authy):</p>
           <div style="background:#fff;display:inline-block;padding:16px;border-radius:8px;margin-bottom:10px;">
             <div id="qrCode" style="font-size:11px;word-break:break-all;color:#000;"></div>
           </div>
-          <p style="font-size:11px;color:var(--muted);margin-bottom:4px;">Или введите секрет вручную:</p>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:4px;" data-t="twofa_manual">Или введите секрет вручную:</p>
           <code id="totpSecretDisplay" style="background:var(--bg);padding:6px 10px;border-radius:4px;font-size:14px;letter-spacing:2px;user-select:all;"></code>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-          <input id="verifyTotpCode" placeholder="Введите 6-значный код" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
-          <button class="btn btn-green btn-sm" onclick="verifyAndEnable2FA()">Подтвердить и включить</button>
+          <input id="verifyTotpCode" data-t-placeholder="twofa_verify_ph" placeholder="Введите 6-значный код" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
+          <button class="btn btn-green btn-sm" onclick="verifyAndEnable2FA()" data-t="btn_verify_enable">Подтвердить и включить</button>
         </div>
       </div>
       <div id="twoFaDisable" style="display:none;">
         <div style="display:flex;gap:8px;align-items:center;">
-          <input id="disableTotpCode" placeholder="Код 2FA для отключения" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
-          <button class="btn btn-red btn-sm" onclick="disable2FA()">Отключить 2FA</button>
+          <input id="disableTotpCode" data-t-placeholder="twofa_disable_ph" placeholder="Код 2FA для отключения" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
+          <button class="btn btn-red btn-sm" onclick="disable2FA()" data-t="btn_disable_2fa">Отключить 2FA</button>
         </div>
       </div>
     </div>
 
   <div style="display:flex;justify-content:flex-end;margin-top:8px;margin-bottom:24px;">
-    <button class="btn btn-blue" onclick="saveContext()" style="padding:12px 32px;font-size:14px;">Сохранить изменения</button>
+    <button class="btn btn-blue" onclick="saveContext()" style="padding:12px 32px;font-size:14px;" data-t="btn_save">Сохранить изменения</button>
   </div>
 
 </div>
@@ -541,29 +1461,29 @@ select.ctx-input { appearance: none; }
 <!-- Custom Cover Modal -->
 <div class="modal-overlay" id="coverModal">
   <div class="cover-modal">
-    <h2>🎨 Кастомная обложка</h2>
+    <h2 data-t="cover_modal_title">🎨 Кастомная обложка</h2>
 
-    <label>Персоны на обложке</label>
+    <label data-t="label_personas_on_cover">Персоны на обложке</label>
     <div id="coverPersonasSelect" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
 
-    <label>Стиль-референс</label>
+    <label data-t="label_style_ref">Стиль-референс</label>
     <div id="coverStyleSelect" class="styles-grid" style="margin-bottom:0;"></div>
 
-    <label>Промпт (на английском — описание полной сцены)</label>
-    <textarea id="coverPromptInput" placeholder="A man pointing at the camera with surprised expression, neon blue glow behind him, bold text says 'ШОК', YouTube thumbnail style, 16:9..."></textarea>
+    <label data-t="label_prompt">Промпт (на английском — описание полной сцены)</label>
+    <textarea id="coverPromptInput" data-t-placeholder="cover_prompt_ph" placeholder="A man pointing at the camera with surprised expression, neon blue glow behind him, bold text says 'ШОК', YouTube thumbnail style, 16:9..."></textarea>
 
-    <label>Текст на обложке (русский, 2-4 слова)</label>
-    <input class="ctx-input" id="coverTextInput" placeholder="СЕКРЕТ УСПЕХА" style="margin-top:0;">
+    <label data-t="label_cover_text">Текст на обложке (русский, 2-4 слова)</label>
+    <input class="ctx-input" id="coverTextInput" data-t-placeholder="cover_text_ph" placeholder="СЕКРЕТ УСПЕХА" style="margin-top:0;">
 
-    <label>Цвет неона</label>
+    <label data-t="label_neon_color">Цвет неона</label>
     <div style="display:flex;gap:8px;align-items:center;">
       <input type="color" id="coverNeonColor" value="#00BFFF" style="width:40px;height:30px;border:none;cursor:pointer;">
       <span id="coverNeonHex" style="font-size:12px;color:var(--muted);">#00BFFF</span>
     </div>
 
     <div class="actions">
-      <button class="btn btn-outline" onclick="hideCoverModal()">Отмена</button>
-      <button class="btn btn-blue" id="btnGenCover" onclick="generateCustomCover()">🎨 Сгенерировать</button>
+      <button class="btn btn-outline" onclick="hideCoverModal()" data-t="btn_cancel">Отмена</button>
+      <button class="btn btn-blue" id="btnGenCover" onclick="generateCustomCover()" data-t="btn_generate_cover">🎨 Сгенерировать</button>
     </div>
   </div>
 </div>
@@ -575,18 +1495,18 @@ select.ctx-input { appearance: none; }
 
 <script>
 const STEPS = [
-  { key: 'research', name: 'Исследование', desc: 'Анализ темы, ключевые слова, конкуренты', auto: true },
-  { key: 'sources', name: 'Источники', desc: 'Статьи, факты, цитаты для контента', auto: true },
-  { key: 'content_plan', name: 'Контент-план', desc: 'Структура видео, хук, CTA', auto: true },
-  { key: 'references', name: 'Референсы', desc: 'Анализ конкурентов, скачивание обложек', auto: true },
-  { key: 'script', name: 'Сценарий', desc: 'Блоки сценария с таймкодами', auto: true },
-  { key: 'teleprompter', name: 'Телесуфлёр', desc: 'Текст для телесуфлёра', auto: true },
-  { key: 'covers', name: 'Обложки', desc: 'Генерация 3 вариантов обложек', auto: true },
-  { key: 'description', name: 'Описание', desc: 'SEO описание + теги + хэштеги', auto: true },
-  { key: 'shooting', name: 'Съёмка', desc: 'Ручной этап — съёмка видео', auto: false },
-  { key: 'editing', name: 'Монтаж', desc: 'Ручной этап — монтаж', auto: false },
-  { key: 'publish', name: 'Публикация', desc: 'Загрузка на YouTube', auto: false },
-  { key: 'dubbing', name: 'Дублирование', desc: 'Перевод и озвучка на другие языки', auto: false },
+  { key: 'research', name: t('step_research'), desc: t('step_research_desc'), auto: true },
+  { key: 'sources', name: t('step_sources'), desc: t('step_sources_desc'), auto: true },
+  { key: 'content_plan', name: t('step_content_plan'), desc: t('step_content_plan_desc'), auto: true },
+  { key: 'references', name: t('step_references'), desc: t('step_references_desc'), auto: true },
+  { key: 'script', name: t('step_script'), desc: t('step_script_desc'), auto: true },
+  { key: 'teleprompter', name: t('step_teleprompter'), desc: t('step_teleprompter_desc'), auto: true },
+  { key: 'covers', name: t('step_covers'), desc: t('step_covers_desc'), auto: true },
+  { key: 'description', name: t('step_description'), desc: t('step_description_desc'), auto: true },
+  { key: 'shooting', name: t('step_shooting'), desc: t('step_shooting_desc'), auto: false },
+  { key: 'editing', name: t('step_editing'), desc: t('step_editing_desc'), auto: false },
+  { key: 'publish', name: t('step_publish'), desc: t('step_publish_desc'), auto: false },
+  { key: 'dubbing', name: t('step_dubbing'), desc: t('step_dubbing_desc'), auto: false },
 ];
 
 let currentProject = null;
@@ -623,7 +1543,7 @@ async function createProject() {
   try {
     const data = await api('/api/new', { topic });
     if (data.ok) {
-      toast('Проект создан!');
+      toast(t('project_created'));
       input.value = '';
       hideModal();
       await loadProjects();
@@ -678,7 +1598,7 @@ async function openProject(id) {
 async function refreshDetail() {
   if (!currentProject) return;
   const data = await api(`/api/project/${currentProject}`);
-  if (!data.ok) { toast('Не удалось загрузить', true); return; }
+  if (!data.ok) { toast(t('load_error'), true); return; }
 
   const { state, files } = data;
   document.getElementById('detailTopic').textContent = state.topic;
@@ -689,7 +1609,7 @@ async function refreshDetail() {
   timeline.innerHTML = STEPS.map((s, i) => {
     const stepState = state.steps[s.key] || {};
     const status = stepState.status || 'pending';
-    const statusLabels = { pending: '⬜ Ожидает', in_progress: '🔄 Выполняется', completed: '✅ Готово', waiting: '⏳ Ожидание', failed: '❌ Ошибка', approved: '👍 Подтверждено' };
+    const statusLabels = { pending: t('status_pending'), in_progress: t('status_in_progress'), completed: t('status_completed'), waiting: t('status_waiting'), failed: t('status_failed'), approved: t('status_approved') };
     const statusColors = { pending: 'var(--muted)', completed: 'var(--green)', in_progress: 'var(--blue)', waiting: 'var(--orange)', failed: 'var(--red)', approved: 'var(--purple)' };
 
     // Check if previous step is completed (strict pipeline order)
@@ -1606,7 +2526,7 @@ async function runStepValidated(step, btn) {
       }
     }
     if (!selectedAngleText) {
-      toast('Сначала выберите угол подачи в разделе "Исследование" выше!', true);
+      toast(t('select_angle_first'), true);
       // Expand research panel and scroll to angles
       const resPanel = document.getElementById('panel-research');
       if (resPanel && resPanel.style.display === 'none') {
@@ -1667,7 +2587,7 @@ async function runAll() {
   try {
     const data = await api('/api/run-all', { project_id: currentProject });
     if (data.ok) {
-      toast('Все авто-шаги выполнены!');
+      toast(t('all_done'));
       await refreshDetail();
     } else {
       toast(data.error || 'Ошибка', true);
@@ -1681,7 +2601,7 @@ async function runAll() {
 async function shotDone(btn) {
   btn.disabled = true;
   const data = await api('/api/shot-done', { project_id: currentProject });
-  if (data.ok) { toast('Съёмка отмечена!'); await refreshDetail(); }
+  if (data.ok) { toast(t('shot_marked')); await refreshDetail(); }
   else toast(data.error, true);
   btn.disabled = false;
 }
@@ -1689,7 +2609,7 @@ async function shotDone(btn) {
 async function editDone(btn) {
   btn.disabled = true;
   const data = await api('/api/edit-done', { project_id: currentProject });
-  if (data.ok) { toast('Монтаж отмечен!'); await refreshDetail(); }
+  if (data.ok) { toast(t('edit_marked')); await refreshDetail(); }
   else toast(data.error, true);
   btn.disabled = false;
 }
@@ -1700,7 +2620,7 @@ async function startDubbing(btn) {
   const checks = document.querySelectorAll('#dubbingLangSelect input[type=checkbox]:checked');
   const languages = Array.from(checks).map(c => c.value);
   if (languages.length === 0) {
-    toast('Выберите хотя бы один язык', true);
+    toast(t('select_language'), true);
     return;
   }
 
@@ -1723,7 +2643,7 @@ async function startDubbing(btn) {
 
 async function uploadDubbingAudio(btn) {
   const fileInput = document.getElementById('dubbingAudioFile');
-  if (!fileInput.files.length) { toast('Выберите аудиофайл (MP3/WAV)', true); return; }
+  if (!fileInput.files.length) { toast(t('select_audio_file'), true); return; }
 
   const file = fileInput.files[0];
   btn.disabled = true;
@@ -1745,17 +2665,17 @@ async function uploadDubbingAudio(btn) {
     };
     xhr.onload = async () => {
       if (xhr.status === 200) {
-        toast('Аудио загружено!');
+        toast(t('audio_uploaded'));
         const statusEl = document.getElementById('dubbingAudioStatus');
         if (statusEl) statusEl.innerHTML = `<span style="color:var(--green);">✅ ${file.name} (${(file.size/(1024*1024)).toFixed(1)} MB)</span>`;
       } else {
-        toast('Ошибка загрузки', true);
+        toast(t('upload_error'), true);
       }
       btn.disabled = false;
       btn.textContent = '⬆ Загрузить';
       progressDiv.style.display = 'none';
     };
-    xhr.onerror = () => { toast('Ошибка сети', true); btn.disabled = false; btn.textContent = '⬆ Загрузить'; };
+    xhr.onerror = () => { toast(t('network_error'), true); btn.disabled = false; btn.textContent = '⬆ Загрузить'; };
     xhr.send(formData);
   } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = '⬆ Загрузить'; }
 }
@@ -1910,7 +2830,7 @@ async function saveContext() {
 
   try {
     const data = await api('/api/context', { context: ctx });
-    if (data.ok) toast('Настройки сохранены!');
+    if (data.ok) toast(t('settings_saved'));
     else toast(data.error || 'Ошибка', true);
   } catch (e) { toast(e.message, true); }
 
@@ -1918,14 +2838,14 @@ async function saveContext() {
   const fileInput = el('expertPhotoInput');
   if (fileInput.files.length > 0) {
     try {
-      toast('Загружаю фото...');
+      toast(t('uploading_photo'));
       const fd = new FormData();
       fd.append('photo', fileInput.files[0]);
       const resp = await fetch('/api/upload-expert', { method: 'POST', body: fd });
       const r = await resp.json();
-      if (r.ok) toast('Фото эксперта загружено!');
+      if (r.ok) toast(t('expert_photo_uploaded'));
       else toast(r.error || 'Ошибка загрузки', true);
-    } catch (e) { toast('Ошибка загрузки фото: ' + e.message, true); }
+    } catch (e) { toast(t('photo_upload_error') + e.message, true); }
   }
 }
 
@@ -1977,8 +2897,8 @@ async function uploadStyle() {
   const name = el('styleNameInput').value.trim();
   const prompt = el('stylePromptInput').value.trim();
 
-  if (!fileInput.files.length) { toast('Выберите картинку', true); return; }
-  if (!name) { toast('Введите название стиля', true); return; }
+  if (!fileInput.files.length) { toast(t('select_image'), true); return; }
+  if (!name) { toast(t('enter_style_name'), true); return; }
 
   const fd = new FormData();
   fd.append('image', fileInput.files[0]);
@@ -1986,11 +2906,11 @@ async function uploadStyle() {
   fd.append('prompt', prompt);
 
   try {
-    toast('Загружаю стиль...');
+    toast(t('uploading_style'));
     const resp = await fetch('/api/upload-style', { method: 'POST', body: fd });
     const r = await resp.json();
     if (r.ok) {
-      toast('Стиль добавлен!');
+      toast(t('style_added'));
       el('styleNameInput').value = '';
       el('stylePromptInput').value = '';
       fileInput.value = '';
@@ -2006,7 +2926,7 @@ async function deleteStyle(id) {
   await fetch(`/api/styles/${id}`, { method: 'DELETE' });
   if (selectedStyleId === id) selectedStyleId = '';
   await loadStyles();
-  toast('Стиль удалён');
+  toast(t('style_deleted'));
 }
 
 // ── Custom Cover Modal ──
@@ -2074,8 +2994,8 @@ async function generateCustomCover() {
   const textOnImage = el('coverTextInput').value.trim();
   const neonColor = el('coverNeonColor').value;
 
-  if (!prompt) { toast('Введите промпт', true); return; }
-  if (!currentProject) { toast('Откройте проект', true); return; }
+  if (!prompt) { toast(t('enter_prompt'), true); return; }
+  if (!currentProject) { toast(t('open_project'), true); return; }
 
   const btn = el('btnGenCover');
   btn.disabled = true;
@@ -2090,7 +3010,7 @@ async function generateCustomCover() {
       neon_color: neonColor,
     });
     if (data.ok) {
-      toast('Обложка сгенерирована!');
+      toast(t('cover_generated'));
       hideCoverModal();
       await refreshDetail();
     } else {
@@ -2111,7 +3031,7 @@ showSettings = function() {
 
 // ── Open Cover Editor ──
 function openEditor() {
-  if (!currentProject) { toast('Откройте проект', true); return; }
+  if (!currentProject) { toast(t('open_project'), true); return; }
   window.open(`/editor.html?project=${currentProject}`, '_blank');
 }
 
@@ -2129,8 +3049,8 @@ async function initStyles() {
 async function addSourceSmart() {
   const input = document.getElementById('sourceUrlInput');
   const url = input.value.trim();
-  if (!url) { toast('Вставьте URL', true); return; }
-  if (!currentProject) { toast('Откройте проект', true); return; }
+  if (!url) { toast(t('enter_url'), true); return; }
+  if (!currentProject) { toast(t('open_project'), true); return; }
 
   // Auto-detect YouTube
   const isYoutube = /youtu\.be|youtube\.com/.test(url);
@@ -2153,12 +3073,12 @@ function showAddTextSource() {
 async function addSourceText() {
   const title = document.getElementById('sourceTextTitle').value.trim();
   const content = document.getElementById('sourceTextContent').value.trim();
-  if (!content) { toast('Введите текст', true); return; }
+  if (!content) { toast(t('enter_text'), true); return; }
   if (!currentProject) return;
 
   const data = await api(`/api/project/${currentProject}/sources`, { type: 'text', title: title || 'Заметки', content });
   if (data.ok) {
-    toast('Текст добавлен!');
+    toast(t('text_added'));
     document.getElementById('sourceTextTitle').value = '';
     document.getElementById('sourceTextContent').value = '';
     document.getElementById('addTextSourceArea').style.display = 'none';
@@ -2171,7 +3091,7 @@ async function addSourceText() {
 async function removeSource(sourceId) {
   if (!confirm('Удалить этот источник?')) return;
   await fetch(`/api/project/${currentProject}/sources/${sourceId}`, { method: 'DELETE' });
-  toast('Источник удалён');
+  toast(t('source_deleted'));
   loadSourcesList();
 }
 
@@ -2221,7 +3141,7 @@ function showAddNotebook() {
 async function addNotebookSource() {
   const nbId = document.getElementById('notebookIdInput').value.trim();
   const title = document.getElementById('notebookTitleInput').value.trim();
-  if (!nbId) { toast('Введите ID блокнота NotebookLM', true); return; }
+  if (!nbId) { toast(t('enter_notebook_id'), true); return; }
   if (!currentProject) return;
 
   const data = await api(`/api/project/${currentProject}/sources`, {
@@ -2249,16 +3169,16 @@ function copyTeleprompterAll() {
     texts.push(el.textContent.trim());
   });
   navigator.clipboard.writeText(texts.join('\n\n---\n\n'))
-    .then(() => toast('Весь текст скопирован!'))
-    .catch(() => toast('Ошибка копирования', true));
+    .then(() => toast(t('all_text_copied')))
+    .catch(() => toast(t('copy_error'), true));
 }
 
 function copySceneText(idx) {
   const el = document.getElementById('scene-text-' + idx);
   if (!el) return;
   navigator.clipboard.writeText(el.textContent.trim())
-    .then(() => toast('Сцена скопирована!'))
-    .catch(() => toast('Ошибка копирования', true));
+    .then(() => toast(t('scene_copied')))
+    .catch(() => toast(t('copy_error'), true));
 }
 
 // ── Research Angle Selection ──
@@ -2610,7 +3530,7 @@ saveContext = async function() {
     tags_always: el('ctx-tags_always').value.split(',').map(s => s.trim()).filter(Boolean),
   };
   const data = await api(`/api/channels/${currentChannelId}`, { context: ctx });
-  if (data.ok) toast('Настройки канала сохранены!');
+  if (data.ok) toast(t('channel_settings_saved'));
   else toast(data.error || 'Ошибка', true);
 };
 
@@ -2648,7 +3568,7 @@ async function checkAudienceFit() {
 // ── Channel Video Analytics ──
 async function loadChannelVideos() {
   const chId = currentChannelId || 'default';
-  toast('Загрузка видео канала...');
+  toast(t('loading_videos'));
   const data = await api(`/api/channels/${chId}/videos`);
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
 
@@ -2688,7 +3608,7 @@ async function loadChannelVideos() {
 // ── Topic Recommendations ──
 async function loadRecommendations() {
   const chId2 = currentChannelId || 'default';
-  toast('Генерирую рекомендации... (Claude AI)');
+  toast(t('generating_recs'));
   const data = await api(`/api/channels/${chId2}/recommendations`);
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
 
@@ -2724,7 +3644,7 @@ async function loadRecommendations() {
       </div>
     `;
   }
-  toast('Рекомендации готовы!');
+  toast(t('recs_ready'));
 }
 
 function createProjectFromRec(topic) {
@@ -2746,7 +3666,7 @@ createProject = async function() {
   try {
     const data = await api('/api/new', { topic, channel_id: channelId });
     if (data.ok) {
-      toast('Проект создан!');
+      toast(t('project_created'));
       input.value = '';
       hideModal();
       await loadProjects();
@@ -2780,7 +3700,7 @@ async function runWizard(mode) {
     use_photo: el('wizAvatarType').value === 'photo',
   };
 
-  if (!params.name) { toast('Введите название канала', true); return; }
+  if (!params.name) { toast(t('enter_channel_name'), true); return; }
 
   const btn = el('btnWizardAll');
   btn.disabled = true;
@@ -2825,12 +3745,12 @@ async function runWizard(mode) {
 
   btn.disabled = false;
   btn.textContent = 'Сгенерировать всё';
-  toast('Готово!');
+  toast(t('done'));
 }
 
 async function generateWizardImage(type) {
   const prompt = type === 'banner' ? el('wizBannerPrompt').textContent : el('wizAvatarPrompt').textContent;
-  if (!prompt) { toast('Сначала сгенерируйте промпт', true); return; }
+  if (!prompt) { toast(t('generate_prompt_first'), true); return; }
 
   const btnId = type === 'banner' ? 'btnGenBanner' : 'btnGenAvatar';
   const btn = el(btnId);
@@ -2866,11 +3786,11 @@ async function generateWizardImage(type) {
 
 function copyWizDesc() {
   const text = el('wizDescText').textContent;
-  navigator.clipboard.writeText(text).then(() => toast('Описание скопировано!')).catch(() => toast('Ошибка', true));
+  navigator.clipboard.writeText(text).then(() => toast(t('desc_copied'))).catch(() => toast(t('error_generic'), true));
 }
 
 function copyText(text) {
-  navigator.clipboard.writeText(text).then(() => toast('Скопировано!')).catch(() => toast('Ошибка', true));
+  navigator.clipboard.writeText(text).then(() => toast(t('copied'))).catch(() => toast(t('error_generic'), true));
 }
 
 // ── Dynamic Links ──
@@ -2922,14 +3842,14 @@ function addDynamicLink() {
   const emoji = el('newLinkEmoji').value.trim();
   const utm = el('newLinkUtm').checked;
 
-  if (!url) { toast('Введите URL', true); return; }
+  if (!url) { toast(t('enter_url'), true); return; }
 
   channelLinks.push({ type, label: label || url, url, emoji, utm });
   el('newLinkLabel').value = '';
   el('newLinkUrl').value = '';
   el('newLinkEmoji').value = '';
   renderDynamicLinks();
-  toast('Ссылка добавлена');
+  toast(t('link_added'));
 }
 
 function removeDynamicLink(i) {
@@ -2965,7 +3885,7 @@ async function addPersona() {
   const desc = document.getElementById('personaDesc').value.trim();
   const fileInput = document.getElementById('personaPhoto');
 
-  if (!name) { toast('Введите имя', true); return; }
+  if (!name) { toast(t('enter_name'), true); return; }
 
   const fd = new FormData();
   fd.append('name', name);
@@ -2992,7 +3912,7 @@ async function addPersona() {
 async function removePersona(id) {
   if (!confirm('Удалить эту персону?')) return;
   await fetch(`/api/personas/${id}`, { method: 'DELETE' });
-  toast('Персона удалена');
+  toast(t('persona_deleted'));
   loadPersonas();
 }
 
@@ -3029,7 +3949,7 @@ async function setup2FA() {
 
 async function verifyAndEnable2FA() {
   const code = document.getElementById('verifyTotpCode').value.trim();
-  if (!code || code.length !== 6) { toast('Введите 6-значный код', true); return; }
+  if (!code || code.length !== 6) { toast(t('enter_6_digit'), true); return; }
 
   const data = await api('/api/2fa/verify', { secret: totpSetupSecret, code });
   if (data.ok) {
@@ -3042,7 +3962,7 @@ async function verifyAndEnable2FA() {
 
 async function disable2FA() {
   const code = document.getElementById('disableTotpCode').value.trim();
-  if (!code || code.length !== 6) { toast('Введите текущий код 2FA', true); return; }
+  if (!code || code.length !== 6) { toast(t('enter_current_2fa'), true); return; }
 
   const data = await api('/api/2fa/disable', { code });
   if (data.ok) {
