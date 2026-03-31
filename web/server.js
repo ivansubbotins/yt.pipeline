@@ -2119,6 +2119,77 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     return;
   }
 
+  // POST /api/upload-video — Upload video file for dubbing (or any step)
+  if (pathname === '/api/upload-video' && req.method === 'POST') {
+    try {
+      const contentType = req.headers['content-type'] || '';
+      const boundary = contentType.split('boundary=')[1];
+      if (!boundary) { res.writeHead(400); res.end('No boundary'); return; }
+
+      const raw = await new Promise((resolve, reject) => {
+        const chunks = [];
+        req.on('data', c => chunks.push(c));
+        req.on('end', () => resolve(Buffer.concat(chunks)));
+        req.on('error', reject);
+      });
+
+      const rawStr = raw.toString('latin1');
+      const parts = rawStr.split('--' + boundary).filter(p => p.includes('Content-Disposition'));
+
+      let projectId = '';
+      let videoBuffer = null;
+      let videoFilename = 'video.mp4';
+
+      for (const part of parts) {
+        if (part.includes('name="project_id"')) {
+          const hEnd = part.indexOf('\r\n\r\n');
+          if (hEnd >= 0) projectId = part.slice(hEnd + 4).trim().replace(/\r\n--$/, '').trim();
+        }
+        if (part.includes('name="video"') && part.includes('filename=')) {
+          const fnMatch = part.match(/filename="([^"]+)"/);
+          if (fnMatch) videoFilename = fnMatch[1];
+          const hEnd = part.indexOf('\r\n\r\n');
+          if (hEnd >= 0) {
+            const start = raw.indexOf(Buffer.from('\r\n\r\n', 'latin1'), raw.indexOf(Buffer.from('name="video"', 'latin1'))) + 4;
+            const partBoundary = Buffer.from('\r\n--' + boundary, 'latin1');
+            let end = raw.length;
+            for (let i = start; i < raw.length - partBoundary.length; i++) {
+              if (raw.slice(i, i + partBoundary.length).equals(partBoundary)) { end = i; break; }
+            }
+            videoBuffer = raw.slice(start, end);
+          }
+        }
+      }
+
+      if (!projectId) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'No project_id' })); return; }
+      if (!videoBuffer) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: false, error: 'No video file' })); return; }
+
+      const projDir = path.join(DATA_DIR, projectId);
+      fs.mkdirSync(projDir, { recursive: true });
+      const videoPath = path.join(projDir, videoFilename);
+      fs.writeFileSync(videoPath, videoBuffer);
+
+      // Update state: mark editing as done with video path
+      const stateFile = path.join(projDir, 'state.json');
+      if (fs.existsSync(stateFile)) {
+        const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+        state.steps.editing = state.steps.editing || {};
+        state.steps.editing.data = state.steps.editing.data || {};
+        state.steps.editing.data.video_file = videoPath;
+        state.steps.editing.status = 'completed';
+        fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf8');
+      }
+
+      console.log(`[upload-video] ${projectId}: saved ${videoFilename} (${(videoBuffer.length/(1024*1024)).toFixed(1)} MB)`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, path: videoPath, size: videoBuffer.length }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
   // POST /api/express/upload-video — Upload video file for express publish
   if (pathname === '/api/express/upload-video' && req.method === 'POST') {
     try {
