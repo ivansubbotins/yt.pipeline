@@ -1454,13 +1454,14 @@ async function refreshDetail() {
         // Language selector
         dubbingPanel = `
         <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">
-          <!-- Video upload -->
+          <!-- Audio upload -->
           <div style="margin-bottom:16px;">
-            <div style="font-weight:700;font-size:14px;margin-bottom:8px;">📹 Видео для дублирования</div>
-            <div id="dubbingVideoStatus" style="font-size:12px;color:var(--muted);margin-bottom:8px;">Проверка...</div>
+            <div style="font-weight:700;font-size:14px;margin-bottom:8px;">🎵 Аудиодорожка (от монтажёра)</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Загрузите MP3 или WAV аудио из финального видео. Видео не нужно — только звук.</div>
+            <div id="dubbingAudioStatus" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
             <div style="display:flex;gap:8px;align-items:center;">
-              <input type="file" id="dubbingVideoFile" accept="video/*" style="font-size:12px;flex:1;">
-              <button class="btn btn-outline btn-sm" onclick="uploadDubbingVideo(this)">⬆ Загрузить</button>
+              <input type="file" id="dubbingAudioFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" style="font-size:12px;flex:1;">
+              <button class="btn btn-outline btn-sm" onclick="uploadDubbingAudio(this)">⬆ Загрузить</button>
             </div>
             <div id="dubbingUploadProgress" style="display:none;margin-top:6px;">
               <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
@@ -1720,9 +1721,9 @@ async function startDubbing(btn) {
   btn.textContent = '🌍 Запустить дублирование';
 }
 
-async function uploadDubbingVideo(btn) {
-  const fileInput = document.getElementById('dubbingVideoFile');
-  if (!fileInput.files.length) { toast('Выберите видеофайл', true); return; }
+async function uploadDubbingAudio(btn) {
+  const fileInput = document.getElementById('dubbingAudioFile');
+  if (!fileInput.files.length) { toast('Выберите аудиофайл (MP3/WAV)', true); return; }
 
   const file = fileInput.files[0];
   btn.disabled = true;
@@ -1733,20 +1734,20 @@ async function uploadDubbingVideo(btn) {
   progressDiv.style.display = 'block';
 
   const formData = new FormData();
-  formData.append('video', file);
+  formData.append('audio', file);
   formData.append('project_id', currentProject);
 
   try {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/upload-video');
+    xhr.open('POST', '/api/upload-audio');
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) progressBar.style.width = Math.round(e.loaded / e.total * 100) + '%';
     };
     xhr.onload = async () => {
       if (xhr.status === 200) {
-        toast('Видео загружено!');
-        const statusEl = document.getElementById('dubbingVideoStatus');
-        if (statusEl) statusEl.innerHTML = `<span style="color:var(--green);">✅ ${file.name} (${(file.size/(1024*1024)).toFixed(0)} MB)</span>`;
+        toast('Аудио загружено!');
+        const statusEl = document.getElementById('dubbingAudioStatus');
+        if (statusEl) statusEl.innerHTML = `<span style="color:var(--green);">✅ ${file.name} (${(file.size/(1024*1024)).toFixed(1)} MB)</span>`;
       } else {
         toast('Ошибка загрузки', true);
       }

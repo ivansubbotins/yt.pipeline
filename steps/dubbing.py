@@ -45,20 +45,22 @@ class DubbingStep(BaseStep):
         content_plan = self.get_previous_step_data("content_plan")
         description_data = self.get_previous_step_data("description")
 
-        video_file = self._find_video_file()
-        logger.info(f"Dubbing source video: {video_file}")
-
         dubbing_config = self._load_dubbing_config()
         selected_langs = dubbing_config.get("languages", list(LANGUAGES.keys()))
 
         dubbing_dir = self.state.project_dir / "dubbing"
         dubbing_dir.mkdir(parents=True, exist_ok=True)
 
+        # ── Find source audio ──
+        # Montageur uploads audio track (mp3/wav) — much lighter than video
+        source_audio = self._find_source_audio(dubbing_dir)
+        logger.info(f"Dubbing source audio: {source_audio}")
+
         # ── Shared steps (run once, reuse for all languages) ──
 
-        # 1. Extract audio
+        # 1. Convert to WAV 16kHz mono for Whisper (if needed)
         audio_path = dubbing_dir / "audio.wav"
-        self._extract_audio(video_file, audio_path)
+        self._prepare_audio(source_audio, audio_path)
 
         # 2. Transcribe Russian
         transcript_path = dubbing_dir / "transcript_ru.json"
@@ -66,10 +68,10 @@ class DubbingStep(BaseStep):
 
         # 3. Separate vocals from background (demucs)
         background_path = dubbing_dir / "background.wav"
-        self._separate_audio(audio_path, background_path)
+        self._separate_audio(Path(source_audio), background_path)
 
-        # Get video duration for audio alignment
-        video_duration = self._get_duration(video_file)
+        # Get audio duration for alignment
+        video_duration = self._get_audio_duration(source_audio)
 
         # ── Per-language steps ──
         results = []
@@ -98,17 +100,11 @@ class DubbingStep(BaseStep):
                     voice_id=ELEVENLABS_VOICE_ID,
                 )
 
-                # 6. Combine background + TTS
+                # 6. Combine background + TTS → final audio track
                 self._save_progress(dubbing_dir, lang_code, "combining_audio", {})
                 combined_path = lang_dir / "combined.wav"
                 self._combine_audio(tts_files, translated, background_path, combined_path, video_duration)
 
-                # 7. Merge with video
-                self._save_progress(dubbing_dir, lang_code, "muxing_video", {})
-                final_path = lang_dir / "final.mp4"
-                self._mux_video(video_file, combined_path, final_path)
-
-                # 8. Translate metadata
                 self._save_progress(dubbing_dir, lang_code, "translating_metadata", {})
                 metadata = self._translate_metadata(
                     lang_code=lang_code,
@@ -124,7 +120,7 @@ class DubbingStep(BaseStep):
                     "lang_code": lang_code,
                     "lang_name": lang_name,
                     "status": "completed",
-                    "output_file": str(final_path),
+                    "output_file": str(combined_path),
                     "translated_title": metadata.get("title", ""),
                 })
                 logger.info(f"=== {lang_name} ({lang_code}) DONE ===")
@@ -150,21 +146,21 @@ class DubbingStep(BaseStep):
             "video_source": video_file,
         }
 
-    # ── Step 1: Extract Audio ──
+    # ── Step 1: Prepare Audio ──
 
-    def _extract_audio(self, video_path: str, output_path: Path):
-        """Extract mono 16kHz audio from video for transcription."""
+    def _prepare_audio(self, source_audio: str, output_path: Path):
+        """Convert source audio to mono 16kHz WAV for Whisper transcription."""
         if output_path.exists():
-            logger.info(f"Audio already extracted: {output_path}")
+            logger.info(f"Audio already prepared: {output_path}")
             return
-        logger.info("Extracting audio from video...")
+        logger.info("Converting audio to 16kHz mono WAV for transcription...")
         subprocess.run(
-            ["ffmpeg", "-y", "-i", video_path, "-vn",
+            ["ffmpeg", "-y", "-i", source_audio, "-vn",
              "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
              str(output_path)],
             check=True, capture_output=True, timeout=120,
         )
-        logger.info(f"Audio extracted: {output_path}")
+        logger.info(f"Audio prepared: {output_path}")
 
     # ── Step 2: Transcribe ──
 
@@ -443,23 +439,6 @@ Return JSON: [{{"start": 0.0, "end": 4.8, "text": "{lang_name} text"}}]"""
 
         logger.info(f"Combined audio: {output_path}")
 
-    # ── Step 7: Merge Video + Audio ──
-
-    def _mux_video(self, video_path: str, audio_path: Path, output_path: Path):
-        """Merge dubbed audio with original video."""
-        if output_path.exists():
-            logger.info(f"Final video already exists: {output_path}")
-            return
-
-        logger.info("Merging audio with video...")
-        subprocess.run(
-            ["ffmpeg", "-y", "-i", video_path, "-i", str(audio_path),
-             "-c:v", "copy", "-map", "0:v:0", "-map", "1:a:0",
-             "-shortest", str(output_path)],
-            check=True, capture_output=True, timeout=300,
-        )
-        logger.info(f"Final video: {output_path}")
-
     # ── Translate Metadata ──
 
     def _translate_metadata(
@@ -509,29 +488,31 @@ Respond ONLY with valid JSON:
 
     # ── Utilities ──
 
-    def _find_video_file(self) -> str:
-        """Locate the source video file."""
-        # Check editing step
-        video_file = self.state.get_step("editing").get("data", {}).get("video_file")
-        if video_file and Path(video_file).exists():
-            return video_file
+    def _find_source_audio(self, dubbing_dir: Path) -> str:
+        """Locate the source audio file uploaded by montageur."""
+        # Check dubbing directory first (uploaded via UI)
+        for ext in ("mp3", "wav", "m4a", "aac", "ogg", "flac"):
+            candidates = list(dubbing_dir.glob(f"source_audio.{ext}"))
+            if candidates:
+                return str(candidates[0])
 
-        # Check publish step
-        publish_data = self.state.get_step("publish").get("data", {})
-        video_file = publish_data.get("video_file")
-        if video_file and Path(video_file).exists():
-            return video_file
+        # Check project directory
+        for ext in ("mp3", "wav", "m4a", "aac", "ogg", "flac"):
+            candidates = list(self.state.project_dir.glob(f"*.{ext}"))
+            if candidates:
+                candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+                return str(candidates[0])
 
-        # Search project directory
-        for ext in ("mp4", "mov", "mkv", "avi", "webm"):
+        # Fallback: try video file and extract audio
+        for ext in ("mp4", "mov", "mkv", "webm"):
             candidates = list(self.state.project_dir.glob(f"*.{ext}"))
             if candidates:
                 candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                 return str(candidates[0])
 
         raise FileNotFoundError(
-            f"Video file not found in {self.state.project_dir}. "
-            "Place the video file in the project directory before running dubbing."
+            f"Audio file not found in {dubbing_dir} or {self.state.project_dir}. "
+            "Upload an audio track (MP3/WAV) via the dashboard before running dubbing."
         )
 
     def _load_dubbing_config(self) -> dict:
@@ -551,11 +532,11 @@ Respond ONLY with valid JSON:
 
         return {"languages": list(LANGUAGES.keys())}
 
-    def _get_duration(self, video_path: str) -> float:
-        """Get video duration in seconds via ffprobe."""
+    def _get_audio_duration(self, audio_path: str) -> float:
+        """Get audio duration in seconds via ffprobe."""
         result = subprocess.run(
             ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", video_path],
+             "-of", "default=noprint_wrappers=1:nokey=1", audio_path],
             capture_output=True, text=True, timeout=10,
         )
         return float(result.stdout.strip())
