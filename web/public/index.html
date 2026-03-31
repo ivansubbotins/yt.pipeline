@@ -1471,16 +1471,16 @@ async function refreshDetail() {
           <!-- Language selection -->
           <div style="font-weight:700;font-size:14px;margin-bottom:12px;">🌍 Выберите языки для дублирования</div>
           <div id="dubbingLangSelect" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;">
-            ${Object.entries(allLangs).map(([code, info]) => \`
+            ${Object.entries(allLangs).map(([code, info]) => `
               <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
-                <input type="checkbox" value="\${code}" checked style="accent-color:var(--blue);">
-                <span style="font-size:18px;">\${info.flag}</span>
+                <input type="checkbox" value="${code}" checked style="accent-color:var(--blue);">
+                <span style="font-size:18px;">${info.flag}</span>
                 <div>
-                  <div style="font-size:13px;font-weight:600;">\${info.name}</div>
-                  <div style="font-size:10px;color:var(--muted);">\${info.provider}</div>
+                  <div style="font-size:13px;font-weight:600;">${info.name}</div>
+                  <div style="font-size:10px;color:var(--muted);">${info.provider}</div>
                 </div>
               </label>
-            \`).join('')}
+            `).join('')}
           </div>
         </div>`;
       } else if (langs.length > 0) {
