@@ -491,24 +491,27 @@ Respond ONLY with valid JSON:
     def _find_source_audio(self, dubbing_dir: Path) -> str:
         """Locate the source audio file uploaded by montageur."""
         # Check dubbing directory first (uploaded via UI)
-        for ext in ("mp3", "wav", "m4a", "aac", "ogg", "flac"):
-            candidates = list(dubbing_dir.glob(f"source_audio.{ext}"))
-            if candidates:
-                return str(candidates[0])
+        # Case-insensitive glob for Linux compatibility
+        for pattern in ("source_audio.*", "SOURCE_AUDIO.*", "Source_Audio.*"):
+            candidates = list(dubbing_dir.glob(pattern))
+            audio_candidates = [c for c in candidates if c.suffix.lower() in (".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac")]
+            if audio_candidates:
+                return str(audio_candidates[0])
+
+        # Any audio file in dubbing dir
+        for f in dubbing_dir.iterdir() if dubbing_dir.exists() else []:
+            if f.suffix.lower() in (".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"):
+                return str(f)
 
         # Check project directory
-        for ext in ("mp3", "wav", "m4a", "aac", "ogg", "flac"):
-            candidates = list(self.state.project_dir.glob(f"*.{ext}"))
-            if candidates:
-                candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-                return str(candidates[0])
+        for f in sorted(self.state.project_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if f.suffix.lower() in (".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"):
+                return str(f)
 
         # Fallback: try video file and extract audio
-        for ext in ("mp4", "mov", "mkv", "webm"):
-            candidates = list(self.state.project_dir.glob(f"*.{ext}"))
-            if candidates:
-                candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-                return str(candidates[0])
+        for f in sorted(self.state.project_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if f.suffix.lower() in (".mp4", ".mov", ".mkv", ".webm"):
+                return str(f)
 
         raise FileNotFoundError(
             f"Audio file not found in {dubbing_dir} or {self.state.project_dir}. "
