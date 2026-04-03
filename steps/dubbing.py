@@ -146,7 +146,7 @@ class DubbingStep(BaseStep):
             "total": len(results),
             "completed": len(completed),
             "failed": len(failed),
-            "video_source": video_file,
+            "audio_source": source_audio,
         }
 
     # ── Step 1: Prepare Audio ──
