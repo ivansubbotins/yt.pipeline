@@ -194,33 +194,30 @@ class DubbingStep(BaseStep):
     # ── Step 3: Separate Audio (Demucs) ──
 
     def _separate_audio(self, audio_path: Path, output_path: Path):
-        """Separate vocals from background using Demucs via SSH on VPS."""
+        """Separate vocals from background using Demucs.
+
+        Tries local demucs first (if running on VPS where it's installed),
+        falls back to SSH if local fails, then to simple volume reduction.
+        """
         if output_path.exists():
             logger.info(f"Background audio already separated: {output_path}")
             return
 
-        from config import VPS_SSH_HOST, VPS_SSH_USER
+        logger.info("Separating vocals from background via Demucs...")
 
-        logger.info("Separating vocals from background via Demucs on VPS...")
-
-        remote_input = "/tmp/dubbing_input.wav"
-        remote_output = "/tmp/dubbing_background.wav"
-
-        # Upload audio to VPS
-        subprocess.run(
-            ["scp", str(audio_path), f"{VPS_SSH_USER}@{VPS_SSH_HOST}:{remote_input}"],
-            check=True, capture_output=True, timeout=60,
-        )
-
-        # Run demucs on VPS via Python (bypasses torchaudio/torchcodec issues)
-        demucs_script = f"""
+        # Demucs script that works both locally and remotely
+        demucs_script = """
 import torch, numpy as np, os, soundfile as sf
 from demucs.pretrained import get_model
 from demucs.apply import apply_model
+import sys
+
+input_path = sys.argv[1]
+output_path = sys.argv[2]
 
 model = get_model("htdemucs")
 model.eval()
-wav_np, sr = sf.read("{remote_input}")
+wav_np, sr = sf.read(input_path)
 if wav_np.ndim == 1:
     wav_np = np.stack([wav_np, wav_np])
 else:
@@ -235,39 +232,62 @@ with torch.no_grad():
 vocals_idx = model.sources.index("vocals")
 no_vocals = sources.sum(0) - sources[vocals_idx]
 no_vocals = no_vocals * ref.std() + ref.mean()
-sf.write("{remote_output}", no_vocals.numpy().T, sr)
+sf.write(output_path, no_vocals.numpy().T, sr)
 print("DEMUCS_OK")
 """
+        # Write script to temp file
+        script_path = output_path.parent / "_demucs_script.py"
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(demucs_script)
+
+        # Try 1: Run demucs locally (works if on VPS)
         result = subprocess.run(
-            ["ssh", f"{VPS_SSH_USER}@{VPS_SSH_HOST}",
-             f"python3 -u -c '{demucs_script}'"],
+            ["python3", str(script_path), str(audio_path), str(output_path)],
             capture_output=True, timeout=600, text=True,
         )
 
-        if "DEMUCS_OK" not in result.stdout:
-            # Fallback: use original audio with reduced volume
-            logger.warning(f"Demucs failed: {result.stderr[:300]}. Using original audio as fallback.")
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", str(audio_path), "-filter:a", "volume=0.15",
-                 str(output_path)],
-                check=True, capture_output=True, timeout=30,
-            )
+        if "DEMUCS_OK" in result.stdout:
+            logger.info(f"Background separated (local demucs): {output_path}")
+            script_path.unlink(missing_ok=True)
             return
 
-        # Download result
-        subprocess.run(
-            ["scp", f"{VPS_SSH_USER}@{VPS_SSH_HOST}:{remote_output}", str(output_path)],
-            check=True, capture_output=True, timeout=60,
-        )
+        logger.warning(f"Local demucs failed: {result.stderr[:200]}")
 
-        # Cleanup remote files
-        subprocess.run(
-            ["ssh", f"{VPS_SSH_USER}@{VPS_SSH_HOST}",
-             f"rm -f {remote_input} {remote_output}"],
-            capture_output=True, timeout=10,
-        )
+        # Try 2: Run via SSH (if running from a different machine)
+        try:
+            from config import VPS_SSH_HOST, VPS_SSH_USER
+            remote_input = "/tmp/dubbing_input.wav"
+            remote_output = "/tmp/dubbing_background.wav"
 
-        logger.info(f"Background separated: {output_path}")
+            subprocess.run(
+                ["scp", str(audio_path), f"{VPS_SSH_USER}@{VPS_SSH_HOST}:{remote_input}"],
+                check=True, capture_output=True, timeout=120,
+            )
+            ssh_result = subprocess.run(
+                ["ssh", f"{VPS_SSH_USER}@{VPS_SSH_HOST}",
+                 f"python3 {script_path} {remote_input} {remote_output}"],
+                capture_output=True, timeout=600, text=True,
+            )
+            if "DEMUCS_OK" in ssh_result.stdout:
+                subprocess.run(
+                    ["scp", f"{VPS_SSH_USER}@{VPS_SSH_HOST}:{remote_output}", str(output_path)],
+                    check=True, capture_output=True, timeout=120,
+                )
+                logger.info(f"Background separated (SSH demucs): {output_path}")
+                script_path.unlink(missing_ok=True)
+                return
+        except Exception as e:
+            logger.warning(f"SSH demucs failed: {e}")
+
+        # Fallback: use original audio with reduced volume (no vocal removal)
+        logger.warning("Demucs unavailable. Using original audio with reduced volume as background.")
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", str(audio_path), "-filter:a", "volume=0.15",
+             str(output_path)],
+            check=True, capture_output=True, timeout=30,
+        )
+        script_path.unlink(missing_ok=True)
+        logger.info(f"Background (fallback, reduced volume): {output_path}")
 
     # ── Step 4: Translate Segments ──
 
