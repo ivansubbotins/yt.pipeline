@@ -373,8 +373,8 @@ Return JSON: [{{"start": 0.0, "end": 4.8, "text": "{lang_name} text"}}]"""
 
             # Try proxy first (bypasses Russian IP block), then direct
             tts_urls = [
-                (ELEVENLABS_PROXY_URL, {"xi-api-key": api_key, "x-proxy-secret": ELEVENLABS_PROXY_SECRET, "Content-Type": "application/json", "Accept": "audio/mpeg"}),
-                (ELEVENLABS_BASE_URL, {"xi-api-key": api_key, "Content-Type": "application/json", "Accept": "audio/mpeg"}),
+                (ELEVENLABS_PROXY_URL, {"xi-api-key": api_key, "x-proxy-secret": ELEVENLABS_PROXY_SECRET, "Content-Type": "application/json", "Accept": "audio/mpeg", "User-Agent": "YTPipeline/1.0"}),
+                (ELEVENLABS_BASE_URL, {"xi-api-key": api_key, "Content-Type": "application/json", "Accept": "audio/mpeg", "User-Agent": "YTPipeline/1.0"}),
             ]
 
             success = False
