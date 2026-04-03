@@ -34,6 +34,9 @@ LANGUAGES = {
 
 ELEVENLABS_MODEL = "eleven_multilingual_v2"
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
+# Cloudflare Worker proxy (bypasses Russian IP block)
+ELEVENLABS_PROXY_URL = "https://elevenlabs-proxy.iv-subbotin1.workers.dev/v1"
+ELEVENLABS_PROXY_SECRET = "yt-pipe-el-proxy-2026-secret"
 
 
 class DubbingStep(BaseStep):
@@ -368,35 +371,45 @@ Return JSON: [{{"start": 0.0, "end": 4.8, "text": "{lang_name} text"}}]"""
                 },
             }).encode("utf-8")
 
-            req = urllib.request.Request(
-                f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}",
-                data=tts_data,
-                headers={
-                    "xi-api-key": api_key,
-                    "Content-Type": "application/json",
-                    "Accept": "audio/mpeg",
-                },
-                method="POST",
-            )
+            # Try proxy first (bypasses Russian IP block), then direct
+            tts_urls = [
+                (ELEVENLABS_PROXY_URL, {"xi-api-key": api_key, "x-proxy-secret": ELEVENLABS_PROXY_SECRET, "Content-Type": "application/json", "Accept": "audio/mpeg"}),
+                (ELEVENLABS_BASE_URL, {"xi-api-key": api_key, "Content-Type": "application/json", "Accept": "audio/mpeg"}),
+            ]
 
-            # Retry logic for rate limits
+            success = False
             for attempt in range(3):
-                try:
-                    with urllib.request.urlopen(req, timeout=60) as resp:
-                        with open(out_file, "wb") as f:
-                            while True:
-                                chunk = resp.read(8192)
-                                if not chunk:
-                                    break
-                                f.write(chunk)
+                if success:
                     break
-                except urllib.error.HTTPError as e:
-                    if e.code == 429 and attempt < 2:
-                        wait = (attempt + 1) * 10
-                        logger.warning(f"  Rate limited, waiting {wait}s...")
-                        time.sleep(wait)
-                    else:
-                        raise
+                for base_url, hdrs in tts_urls:
+                    try:
+                        req = urllib.request.Request(
+                            f"{base_url}/text-to-speech/{voice_id}",
+                            data=tts_data,
+                            headers=hdrs,
+                            method="POST",
+                        )
+                        with urllib.request.urlopen(req, timeout=60) as resp:
+                            with open(out_file, "wb") as f:
+                                while True:
+                                    chunk = resp.read(8192)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                        success = True
+                        break  # got it, skip other URLs
+                    except urllib.error.HTTPError as e:
+                        if e.code == 429 and attempt < 2:
+                            wait = (attempt + 1) * 10
+                            logger.warning(f"  Rate limited, waiting {wait}s...")
+                            time.sleep(wait)
+                            break  # retry same URL set
+                        # Try next URL
+                        continue
+                    except urllib.error.URLError:
+                        continue  # try next URL
+            if not success:
+                raise RuntimeError(f"TTS failed for segment {i} after all retries")
 
             tts_files.append(out_file)
 
