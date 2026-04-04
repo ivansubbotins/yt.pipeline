@@ -124,8 +124,10 @@ class ContentPlanStep(BaseStep):
 Целевая аудитория: {research.get('target_audience', 'не определена')}
 Незакрытые ниши: {json.dumps(research.get('content_gaps', []), ensure_ascii=False)}
 Трендовые подходы: {json.dumps(research.get('trending_angles', []), ensure_ascii=False)}
-Средняя длительность топ-видео конкурентов: {research.get('_avg_duration_minutes', 12)} мин
-РЕКОМЕНДУЕМАЯ длительность нашего видео: {research.get('_recommended_duration_minutes', 14)} мин (на 20% длиннее среднего конкурента)
+Средняя длительность конкурентов: {research.get('_avg_duration_minutes', 12)} мин
+Максимальная длительность конкурента: {research.get('_max_duration_minutes', 15)} мин
+Длительность лучшего видео: {research.get('_best_video_duration_minutes', 12)} мин
+ЦЕЛЕВАЯ длительность нашего видео: {research.get('_recommended_duration_minutes', 14)} мин — мы должны быть НЕ КОРОЧЕ самого длинного успешного конкурента!
 {('=== ИНСАЙТЫ ИЗ ИСТОЧНИКОВ ===\n' + sources.get('summary', '') + '\nКлючевые инсайты: ' + json.dumps(sources.get('key_insights', []), ensure_ascii=False) + '\nВАЖНО: структура видео должна раскрывать эти инсайты!') if sources and not sources.get('skipped') else ''}
 Анализ обложек конкурентов: {thumbnail_analysis}
 
@@ -137,7 +139,7 @@ class ContentPlanStep(BaseStep):
 1. Использует ЛУЧШИЙ УГОЛ из исследования (hot_angle)
 2. Закрывает content gaps конкурентов
 3. Имеет более сильный хук чем у лучшего видео конкурентов
-4. Минимум 10 минут хронометража
+4. Хронометраж МИНИМУМ {research.get('_recommended_duration_minutes', 14)} минут — не короче лучшего конкурента!
 5. Retention-хуки каждые 2-3 минуты
 6. Чёткая структура с таймингами
 7. CTA (подписка, лайк, комментарий)

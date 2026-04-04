@@ -3256,6 +3256,27 @@ async function refreshDetail() {
       </div>`;
     }
 
+    // Expert notes panel (shows on script step before/after generation)
+    let expertNotesPanel = '';
+    if (s.key === 'script') {
+      expertNotesPanel = `
+        <div style="margin-top:12px;background:var(--surface-container-low);border-radius:var(--radius-lg);padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:1px;">
+              <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit_note</span>
+              Экспертные заметки
+            </div>
+            <span style="font-size:10px;color:var(--muted);">Уникальные инсайты для сценария</span>
+          </div>
+          <div id="expertNotesList" style="margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="expertNoteInput" placeholder="Добавить экспертный инсайт, факт или историю..." style="flex:1;padding:8px 12px;font-size:12px;" onkeydown="if(event.key==='Enter')addExpertNote()">
+            <button class="btn btn-outline btn-sm" onclick="addExpertNote()">+</button>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;">Добавьте уникальные факты, личные истории, кейсы — они будут вплетены в сценарий при генерации</div>
+        </div>`;
+    }
+
     // Script panel
     let scriptPanel = '';
     if (s.key === 'script' && stepState.data && (status === 'completed' || status === 'approved')) {
@@ -3530,7 +3551,7 @@ async function refreshDetail() {
       }
     }
 
-    const hasPanel = researchPanel || sourcesPanel || refsPanel || titlePanel || scriptPanel || teleprompterPanel || dubbingPanel;
+    const hasPanel = researchPanel || sourcesPanel || refsPanel || titlePanel || expertNotesPanel || scriptPanel || teleprompterPanel || dubbingPanel;
     const panelId = 'panel-' + s.key;
     // Auto-collapse completed steps that have panels
     const collapsed = hasPanel && (status === 'completed' || status === 'approved');
@@ -3592,6 +3613,7 @@ async function refreshDetail() {
       ${sourcesPanel}
       ${refsPanel}
       ${titlePanel}
+      ${expertNotesPanel}
       ${scriptPanel}
       ${teleprompterPanel}
       ${dubbingPanel}
@@ -3619,6 +3641,9 @@ async function refreshDetail() {
     filesHtml += `<div class="text-output">${esc(files.description)}</div>`;
   }
   filesSection.innerHTML = filesHtml;
+
+  // Load expert notes for script step
+  loadExpertNotes();
 }
 
 function toggleData(id) {
@@ -4310,6 +4335,48 @@ function copySceneText(idx) {
 // ── Research Angle Selection ──
 let selectedAngleIdx = null;
 let selectedAngleText = '';
+
+// ── Expert Notes ──
+let expertNotes = [];
+
+async function loadExpertNotes() {
+  if (!currentProject) return;
+  const data = await api(`/api/project/${currentProject}/expert-notes`);
+  expertNotes = data.notes || [];
+  renderExpertNotes();
+}
+
+function renderExpertNotes() {
+  const list = document.getElementById('expertNotesList');
+  if (!list) return;
+  if (expertNotes.length === 0) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Нет заметок</div>';
+    return;
+  }
+  list.innerHTML = expertNotes.map((n, i) => `
+    <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;${i > 0 ? 'border-top:1px solid var(--outline-variant);' : ''}">
+      <span class="material-symbols-outlined" style="font-size:14px;color:var(--primary);margin-top:2px;">lightbulb</span>
+      <div style="flex:1;font-size:12px;color:var(--on-surface);line-height:1.4;">${esc(n)}</div>
+      <button onclick="removeExpertNote(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;">×</button>
+    </div>
+  `).join('');
+}
+
+async function addExpertNote() {
+  const input = document.getElementById('expertNoteInput');
+  const text = input.value.trim();
+  if (!text) return;
+  expertNotes.push(text);
+  input.value = '';
+  renderExpertNotes();
+  await api(`/api/project/${currentProject}/expert-notes`, { notes: expertNotes });
+}
+
+async function removeExpertNote(idx) {
+  expertNotes.splice(idx, 1);
+  renderExpertNotes();
+  await api(`/api/project/${currentProject}/expert-notes`, { notes: expertNotes });
+}
 
 function selectAngle(idx, el) {
   // Deselect all

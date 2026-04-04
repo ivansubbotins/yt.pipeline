@@ -526,20 +526,28 @@ breakthrough_score = просмотры / подписчики (чем выше 
             else:
                 result = {"raw_response": response}
 
-        # Calculate average duration of top videos
-        durations_sec = [v.get("days_since_publish", 0) for v in sorted_all]  # placeholder
+        # Calculate duration metrics from top competitors
         durations_sec = []
         for v in sorted_all[:20]:
             dur = _parse_duration_seconds(v.get("duration", ""))
             if dur >= 300:  # only 5+ min videos
                 durations_sec.append(dur)
         avg_duration_min = round(sum(durations_sec) / len(durations_sec) / 60, 1) if durations_sec else 12
+        max_duration_min = round(max(durations_sec) / 60, 1) if durations_sec else 15
         # Best performing video duration
         best_dur_min = round(_parse_duration_seconds(sorted_all[0].get("duration", "")) / 60, 1) if sorted_all else 12
 
+        # Strategy: match or exceed the longest successful competitor
+        # Use MAX of: best video duration, max competitor duration
+        # Our video should be at least as long as the top competitor
+        recommended = max(max_duration_min, best_dur_min)
+        # Cap at 90 min to avoid absurdly long targets
+        recommended = min(recommended, 90)
+
         result["_avg_duration_minutes"] = avg_duration_min
+        result["_max_duration_minutes"] = max_duration_min
         result["_best_video_duration_minutes"] = best_dur_min
-        result["_recommended_duration_minutes"] = round(avg_duration_min * 1.2, 0)  # 20% longer than average
+        result["_recommended_duration_minutes"] = round(recommended, 0)
 
         # Attach top videos with subscriber data (for UI to use independently of Claude)
         result["_top_videos"] = [{

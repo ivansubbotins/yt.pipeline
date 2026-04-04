@@ -2466,6 +2466,37 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     return;
   }
 
+  // POST /api/project/:id/expert-notes — Save expert notes
+  if (pathname.match(/^\/api\/project\/[^/]+\/expert-notes$/) && req.method === 'POST') {
+    try {
+      const projectId = pathname.split('/')[3];
+      const body = JSON.parse(await readBody(req));
+      const filePath = path.join(DATA_DIR, projectId, 'expert_notes.json');
+      fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+  // GET /api/project/:id/expert-notes — Get expert notes
+  if (pathname.match(/^\/api\/project\/[^/]+\/expert-notes$/) && req.method === 'GET') {
+    const projectId = pathname.split('/')[3];
+    const filePath = path.join(DATA_DIR, projectId, 'expert_notes.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, ...data }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, notes: [] }));
+    }
+    return;
+  }
+
   // POST /api/project/:id/selected-hook — Save selected hook
   if (pathname.match(/^\/api\/project\/[^/]+\/selected-hook$/) && req.method === 'POST') {
     try {
