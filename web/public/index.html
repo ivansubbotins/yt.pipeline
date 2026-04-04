@@ -3261,7 +3261,11 @@ async function refreshDetail() {
     if (s.key === 'script' && stepState.data && (status === 'completed' || status === 'approved')) {
       const sd = stepState.data;
       const blocks = sd.blocks || [];
-      const totalDur = sd.total_duration_minutes || blocks.reduce((s, b) => s + (b.duration_seconds || 0), 0) / 60;
+      // Calculate real duration from word count (150 words/min)
+      const allWords = blocks.map(b => [...(b.talking_points || []), b.key_phrase || ''].join(' ')).join(' ');
+      const wordCount = allWords.split(/\s+/).filter(w => w.length > 0).length;
+      const realDurMin = wordCount > 0 ? (wordCount / 150).toFixed(1) : 0;
+      const plannedDur = sd.total_duration_minutes || blocks.reduce((s, b) => s + (b.duration_seconds || 0), 0) / 60;
       const keyMessages = sd.key_messages || [];
       const typeIcons = { hook: 'H', intro: 'I', main: 'M', climax: 'C', cta_outro: 'A', cta: 'A' };
       const typeColors = { hook: 'var(--red)', intro: 'var(--blue)', main: 'var(--green)', climax: 'var(--orange)', cta_outro: 'var(--purple)', cta: 'var(--purple)' };
@@ -3276,8 +3280,8 @@ async function refreshDetail() {
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Блоков</div>
           </div>
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
-            <div style="font-size:20px;font-weight:700;color:var(--green);">${Math.round(totalDur)} мин</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж</div>
+            <div style="font-size:20px;font-weight:700;color:var(--green);">~${realDurMin} мин</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж (${wordCount} слов)</div>
           </div>
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
             <div style="font-size:20px;font-weight:700;color:var(--purple);">${sd.tone ? '✓' : '—'}</div>
