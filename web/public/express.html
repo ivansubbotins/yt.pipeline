@@ -3,10 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Express — YouTube Pipeline</title>
+<title>Express — Yt.Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/shared.css">
 <style>
-.topbar h1 span { color: var(--orange); }
+.topbar h1 span { color: var(--primary); }
 .container { max-width: 900px; }
 
 /* Inline edit for titles */
@@ -23,7 +27,7 @@
 <body>
 
 <div class="topbar">
-  <a href="/" class="back-btn" title="Назад">←</a>
+  <a href="/" class="back-btn" title="Назад"><span class="material-symbols-outlined">arrow_back</span></a>
   <h1><span>Express</span> Publish</h1>
   <div class="spacer"></div>
   <a href="/api/logout" class="btn btn-outline btn-xs" style="text-decoration:none;color:var(--muted);">Выйти</a>
@@ -63,7 +67,7 @@
     <div style="margin-bottom:10px;">
       <label>Фото героя (для обложки)</label>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <img id="expertPreview" src="/api/assets/expert.jpg" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--border);display:none;" onerror="this.style.display='none'" onload="this.style.display='block'">
+        <img id="expertPreview" src="/api/assets/expert.jpg" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid transparent;display:none;" onerror="this.style.display='none'" onload="this.style.display='block'">
         <label class="btn btn-outline" style="cursor:pointer;margin:0;">
           Загрузить фото
           <input type="file" id="expertFile" accept="image/*" onchange="uploadExpert()" style="display:none;">
@@ -155,7 +159,7 @@
     <div id="uploadProgress" style="display:none;">
       <span class="loading"></span> <span id="uploadStatus">Загрузка...</span>
     </div>
-    <div id="videoInfo" style="display:none;background:var(--bg);border-radius:6px;padding:10px;font-size:12px;color:var(--green);margin-top:8px;"></div>
+    <div id="videoInfo" style="display:none;background:var(--surface-container-low);border-radius:6px;padding:10px;font-size:12px;color:var(--green);margin-top:8px;"></div>
   </div>
 
   <!-- Step 6: Publish settings -->
@@ -163,19 +167,19 @@
     <h2><span class="num" id="n6">6</span> Публикация на YouTube</h2>
 
     <!-- YouTube connection status -->
-    <div id="ytConnectBlock" style="background:rgba(245,158,11,0.1);border:1px solid var(--orange);border-radius:8px;padding:14px;margin-bottom:12px;display:none;">
+    <div id="ytConnectBlock" style="background:rgba(245,158,11,0.1);border:none;border-radius:8px;padding:14px;margin-bottom:12px;display:none;">
       <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">YouTube не подключён</div>
       <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Для публикации видео нужно подключить YouTube-аккаунт. Это делается один раз.</div>
       <button class="btn btn-orange" onclick="connectYouTube()" id="btnConnect">Подключить YouTube</button>
     </div>
 
-    <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:12px;">
+    <div style="background:var(--surface-container-low);border-radius:8px;padding:14px;margin-bottom:12px;">
       <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Заголовок:</div>
       <div style="font-size:15px;font-weight:600;" id="summaryTitle">—</div>
       <div style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:4px;">Описание (первые строки):</div>
       <div style="font-size:12px;color:var(--text2);white-space:pre-wrap;max-height:80px;overflow-y:auto;" id="summaryDesc">—</div>
       <div style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:4px;">Обложка:</div>
-      <img id="summaryCover" style="max-width:240px;border-radius:6px;border:1px solid var(--border);display:none;">
+      <img id="summaryCover" style="max-width:240px;border-radius:6px;border:none;display:none;">
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
@@ -220,7 +224,7 @@
       <button class="btn btn-outline" onclick="copyDesc()">Скопировать описание</button>
     </div>
 
-    <div id="publishResult" style="display:none;margin-top:12px;background:rgba(34,197,94,0.1);border:1px solid var(--green);border-radius:8px;padding:14px;"></div>
+    <div id="publishResult" style="display:none;margin-top:12px;background:rgba(34,197,94,0.1);border:none;border-radius:8px;padding:14px;"></div>
   </div>
 
   <!-- Step 7: Split-Test (Matrix Mode) -->
@@ -848,7 +852,7 @@ function renderSplitConfig() {
 
   coversEl.innerHTML = coverPool.map((c, n) => `
     <div style="position:relative;cursor:pointer;" onclick="document.getElementById('scover${n}').checked=!document.getElementById('scover${n}').checked;updateMatrixPreview()">
-      <img src="${c.url}?t=${Date.now()}" style="width:120px;height:68px;border-radius:6px;object-fit:cover;border:2px solid ${c.checked ? 'var(--green)' : 'var(--border)'};">
+      <img src="${c.url}?t=${Date.now()}" style="width:120px;height:68px;border-radius:6px;object-fit:cover;border:2px solid ${c.checked ? 'var(--green)' : 'transparent'};">
       <input type="checkbox" id="scover${n}" ${c.checked ? 'checked' : ''} onchange="updateMatrixPreview()" style="position:absolute;top:4px;left:4px;width:auto;">
     </div>
   `).join('');
@@ -988,9 +992,9 @@ function updateSplitDashboard(test) {
   resultsEl.innerHTML = test.variants.map((v, i) => {
     const isActive = test.status === 'running' && test.current_variant === i;
     const isWinner = test.winner && test.winner.index === i;
-    const borderColor = isWinner ? 'var(--green)' : isActive ? 'var(--purple)' : 'var(--border)';
+    const borderColor = isWinner ? 'var(--green)' : isActive ? 'var(--purple)' : 'transparent';
     return `
-      <div style="background:var(--bg);border:2px solid ${borderColor};border-radius:8px;padding:10px;margin-bottom:6px;">
+      <div style="background:var(--surface-container-low);border:2px solid ${borderColor};border-radius:8px;padding:10px;margin-bottom:6px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-size:13px;font-weight:600;">
             ${isWinner ? '&#x1F3C6; ' : ''}Вариант ${i + 1}${isActive ? ' (активен)' : ''}
