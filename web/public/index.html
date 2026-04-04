@@ -596,11 +596,272 @@ select.ctx-input { appearance: none; }
   border-radius: 2px;
 }
 
-/* ── Mobile Dashboard ── */
+/* ═══════════════════════════════════════════════════
+   Project Detail — Step Cards (Bento)
+   ═══════════════════════════════════════════════════ */
+
+/* ── Detail Back Link ── */
+.detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  text-decoration: none;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.detail-back:hover { color: var(--on-surface); text-decoration: none; }
+
+/* ── Detail Hero Card ── */
+.detail-hero {
+  background: var(--surface-container);
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
+  margin-bottom: 28px;
+}
+.detail-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+.detail-hero-title {
+  font-size: 28px;
+  font-weight: 900;
+  font-family: var(--font-headline);
+  letter-spacing: -0.03em;
+  flex: 1;
+  margin-right: 16px;
+}
+.detail-status-badge {
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface-container-highest);
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+}
+.detail-progress-section { margin-bottom: 16px; }
+.detail-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.detail-progress-bar {
+  height: 6px;
+  background: var(--surface-container-highest);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.detail-progress-fill {
+  height: 100%;
+  background: var(--primary-container);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.detail-hero-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.detail-hero-meta .run-all-bar {
+  margin-bottom: 0;
+}
+
+/* ── Steps Bento Grid ── */
+.steps-bento {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* ── Step Card ── */
+.step-card {
+  background: var(--surface-container);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.step-card:hover { background: var(--surface-container-high); }
+.step-card.locked {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.step-card.locked .step-card-action { visibility: hidden; }
+.step-card.has-panel { cursor: pointer; }
+
+/* First card spans full width */
+.step-card.step-featured {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+.step-featured-visual {
+  background: var(--surface-container-low);
+  border-radius: var(--radius-lg);
+  height: 100%;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step-featured-visual .material-symbols-outlined {
+  font-size: 64px;
+  color: var(--outline);
+  opacity: 0.5;
+}
+
+.step-card-badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--primary-container);
+  color: var(--on-primary-fixed);
+  margin-bottom: 14px;
+  align-self: flex-start;
+}
+.step-card-badge.badge-done {
+  background: rgba(52,211,153,0.15);
+  color: var(--green);
+}
+.step-card-badge.badge-progress {
+  background: rgba(77,142,255,0.15);
+  color: var(--primary);
+}
+.step-card-badge.badge-waiting {
+  background: rgba(251,191,36,0.15);
+  color: var(--orange);
+}
+.step-card-badge.badge-failed {
+  background: rgba(255,180,171,0.15);
+  color: var(--error);
+}
+.step-card-badge.badge-locked {
+  background: var(--surface-container-highest);
+  color: var(--muted);
+}
+
+.step-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--surface-container-low);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.step-card-icon .material-symbols-outlined {
+  font-size: 22px;
+  color: var(--on-surface-variant);
+}
+
+.step-card-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+.step-card-progress .material-symbols-outlined { font-size: 16px; }
+
+.step-card-name {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--font-headline);
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.step-card-desc {
+  font-size: 13px;
+  color: var(--on-surface-variant);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  flex: 1;
+}
+
+.step-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-headline);
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  align-self: flex-start;
+}
+.step-card-action.action-primary {
+  background: var(--primary-container);
+  color: var(--on-primary-fixed);
+  box-shadow: 0 4px 12px rgba(77,142,255,0.2);
+}
+.step-card-action.action-primary:hover { box-shadow: 0 6px 20px rgba(77,142,255,0.3); }
+.step-card-action.action-restart {
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+}
+.step-card-action.action-restart:hover { background: var(--surface-container-highest); }
+.step-card-action.action-success {
+  background: rgba(52,211,153,0.15);
+  color: var(--green);
+}
+.step-card-action.action-locked {
+  background: var(--surface-container-high);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.step-card-action .material-symbols-outlined { font-size: 18px; }
+
+/* Panel inside card */
+.step-card-panel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+/* Lock overlay */
+.step-card-lock {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+.step-card-lock .material-symbols-outlined {
+  font-size: 20px;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* ── Mobile ── */
 @media (max-width: 1024px) {
   .dashboard-grid { grid-template-columns: 1fr; }
   .pipeline-grid { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: 1fr; }
+  .steps-bento { grid-template-columns: 1fr; }
+  .step-card.step-featured { grid-template-columns: 1fr; }
+  .step-featured-visual { min-height: 120px; }
+  .detail-hero { padding: 20px; }
+  .detail-hero-title { font-size: 22px; }
+  .detail-hero-meta { flex-direction: column; gap: 12px; align-items: flex-start; }
 }
 </style>
 <script>
@@ -1693,18 +1954,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Project Detail View -->
 <div class="container" id="detailView" style="display:none">
-  <div class="detail-header">
-    <a class="back" onclick="showList()"><span class="material-symbols-outlined">arrow_back</span></a>
-    <h2 id="detailTopic"></h2>
-    <span id="detailMeta" style="color:var(--muted); font-size:12px;"></span>
+  <!-- Back link -->
+  <a class="detail-back" onclick="showList()">
+    <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span>
+    <span>Назад к проектам</span>
+  </a>
+
+  <!-- Project Header Card -->
+  <div class="detail-hero">
+    <div class="detail-hero-top">
+      <h2 id="detailTopic" class="detail-hero-title"></h2>
+      <span id="detailStatusBadge" class="detail-status-badge">Draft</span>
+    </div>
+    <div class="detail-progress-section">
+      <div class="detail-progress-label">
+        <span>Общий прогресс</span>
+        <span id="detailProgressPct">0%</span>
+      </div>
+      <div class="detail-progress-bar">
+        <div class="detail-progress-fill" id="detailProgressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="detail-hero-meta">
+      <span id="detailMeta" style="color:var(--muted); font-size:12px;"></span>
+      <div class="run-all-bar">
+        <button class="btn btn-primary btn-sm" id="btnRunAll" onclick="runAll()" data-t-title="btn_run_all_title" title="Запускает шаги по порядку, но требует одобрения между этапами" style="gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">play_arrow</span>
+          <span data-t="btn_run_all">Run All</span>
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="showCoverModal()" style="gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">palette</span>
+          <span data-t="btn_custom_cover">Cover</span>
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="openEditor()" style="gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">photo_library</span>
+          <span data-t="btn_cover_editor">Editor</span>
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="refreshDetail()" style="gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+        </button>
+      </div>
+    </div>
   </div>
-  <div class="run-all-bar">
-    <button class="btn btn-outline" id="btnRunAll" onclick="runAll()" data-t-title="btn_run_all_title" title="Запускает шаги по порядку, но требует одобрения между этапами" style="opacity:0.6;" data-t="btn_run_all">▶ Запустить все авто-шаги</button>
-    <button class="btn btn-outline btn-sm" onclick="showCoverModal()" data-t="btn_custom_cover">🎨 Кастомная обложка</button>
-    <button class="btn btn-outline btn-sm" onclick="openEditor()" data-t="btn_cover_editor">🖼 Cover Editor</button>
-    <button class="btn btn-outline btn-sm" onclick="refreshDetail()" data-t="btn_refresh">↻ Обновить</button>
-  </div>
-  <div class="steps-timeline" id="stepsTimeline"></div>
+
+  <!-- Steps Bento Grid -->
+  <div class="steps-bento" id="stepsTimeline"></div>
 
   <div id="filesSection" style="margin-top:24px;"></div>
 </div>
@@ -2336,7 +2630,21 @@ async function refreshDetail() {
 
   const { state, files } = data;
   document.getElementById('detailTopic').textContent = state.topic;
-  document.getElementById('detailMeta').textContent = `ID: ${state.project_id} • Создан: ${new Date(state.created_at).toLocaleString('ru-RU')}`;
+  document.getElementById('detailMeta').textContent = `Создан: ${new Date(state.created_at).toLocaleDateString('ru-RU')}`;
+
+  // Overall progress
+  const doneCount = STEPS.filter(s => ['completed','approved'].includes(state.steps[s.key]?.status)).length;
+  const overallPct = Math.round((doneCount / STEPS.length) * 100);
+  document.getElementById('detailProgressPct').textContent = overallPct + '%';
+  document.getElementById('detailProgressFill').style.width = overallPct + '%';
+  // Status badge
+  const badge = document.getElementById('detailStatusBadge');
+  if (overallPct === 100) { badge.textContent = 'Published'; badge.style.background = 'rgba(52,211,153,0.15)'; badge.style.color = 'var(--green)'; }
+  else if (overallPct > 0) { badge.textContent = 'In Progress'; badge.style.background = 'rgba(173,198,255,0.1)'; badge.style.color = 'var(--primary)'; }
+  else { badge.textContent = 'Draft'; badge.style.background = ''; badge.style.color = ''; }
+
+  // Step icons mapping
+  const stepIcons = { research: 'search', sources: 'source', content_plan: 'assignment', references: 'image_search', script: 'description', teleprompter: 'teleprompter', covers: 'palette', description: 'edit_note', shooting: 'videocam', editing: 'movie_edit', publish: 'upload', dubbing: 'translate' };
 
   // Steps timeline
   const timeline = document.getElementById('stepsTimeline');
@@ -3183,19 +3491,59 @@ async function refreshDetail() {
     // Auto-collapse completed steps that have panels
     const collapsed = hasPanel && (status === 'completed' || status === 'approved');
 
+    // Badge class
+    const badgeClass = status === 'completed' || status === 'approved' ? 'badge-done'
+      : status === 'in_progress' ? 'badge-progress'
+      : status === 'waiting' ? 'badge-waiting'
+      : status === 'failed' ? 'badge-failed'
+      : isLocked ? 'badge-locked' : '';
+
+    // Card action button (styled)
+    let cardAction = '';
+    if (actionBtn) {
+      // Extract onclick from existing btn
+      const onclickMatch = actionBtn.match(/onclick="([^"]+)"/);
+      const onclickStr = onclickMatch ? onclickMatch[1] : '';
+      const isDisabled = actionBtn.includes('disabled');
+      if (status === 'pending' && !isLocked && s.auto) {
+        cardAction = `<button class="step-card-action action-primary" onclick="${onclickStr}"><span class="material-symbols-outlined">play_arrow</span> ${t('btn_run')}</button>`;
+      } else if (status === 'completed' || status === 'approved') {
+        cardAction = `<button class="step-card-action action-restart" onclick="${onclickStr}"><span class="material-symbols-outlined">refresh</span> ${t('btn_restart')}</button>`;
+      } else if (status === 'failed') {
+        cardAction = `<button class="step-card-action action-primary" onclick="${onclickStr}"><span class="material-symbols-outlined">replay</span> ${t('btn_restart')}</button>`;
+      } else if (status === 'waiting' && (s.key === 'shooting' || s.key === 'editing')) {
+        cardAction = `<button class="step-card-action action-success" onclick="${onclickStr}"><span class="material-symbols-outlined">check</span> ${s.key === 'shooting' ? t('btn_shot_done') : t('btn_edit_done')}</button>`;
+      } else if (s.key === 'dubbing') {
+        cardAction = `<button class="step-card-action action-primary" onclick="${onclickStr}"><span class="material-symbols-outlined">translate</span> ${t('btn_start_dubbing')}</button>`;
+      } else if (isLocked) {
+        cardAction = `<button class="step-card-action action-locked" disabled><span class="material-symbols-outlined">lock</span> ${t('btn_locked')}</button>`;
+      }
+    }
+
+    // Progress indicator for completed steps
+    const progressIndicator = (status === 'completed' || status === 'approved')
+      ? `<div class="step-card-progress"><span class="material-symbols-outlined">check_circle</span> ${statusLabels[status]}</div>`
+      : '';
+
+    const stepIcon = stepIcons[s.key] || 'task';
+    const isFeatured = i === 0;
+
     return `
-      <div class="step-row" ${hasPanel ? `onclick="togglePanel('${panelId}', event)" style="cursor:pointer;"` : ''}>
-        <div class="num ${status}">${i + 1}</div>
-        <div class="info">
-          <div class="name">${s.name}</div>
-          <div class="desc">${s.desc}</div>
+      <div class="step-card ${isLocked ? 'locked' : ''} ${hasPanel ? 'has-panel' : ''} ${isFeatured ? 'step-featured' : ''}" ${hasPanel ? `onclick="togglePanel('${panelId}', event)"` : ''}>
+        ${isFeatured ? `<div class="step-featured-visual"><span class="material-symbols-outlined">${stepIcon}</span></div>` : ''}
+        <div>
+          <div class="step-card-badge ${badgeClass}">${t('step_prefix')} ${i + 1}</div>
+          ${!isFeatured ? `<div class="step-card-icon"><span class="material-symbols-outlined">${stepIcon}</span></div>` : ''}
+          ${progressIndicator}
+          <div class="step-card-name">${s.name}</div>
+          <div class="step-card-desc">${s.desc}</div>
+          ${cardAction}
+          ${dataToggle ? `<div style="margin-top:8px;">${dataToggle}</div>` : ''}
+          ${isLocked ? '<div class="step-card-lock"><span class="material-symbols-outlined">lock</span></div>' : ''}
+          ${hasPanel ? `<span class="collapse-icon" id="icon-${panelId}" style="position:absolute;top:20px;right:20px;font-size:16px;color:var(--muted);transition:transform 0.2s;${collapsed ? 'transform:rotate(-90deg);' : ''}">▼</span>` : ''}
         </div>
-        <span class="status-label" style="color:${statusColors[status]}">${statusLabels[status]}</span>
-        ${dataToggle}
-        ${actionBtn}
-        ${hasPanel ? `<span class="collapse-icon" id="icon-${panelId}" style="font-size:16px;color:var(--muted);transition:transform 0.2s;${collapsed ? 'transform:rotate(-90deg);' : ''}"">▼</span>` : ''}
       </div>
-      ${hasPanel ? `<div id="${panelId}" style="${collapsed ? 'display:none;' : ''}">` : ''}
+      ${hasPanel ? `<div id="${panelId}" style="grid-column:1/-1;${collapsed ? 'display:none;' : ''}">` : ''}
       ${researchPanel}
       ${sourcesPanel}
       ${refsPanel}
@@ -3204,7 +3552,7 @@ async function refreshDetail() {
       ${teleprompterPanel}
       ${dubbingPanel}
       ${hasPanel ? '</div>' : ''}
-      ${stepState.data ? `<div class="step-data" id="data-${s.key}" style="display:none"><pre>${esc(JSON.stringify(stepState.data, null, 2))}</pre></div>` : ''}
+      ${stepState.data ? `<div class="step-data" id="data-${s.key}" style="display:none;grid-column:1/-1;"><pre>${esc(JSON.stringify(stepState.data, null, 2))}</pre></div>` : ''}
     `;
   }).join('');
 
