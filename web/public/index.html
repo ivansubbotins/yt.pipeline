@@ -10,11 +10,97 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/shared.css">
 <style>
+/* ═══════════════════════════════════════════════════
+   Obsidian Flux — index.html components
+   No-line rule: borders via tonal bg shifts, not lines
+   ═══════════════════════════════════════════════════ */
+
+/* ── Top Navigation Bar ── */
+.topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(12,14,18,0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.topnav-left { display: flex; align-items: center; gap: 32px; }
+.topnav-right { display: flex; align-items: center; gap: 16px; }
+.topnav-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.topnav-search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 18px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.topnav-search-input {
+  width: 240px;
+  padding: 8px 14px 8px 40px;
+  background: var(--surface-container);
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--on-surface);
+}
+.topnav-search-input:focus {
+  background: var(--surface-container-high);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.topnav-tabs { display: flex; gap: 24px; }
+.topnav-tab {
+  font-family: var(--font-headline);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  padding-bottom: 2px;
+  transition: color 0.15s;
+}
+.topnav-tab:hover { color: var(--on-surface); text-decoration: none; }
+.topnav-tab.active {
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+}
+.topnav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 16px;
+  border-left: 1px solid var(--outline-variant);
+}
+.topnav-icon-btn {
+  font-size: 22px;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.topnav-icon-btn:hover { color: var(--primary); }
+.topnav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-container-high);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 /* ── Projects List ── */
-.projects-grid { display: grid; gap: 12px; margin-top: 24px; }
+.projects-grid { display: grid; gap: 10px; margin-top: 24px; }
 .project-card {
   background: var(--surface-container);
-  border: 1px solid transparent;
+  border: none;
   border-bottom: 2px solid transparent;
   border-radius: var(--radius-xl);
   padding: 24px;
@@ -28,7 +114,7 @@
 .project-card .topic {
   font-size: 16px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-family: var(--font-headline);
   letter-spacing: -0.02em;
 }
@@ -36,12 +122,10 @@
   font-size: 11px;
   color: var(--on-surface-variant);
   margin-bottom: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   font-weight: 500;
 }
-.project-card .steps-bar { display: flex; gap: 4px; }
-.step-dot { width: 100%; height: 4px; border-radius: 2px; background: var(--surface-container-highest); transition: background 0.3s; }
+.project-card .steps-bar { display: flex; gap: 3px; }
+.step-dot { width: 100%; height: 3px; border-radius: 2px; background: var(--surface-container-highest); transition: background 0.3s; }
 .step-dot.completed { background: var(--green); }
 .step-dot.in_progress { background: var(--primary-container); animation: pulse 1.5s infinite; }
 .step-dot.waiting { background: var(--orange); }
@@ -77,19 +161,19 @@
   letter-spacing: -0.03em;
 }
 
-.steps-timeline { display: grid; gap: 8px; }
+.steps-timeline { display: grid; gap: 6px; }
 .step-row {
-  background: var(--surface-container);
-  border: 1px solid transparent;
+  background: var(--surface-container-low);
+  border: none;
   border-left: 3px solid transparent;
   border-radius: var(--radius-lg);
-  padding: 16px 24px;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
   transition: all 0.2s ease;
 }
-.step-row:hover { background: var(--surface-container-high); }
+.step-row:hover { background: var(--surface-container); }
 .step-row .num {
   width: 36px;
   height: 36px;
@@ -103,11 +187,11 @@
   transition: all 0.3s ease;
 }
 .step-row .num.pending { background: var(--surface-container-highest); color: var(--muted); }
-.step-row .num.completed { background: rgba(52,211,153,0.15); color: var(--green); }
-.step-row .num.in_progress { background: rgba(77,142,255,0.15); color: var(--primary-container); animation: pulse 1.5s infinite; }
-.step-row .num.waiting { background: rgba(251,191,36,0.15); color: var(--orange); }
-.step-row .num.failed { background: rgba(255,180,171,0.15); color: var(--error); }
-.step-row .num.approved { background: rgba(208,188,255,0.15); color: var(--tertiary); }
+.step-row .num.completed { background: rgba(52,211,153,0.12); color: var(--green); }
+.step-row .num.in_progress { background: rgba(77,142,255,0.12); color: var(--primary-container); animation: pulse 1.5s infinite; }
+.step-row .num.waiting { background: rgba(251,191,36,0.12); color: var(--orange); }
+.step-row .num.failed { background: rgba(255,180,171,0.12); color: var(--error); }
+.step-row .num.approved { background: rgba(208,188,255,0.12); color: var(--tertiary); }
 .step-row .info { flex: 1; }
 .step-row .info .name {
   font-weight: 600;
@@ -122,7 +206,6 @@
   letter-spacing: 1.5px;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
-  background: var(--surface-container-highest);
 }
 
 /* Colored border-left for active steps */
@@ -134,11 +217,11 @@
 
 /* ── Step Data Panel ── */
 .step-data {
-  background: var(--surface-container-low);
-  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  border: none;
   border-radius: var(--radius-lg);
   padding: 20px;
-  margin-top: 12px;
+  margin-top: 8px;
   max-height: 400px;
   overflow-y: auto;
 }
@@ -146,13 +229,13 @@
 
 /* ── Thumbnails ── */
 .thumbs-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-.thumbs-grid img { width: 280px; border-radius: var(--radius-lg); border: 2px solid var(--outline-variant); transition: border-color 0.2s; }
-.thumbs-grid img:hover { border-color: var(--primary); }
+.thumbs-grid img { width: 280px; border-radius: var(--radius-lg); border: none; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.thumbs-grid img:hover { box-shadow: var(--shadow-glow); transform: translateY(-2px); }
 
 /* ── Text Output ── */
 .text-output {
-  background: var(--surface-container-low);
-  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  border: none;
   border-radius: var(--radius-lg);
   padding: 20px;
   margin-top: 12px;
@@ -169,7 +252,7 @@
 .style-card {
   position: relative;
   width: 200px;
-  border: 2px solid var(--outline-variant);
+  border: 2px solid transparent;
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
@@ -177,23 +260,24 @@
   background: var(--surface-container);
 }
 .style-card.selected { border-color: var(--primary); box-shadow: var(--shadow-glow); }
-.style-card:hover { border-color: var(--outline); }
+.style-card:hover { background: var(--surface-container-high); }
 .style-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-.style-card .style-name { padding: 8px 10px; font-size: 12px; font-weight: 600; background: var(--surface-container); }
-.style-card .style-prompt { padding: 2px 10px 8px; font-size: 11px; color: var(--on-surface-variant); background: var(--surface-container); }
+.style-card .style-name { padding: 8px 10px; font-size: 12px; font-weight: 600; }
+.style-card .style-prompt { padding: 2px 10px 8px; font-size: 11px; color: var(--on-surface-variant); }
 .style-card .style-delete { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: var(--radius-full); background: rgba(0,0,0,0.6); color: #fff; border: none; font-size: 12px; cursor: pointer; display: none; backdrop-filter: blur(4px); }
 .style-card:hover .style-delete { display: flex; align-items: center; justify-content: center; }
 
 /* ── Custom Cover Modal ── */
 .cover-modal {
-  background: var(--surface-container);
-  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-high);
+  border: none;
   border-radius: var(--radius-2xl);
   padding: 28px;
   width: 640px;
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: var(--shadow-xl);
 }
 .cover-modal h2 { margin-bottom: 20px; font-size: 20px; font-weight: 800; font-family: var(--font-headline); }
 .cover-modal label { display: block; font-size: 10px; color: var(--on-surface-variant); margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
@@ -202,16 +286,16 @@
 /* ── Collapsible panels ── */
 .collapse-icon { user-select: none; }
 .step-row[onclick] .info .name::after { content: ''; }
-.step-row[onclick]:hover { border-color: transparent; border-left-color: var(--primary); }
+.step-row[onclick]:hover { border-left-color: var(--primary); }
 
-.run-all-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.run-all-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
 
 /* ── Settings ── */
 .ctx-input {
   width: 100%;
   padding: 10px 14px;
   background: var(--surface-container-highest);
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--radius-md);
   color: var(--text);
   font-size: 13px;
@@ -220,11 +304,15 @@
   margin-top: 4px;
   transition: all 0.2s;
 }
-.ctx-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(173,198,255,0.15); }
+.ctx-input:focus { box-shadow: 0 0 0 2px rgba(173,198,255,0.2); }
 select.ctx-input { appearance: none; }
 
 /* ═══ MOBILE ═══ */
 @media (max-width: 768px) {
+  .topnav { padding: 0 16px; height: 48px; }
+  .topnav-search { display: none; }
+  .topnav-tabs { gap: 16px; }
+  .topnav-tab { font-size: 13px; }
   .project-card { padding: 16px; }
   .project-card .topic { font-size: 14px; }
   .cover-modal { width: 95vw; padding: 16px; }
@@ -1201,11 +1289,38 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Main Content -->
 <div class="main-content">
 
+<!-- Top Navigation Bar -->
+<header class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-search">
+      <span class="material-symbols-outlined topnav-search-icon">search</span>
+      <input type="text" class="topnav-search-input" placeholder="Search pipeline...">
+    </div>
+    <nav class="topnav-tabs">
+      <a href="#" class="topnav-tab active" onclick="showList(); setActiveNav(document.getElementById('navMain')); document.querySelectorAll('.topnav-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active');">Projects</a>
+      <a href="#" class="topnav-tab">Queue</a>
+      <a href="#" class="topnav-tab">Archive</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <button class="btn btn-blue btn-sm" onclick="showModal()" style="gap:6px;">
+      <span class="material-symbols-outlined" style="font-size:16px;">add</span> Create Content
+    </button>
+    <div class="topnav-actions">
+      <span class="material-symbols-outlined topnav-icon-btn">notifications</span>
+      <div class="topnav-avatar">
+        <span class="material-symbols-outlined" style="font-size:20px;color:var(--on-surface-variant);">account_circle</span>
+      </div>
+    </div>
+  </div>
+</header>
+
 <!-- Projects List View -->
 <div class="container" id="listView">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px;">
     <div>
-      <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.03em;font-family:var(--font-headline);" data-t="projects_title">Проекты</h2>
+      <h2 style="font-size:32px;font-weight:800;letter-spacing:-0.03em;font-family:var(--font-headline);line-height:1.1;" data-t="projects_title">Проекты</h2>
+      <p style="color:var(--on-surface-variant);font-size:13px;margin-top:6px;">Manage your content production pipeline</p>
     </div>
     <button class="btn btn-blue" onclick="showModal()" style="gap:8px;" data-t="btn_new_project"><span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> + Новый проект</button>
   </div>
@@ -1264,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
       <button class="btn btn-blue" onclick="showAddChannelModal()" data-t="btn_add_channel">+ Добавить канал</button>
     </div>
-    <div id="channelCurrentInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;padding:14px;background:var(--surface-container-low);border:1px solid var(--outline-variant);border-radius:var(--radius-lg);">
+    <div id="channelCurrentInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;padding:14px;background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);">
       <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(173,198,255,0.1);display:flex;align-items:center;justify-content:center;border:none;"><span class="material-symbols-outlined" style="font-size:24px;color:var(--primary);">subscriptions</span></div>
       <div>
         <div id="channelDisplayName" style="font-size:14px;font-weight:600;">—</div>
@@ -1347,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Description -->
       <div id="wizDescResult" style="display:none;margin-bottom:14px;">
         <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:6px;" data-t="wiz_desc_label">Описание канала</div>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+        <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:14px;">
           <div id="wizDescText" style="font-size:13px;line-height:1.6;white-space:pre-wrap;"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
             <span id="wizDescChars" style="font-size:10px;color:var(--muted);"></span>
@@ -1361,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Banner -->
       <div id="wizBannerResult" style="display:none;margin-bottom:14px;">
         <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px;" data-t="wiz_banner_label">Баннер канала (2560×1440)</div>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+        <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:14px;">
           <div id="wizBannerLayout" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizBannerColors"></div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:6px;" data-t="wiz_banner_text_label">Текст на баннере:</div>
@@ -1373,7 +1488,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="btn btn-blue btn-xs" onclick="generateWizardImage('banner')" id="btnGenBanner" data-t="btn_gen_banner">🎨 Сгенерировать баннер</button>
           </div>
           <div id="wizBannerImage" style="display:none;margin-top:10px;">
-            <img id="wizBannerImg" style="width:100%;border-radius:8px;border:1px solid var(--border);">
+            <img id="wizBannerImg" style="width:100%;border-radius:8px;border:none;">
             <a id="wizBannerDownload" class="btn btn-green btn-xs" style="margin-top:6px;text-decoration:none;" download="banner.jpg" data-t="btn_download_banner">⬇ Скачать баннер</a>
           </div>
         </div>
@@ -1382,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Avatar -->
       <div id="wizAvatarResult" style="display:none;margin-bottom:14px;">
         <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;" data-t="wiz_avatar_label">Аватар канала (800×800)</div>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+        <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:14px;">
           <div id="wizAvatarDesc" style="font-size:12px;color:var(--text2);margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;margin-bottom:8px;" id="wizAvatarColors"></div>
           <div style="font-size:10px;color:var(--muted);margin-bottom:4px;" data-t="wiz_banner_prompt_label">Промпт для генерации:</div>
@@ -1425,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div id="dynamicLinksList" style="margin-bottom:12px;"></div>
 
-    <div style="background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:12px;">
+    <div style="background:var(--surface-container-low);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:12px;">
       <div class="settings-row">
         <div class="settings-field">
           <label data-t="label_type">Тип</label>
@@ -1464,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 
     <!-- UTM defaults -->
-    <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;">
+    <div style="margin-top:12px;background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:12px;">
       <div style="font-size:12px;font-weight:600;margin-bottom:8px;" data-t="utm_defaults">UTM по умолчанию</div>
       <div class="settings-row">
         <div class="settings-field"><label>utm_source</label><input class="ctx-input" id="utmSource" value="youtube"></div>
@@ -1486,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
       <!-- Lead Magnet -->
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+      <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-lead_magnet-enabled" style="width:auto;margin-right:6px;"> <span data-t="label_lead_magnet">Лидмагнит</span></label>
         </div>
@@ -1498,7 +1613,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <!-- Mid-Roll -->
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+      <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <label style="font-size:13px;font-weight:600;margin:0;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-mid_roll-enabled" style="width:auto;margin-right:6px;"> <span data-t="label_mid_roll">Рекламная вставка</span></label>
         </div>
@@ -1511,7 +1626,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 
     <!-- End Screen -->
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;">
+    <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:14px;">
       <div class="settings-row">
         <div class="settings-field"><label style="font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;"><input type="checkbox" id="ctx-cta-end_screen-enabled" checked style="width:auto;margin-right:6px;"> <span data-t="label_end_screen">Концовка</span></label><input class="ctx-input" id="ctx-cta-end_screen-text" data-t-placeholder="end_screen_ph" placeholder="Ставьте лайк и подписывайтесь!" style="margin-top:8px;"></div>
         <div class="settings-field"><label data-t="label_hashtags">Хэштеги</label><input class="ctx-input" id="ctx-hashtags_always" data-t-placeholder="hashtags_ph" placeholder="ИмяКанала, Маркетинг"></div>
@@ -1527,7 +1642,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div id="personasList" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
 
-    <div style="background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:14px;">
+    <div style="background:var(--surface-container-low);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:14px;">
       <div class="settings-row">
         <div class="settings-field">
           <label data-t="label_name">Имя</label>
@@ -1585,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="qrCode" style="font-size:11px;word-break:break-all;color:#000;"></div>
           </div>
           <p style="font-size:11px;color:var(--muted);margin-bottom:4px;" data-t="twofa_manual">Или введите секрет вручную:</p>
-          <code id="totpSecretDisplay" style="background:var(--bg);padding:6px 10px;border-radius:4px;font-size:14px;letter-spacing:2px;user-select:all;"></code>
+          <code id="totpSecretDisplay" style="background:var(--surface-container-low);padding:6px 10px;border-radius:4px;font-size:14px;letter-spacing:2px;user-select:all;"></code>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
           <input id="verifyTotpCode" data-t-placeholder="twofa_verify_ph" placeholder="Введите 6-значный код" maxlength="6" inputmode="numeric" style="width:160px;text-align:center;font-size:16px;letter-spacing:4px;">
@@ -1818,20 +1933,20 @@ async function refreshDetail() {
         <div id="researchPanel" style="margin-top:12px;">
           <!-- Stats summary -->
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
-            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+            <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--blue);">${totalVideos}</div>
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Видео найдено</div>
             </div>
-            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+            <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--green);">${(avgRu/1000).toFixed(0)}K</div>
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. просмотры RU</div>
             </div>
-            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+            <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--purple);">${(avgEn/1000).toFixed(0)}K</div>
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. просмотры EN</div>
             </div>
             ${avgDuration ? `
-            <div style="background:var(--bg);border:1px solid var(--orange);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
+            <div style="background:var(--surface-container-low);border:1px solid var(--orange);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--orange);">${avgDuration} мин</div>
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. длительность</div>
               <div style="font-size:10px;color:var(--orange);margin-top:2px;">Рек.: ${recDuration} мин</div>
@@ -1903,7 +2018,7 @@ async function refreshDetail() {
           <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Все конкуренты</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:10px;margin-bottom:16px;" id="competitorsGrid">
             ${competitors.slice(0, 8).map((c, ci) => `
-              <div style="background:var(--bg);border:1px solid ${c.is_breakthrough ? 'var(--orange)' : 'var(--border)'};border-radius:8px;overflow:hidden;">
+              <div style="background:var(--surface-container-low);border:1px solid ${c.is_breakthrough ? 'var(--orange)' : 'var(--border)'};border-radius:8px;overflow:hidden;">
                 <a href="https://youtube.com/watch?v=${esc(c.video_id || '')}" target="_blank" style="display:block;position:relative;">
                   <img src="https://img.youtube.com/vi/${esc(c.video_id || '')}/mqdefault.jpg" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" onerror="this.style.display='none'">
                   ${c.is_breakthrough ? `<div style="position:absolute;top:6px;left:6px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">ПРОРЫВ</div>` : ''}
@@ -1995,7 +2110,7 @@ async function refreshDetail() {
 
         <div id="addNotebookArea" style="display:none;margin-bottom:10px;background:rgba(168,85,247,0.05);border:1px solid var(--purple);border-radius:8px;padding:12px;">
           <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">Подключить NotebookLM</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Создайте блокнот в NotebookLM, добавьте YouTube-видео/PDF/статьи, и вставьте ID блокнота.<br>Авторизация живёт ~12-24ч. Если истекла — запустите <code style="background:var(--bg);padding:2px 4px;border-radius:3px;">nlm login</code> в терминале.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Создайте блокнот в NotebookLM, добавьте YouTube-видео/PDF/статьи, и вставьте ID блокнота.<br>Авторизация живёт ~12-24ч. Если истекла — запустите <code style="background:var(--surface-container-low);padding:2px 4px;border-radius:3px;">nlm login</code> в терминале.</div>
           <input id="notebookIdInput" placeholder="ID блокнота NotebookLM..." style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
           <input id="notebookTitleInput" placeholder="Название (необязательно)" style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
           <div style="display:flex;gap:6px;">
@@ -2029,7 +2144,7 @@ async function refreshDetail() {
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;margin-bottom:10px;">
           ${(sd.facts || []).map(f => `
-            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 10px;">
+            <div style="background:var(--surface-container-low);border:none;border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 10px;">
               <div style="font-size:9px;color:var(--green);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Факт</div>
               <div style="font-size:12px;color:var(--text);line-height:1.4;">${esc(f.text || '')}</div>
               <div style="font-size:10px;color:var(--muted);margin-top:3px;">Источник: ${esc(f.source || '?')}</div>
@@ -2037,7 +2152,7 @@ async function refreshDetail() {
           `).join('')}
 
           ${(sd.quotes || []).map(q => `
-            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:8px 10px;">
+            <div style="background:var(--surface-container-low);border:none;border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:8px 10px;">
               <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Цитата</div>
               <div style="font-size:12px;color:var(--text);line-height:1.4;font-style:italic;">"${esc(q.text || '')}"</div>
               <div style="font-size:10px;color:var(--muted);margin-top:3px;">— ${esc(q.author || '?')} (${esc(q.source || '')})</div>
@@ -2045,7 +2160,7 @@ async function refreshDetail() {
           `).join('')}
 
           ${(sd.statistics || []).map(s => `
-            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;padding:8px 10px;">
+            <div style="background:var(--surface-container-low);border:none;border-left:3px solid var(--orange);border-radius:0 6px 6px 0;padding:8px 10px;">
               <div style="font-size:9px;color:var(--orange);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Статистика</div>
               <div style="font-size:16px;font-weight:700;color:var(--orange);">${esc(s.metric || '')}</div>
               <div style="font-size:11px;color:var(--text2);">${esc(s.context || '')}</div>
@@ -2082,7 +2197,7 @@ async function refreshDetail() {
       refsPanel = `<div style="margin-top:12px;">
 
         <!-- Expert photo check -->
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;display:flex;gap:12px;align-items:center;">
+        <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;margin-bottom:12px;display:flex;gap:12px;align-items:center;">
           <img id="refExpertPhoto" src="/api/assets/expert.jpg" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--green);"
                onerror="this.style.borderColor='var(--red)';this.src='';this.style.background='var(--card)';this.alt='⚠';document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--red);font-weight:600>Фото не загружено!</span> Загрузите в Настройках.'"
                onload="document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--green)>✓ Фото загружено</span>'">
@@ -2094,7 +2209,7 @@ async function refreshDetail() {
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:8px;margin-bottom:16px;">
           <!-- Fonts -->
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="font-size:18px;margin-bottom:4px;">🔤</div>
             <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Шрифты</div>
             <div style="font-size:11px;color:var(--text2);">Стили: ${esc((fonts.dominant_styles || []).join(', '))}</div>
@@ -2104,7 +2219,7 @@ async function refreshDetail() {
           </div>
 
           <!-- Colors -->
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="font-size:18px;margin-bottom:4px;">🎨</div>
             <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Цвета</div>
             <div style="display:flex;gap:4px;margin-bottom:4px;">
@@ -2115,7 +2230,7 @@ async function refreshDetail() {
           </div>
 
           <!-- Composition -->
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="font-size:18px;margin-bottom:4px;">📐</div>
             <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Композиция</div>
             <div style="font-size:11px;color:var(--text2);">Лицо: ${esc(composition.face_present || '—')}</div>
@@ -2124,7 +2239,7 @@ async function refreshDetail() {
           </div>
 
           <!-- Clickbait -->
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="font-size:18px;margin-bottom:4px;">🎯</div>
             <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Кликбейт-элементы</div>
             ${clickbait.map(c => `<div style="font-size:11px;color:var(--text2);">• ${esc(c)}</div>`).join('')}
@@ -2266,7 +2381,7 @@ async function refreshDetail() {
                 const typeIcons = { hook: '🎣', intro: '👋', main: '📝', demo: '💻', climax: '🔥', cta: '📢' };
                 const icon = typeIcons[b.type] || '📌';
                 return `
-                <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ${color};border-radius:6px;padding:12px;display:flex;gap:12px;">
+                <div style="background:var(--surface-container-low);border:none;border-left:3px solid ${color};border-radius:6px;padding:12px;display:flex;gap:12px;">
                   <div style="flex-shrink:0;text-align:center;min-width:50px;">
                     <div style="font-size:18px;">${icon}</div>
                     <div style="font-size:10px;color:var(--muted);margin-top:2px;">${startMin}:00</div>
@@ -2292,7 +2407,7 @@ async function refreshDetail() {
           <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <!-- Emotion -->
             ${thumbEmotion ? `
-            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;min-width:120px;">
+            <div style="background:var(--surface-container-low);border:none;border-radius:10px;padding:16px;text-align:center;min-width:120px;">
               <div style="font-size:40px;margin-bottom:6px;">${emotionEmoji[thumbEmotion.toLowerCase()] || '😮'}</div>
               <div style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;">${esc(thumbEmotion)}</div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px;">Эмоция обложки</div>
@@ -2301,7 +2416,7 @@ async function refreshDetail() {
             <!-- Text variants -->
             <div style="flex:1;display:grid;gap:6px;min-width:200px;">
               ${thumbVariants.map((tv, tvi) => `
-                <div style="background:var(--bg);border:2px solid ${tvi === 0 ? 'var(--orange)' : 'var(--border)'};border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="background:var(--surface-container-low);border:2px solid ${tvi === 0 ? 'var(--orange)' : 'var(--border)'};border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
                   <div style="font-size:18px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">${esc(tv)}</div>
                   ${tvi === 0 ? '<span style="font-size:9px;color:var(--orange);font-weight:600;">РЕКОМЕНДОВАННЫЙ</span>' : ''}
                 </div>
@@ -2337,15 +2452,15 @@ async function refreshDetail() {
 
         <!-- Stats -->
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
             <div style="font-size:20px;font-weight:700;color:var(--blue);">${blocks.length}</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Блоков</div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
             <div style="font-size:20px;font-weight:700;color:var(--green);">${Math.round(totalDur)} мин</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж</div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
             <div style="font-size:20px;font-weight:700;color:var(--purple);">${sd.tone ? '✓' : '—'}</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Тон: ${esc((sd.tone || '').substring(0, 20))}</div>
           </div>
@@ -2378,7 +2493,7 @@ async function refreshDetail() {
                 ${!isLast ? '<div style="width:2px;flex:1;background:var(--border);min-height:20px;"></div>' : ''}
               </div>
               <!-- Block content -->
-              <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-left:3px solid ${color};border-radius:0 8px 8px 0;padding:12px;margin-bottom:${isLast ? '0' : '0'};margin-left:-1px;">
+              <div style="flex:1;background:var(--surface-container-low);border:none;border-left:3px solid ${color};border-radius:0 8px 8px 0;padding:12px;margin-bottom:${isLast ? '0' : '0'};margin-left:-1px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                   <div>
                     <span style="font-size:13px;font-weight:700;">${esc(b.name || '')}</span>
@@ -2450,15 +2565,15 @@ async function refreshDetail() {
           const isShort = realWordCount < 1500;
           return `
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
-          <div style="background:var(--bg);border:1px solid ${isShort ? 'var(--red)' : 'var(--border)'};border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+          <div style="background:var(--surface-container-low);border:1px solid ${isShort ? 'var(--red)' : 'var(--border)'};border-radius:8px;padding:10px;text-align:center;min-width:100px;">
             <div style="font-size:20px;font-weight:700;color:${isShort ? 'var(--red)' : 'var(--blue)'};">${realWordCount}</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Слов (реально)</div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;text-align:center;min-width:100px;">
             <div style="font-size:20px;font-weight:700;color:var(--green);">~${realReadMin} мин</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж (150 сл/мин)</div>
           </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;text-align:center;min-width:100px;">
             <div style="font-size:20px;font-weight:700;color:var(--purple);">${scenes.length}</div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Сцен</div>
           </div>
@@ -2476,7 +2591,7 @@ async function refreshDetail() {
             const text = sc.teleprompter_text || '';
             const wordCount = text.split(/\s+/).filter(Boolean).length;
             return `
-            <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid ${color};border-radius:0 8px 8px 0;overflow:hidden;">
+            <div style="background:var(--surface-container-low);border:none;border-left:3px solid ${color};border-radius:0 8px 8px 0;overflow:hidden;">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="font-size:16px;">${icon}</span>
@@ -2521,7 +2636,7 @@ async function refreshDetail() {
       if (status === 'pending' || status === 'failed') {
         // Language selector
         dubbingPanel = `
-        <div style="margin-top:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div style="margin-top:12px;background:var(--surface-container-low);border:none;border-radius:10px;padding:16px;">
           <!-- Audio upload -->
           <div style="margin-bottom:16px;">
             <div style="font-weight:700;font-size:14px;margin-bottom:8px;">🎵 Аудиодорожка (от монтажёра)</div>
@@ -2541,7 +2656,7 @@ async function refreshDetail() {
           <div style="font-weight:700;font-size:14px;margin-bottom:12px;">🌍 Выберите языки для дублирования</div>
           <div id="dubbingLangSelect" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;">
             ${Object.entries(allLangs).map(([code, info]) => `
-              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:none;border-radius:8px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
                 <input type="checkbox" value="${code}" checked style="accent-color:var(--blue);">
                 <span style="font-size:18px;">${info.flag}</span>
                 <div>
@@ -2559,12 +2674,12 @@ async function refreshDetail() {
         dubbingPanel = `
         <div style="margin-top:12px;">
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
-            <div style="background:var(--bg);border:1px solid var(--green);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+            <div style="background:var(--surface-container-low);border:1px solid var(--green);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
               <div style="font-size:22px;font-weight:700;color:var(--green);">${completed.length}</div>
               <div style="font-size:10px;color:var(--muted);">Готово</div>
             </div>
             ${failed.length ? `
-            <div style="background:var(--bg);border:1px solid var(--red);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
+            <div style="background:var(--surface-container-low);border:1px solid var(--red);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
               <div style="font-size:22px;font-weight:700;color:var(--red);">${failed.length}</div>
               <div style="font-size:10px;color:var(--muted);">Ошибки</div>
             </div>` : ''}
@@ -2574,7 +2689,7 @@ async function refreshDetail() {
               const info = allLangs[l.lang_code] || { name: l.lang_name, flag: '🌐', provider: '' };
               const isOk = l.status === 'completed';
               return `
-              <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border:1px solid ${isOk ? 'var(--green)' : 'var(--red)'};border-radius:8px;">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-container-low);border:1px solid ${isOk ? 'var(--green)' : 'var(--red)'};border-radius:8px;">
                 <span style="font-size:20px;">${info.flag}</span>
                 <div style="flex:1;">
                   <div style="font-weight:600;font-size:13px;">${info.name}</div>
@@ -3264,7 +3379,7 @@ async function loadSourcesList() {
     const statusColor = item.status === 'fetched' ? 'var(--green)' : item.status === 'error' ? 'var(--red)' : 'var(--muted)';
     const preview = isUrl ? (item.url || '').substring(0, 60) : (item.content || '').substring(0, 80) + '...';
     return `
-      <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;">
+      <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--surface-container-low);border:none;border-radius:6px;margin-bottom:4px;">
         <span style="font-size:16px;">${icon}</span>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title || preview)}</div>
@@ -3466,7 +3581,7 @@ refreshDetail = async function() {
       const refsData = await api(`/api/project/${currentProject}/references`);
       if (refsData.ok && refsData.files.length) {
         refsGrid.innerHTML = refsData.files.slice(0, 15).map(f =>
-          `<img src="${f}" style="height:80px;border-radius:6px;border:1px solid var(--border);object-fit:cover;" onerror="this.remove()">`
+          `<img src="${f}" style="height:80px;border-radius:6px;border:none;object-fit:cover;" onerror="this.remove()">`
         ).join('');
       } else {
         refsGrid.innerHTML = '<span style="font-size:11px;color:var(--muted);">Нет обложек</span>';
@@ -3737,7 +3852,7 @@ async function loadChannelVideos() {
         const color = aboveAvg ? 'var(--green)' : 'var(--red)';
         const date = new Date(v.published_at).toLocaleDateString('ru-RU');
         return `
-          <div style="display:flex;gap:8px;align-items:center;padding:6px;border-radius:6px;background:var(--bg);border:1px solid var(--border);">
+          <div style="display:flex;gap:8px;align-items:center;padding:6px;border-radius:6px;background:var(--surface-container-low);border:none;">
             <img src="${v.thumbnail_url || ''}" style="width:80px;height:45px;border-radius:4px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">
             <div style="flex:1;min-width:0;">
               <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(v.title)}</div>
@@ -3779,7 +3894,7 @@ async function loadRecommendations() {
       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Рекомендованные темы</div>
       <div style="display:grid;gap:6px;">
         ${recs.map(r => `
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+          <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
             <div style="flex:1;">
               <div style="font-size:13px;font-weight:600;">${esc(r.topic)}</div>
               <div style="font-size:11px;color:var(--text2);margin-top:2px;">${esc(r.rationale)}</div>
@@ -3961,7 +4076,7 @@ function renderDynamicLinks() {
     const bg = typeColors[link.type] || 'rgba(255,255,255,0.06)';
     const utmUrl = link.utm ? buildUtmUrl(link.url) : link.url;
     return `
-      <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:4px;">
+      <div style="display:flex;gap:8px;align-items:center;padding:8px;background:var(--surface-container-low);border:none;border-radius:var(--radius-md);margin-bottom:4px;">
         <div style="width:30px;height:30px;border-radius:6px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${icon}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:600;">${esc(link.label || link.url)}</div>
@@ -4018,8 +4133,8 @@ async function loadPersonas() {
   }
 
   list.innerHTML = personas.map(p => `
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;width:140px;text-align:center;position:relative;">
-      ${p.photo ? `<img src="/api/personas/${p.id}/photo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);margin-bottom:6px;" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:28px;border:2px solid var(--border);">👤</div>'}
+    <div style="background:var(--surface-container-low);border:none;border-radius:var(--radius-lg);padding:10px;width:140px;text-align:center;position:relative;">
+      ${p.photo ? `<img src="/api/personas/${p.id}/photo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid transparent;margin-bottom:6px;" onerror="this.style.display='none'">` : '<div style="width:80px;height:80px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:28px;border:2px solid transparent;">👤</div>'}
       <div style="font-size:12px;font-weight:600;">${esc(p.name)}</div>
       <div style="font-size:10px;color:var(--muted);">${esc(p.role || '')}</div>
       <button onclick="removePersona('${p.id}')" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;" title="Удалить">✕</button>

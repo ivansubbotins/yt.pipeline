@@ -236,10 +236,10 @@ label {
 /* ── Card ── */
 .card {
   background: var(--surface-container);
-  border: 1px solid var(--outline-variant);
+  border: none;
   border-radius: var(--radius-xl);
   padding: var(--space-5);
-  transition: border-color 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 /* ── Modal ── */
@@ -247,19 +247,20 @@ label {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.6);
   z-index: 100;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .modal-overlay.show { display: flex; }
 
 .modal {
-  background: var(--surface-container);
-  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-high);
+  border: none;
   border-radius: var(--radius-2xl);
-  padding: 28px;
+  padding: 32px;
   width: 480px;
   max-width: 90vw;
   box-shadow: var(--shadow-xl);
@@ -277,8 +278,10 @@ label {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: var(--surface-container-high);
-  border: 1px solid var(--outline-variant);
+  background: rgba(51,53,57,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none;
   border-radius: var(--radius-lg);
   padding: 12px 20px;
   font-size: 13px;
@@ -289,7 +292,7 @@ label {
   color: var(--on-surface);
 }
 .toast.show { display: block; animation: fadeIn 0.25s ease-out; }
-.toast.error { border-color: var(--error); background: rgba(147,0,10,0.2); color: var(--error); }
+.toast.error { background: rgba(147,0,10,0.3); color: var(--error); }
 
 /* ── Loading Spinner ── */
 .loading {
@@ -307,17 +310,18 @@ label {
 /* ── Option Cards (title/description selection) ── */
 .option-card {
   background: var(--surface-container-low);
-  border: 2px solid var(--outline-variant);
+  border: 2px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
 }
-.option-card:hover { border-color: var(--outline); background: var(--surface-container); }
+.option-card:hover { background: var(--surface-container); }
 .option-card.selected {
   border-color: var(--primary);
   background: rgba(173,198,255,0.06);
+  box-shadow: var(--shadow-glow);
 }
 .option-card .check {
   position: absolute;
@@ -326,7 +330,7 @@ label {
   width: 22px;
   height: 22px;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--outline-variant);
+  border: 2px solid var(--surface-container-highest);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,7 +402,7 @@ label {
   margin-top: var(--space-3);
 }
 .cover-card {
-  border: 2px solid var(--outline-variant);
+  border: 2px solid transparent;
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
@@ -406,7 +410,7 @@ label {
   position: relative;
   background: var(--surface-container-low);
 }
-.cover-card:hover { border-color: var(--outline); }
+.cover-card:hover { background: var(--surface-container); }
 .cover-card.selected {
   border-color: var(--green);
   box-shadow: 0 0 16px rgba(52,211,153,0.25);
@@ -463,7 +467,7 @@ label {
 /* ── Prompt Cards (thumbnail approval) ── */
 .prompt-card {
   background: var(--surface-container-low);
-  border: 2px solid var(--outline-variant);
+  border: 2px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   transition: all 0.15s ease;
@@ -472,10 +476,10 @@ label {
 .prompt-card.approved {
   border-color: var(--green);
   background: rgba(52,211,153,0.04);
+  box-shadow: 0 0 12px rgba(52,211,153,0.1);
 }
 .prompt-card.rejected {
   opacity: 0.4;
-  border-color: var(--outline-variant);
 }
 .prompt-card .prompt-header {
   display: flex;
@@ -513,7 +517,7 @@ label {
 }
 .matrix-cell {
   background: var(--surface-container-low);
-  border: 1px solid var(--outline-variant);
+  border: none;
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
   display: flex;
@@ -531,10 +535,10 @@ label {
 /* ── Section ── */
 .section {
   background: var(--surface-container);
-  border: 1px solid var(--outline-variant);
+  border: none;
   border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  margin-bottom: var(--space-4);
+  padding: var(--space-7);
+  margin-bottom: var(--space-5);
 }
 .section h2 {
   font-size: 15px;
@@ -571,8 +575,10 @@ label {
 /* ── Topbar (shared between express + editor) ── */
 .topbar {
   height: 52px;
-  background: var(--surface-container);
-  border-bottom: 1px solid var(--outline-variant);
+  background: rgba(12,14,18,0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: none;
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -685,7 +691,10 @@ label {
 
 .sidebar-bottom {
   padding: 16px 12px;
-  border-top: 1px solid var(--outline-variant);
+  border-top: none;
+  background: var(--surface-container-low);
+  margin: 0 8px 8px;
+  border-radius: var(--radius-lg);
 }
 
 .main-content {
@@ -703,7 +712,7 @@ label {
 /* ── Settings Grid ── */
 .settings-section {
   background: var(--surface-container);
-  border: 1px solid var(--outline-variant);
+  border: none;
   border-radius: var(--radius-xl);
   padding: var(--space-7);
   margin-bottom: var(--space-5);
