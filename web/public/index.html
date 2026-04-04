@@ -325,6 +325,283 @@ select.ctx-input { appearance: none; }
   .style-card { width: 140px; }
   .run-all-bar { flex-wrap: wrap; }
 }
+
+/* ═══════════════════════════════════════════════════
+   Executive Dashboard — Layout & Widgets
+   ═══════════════════════════════════════════════════ */
+
+/* ── Dashboard Grid ── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 32px;
+  align-items: start;
+}
+.dashboard-main { min-width: 0; }
+.dashboard-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Pipeline Section Header ── */
+.pipeline-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+.pipeline-section-title {
+  font-size: 24px;
+  font-weight: 900;
+  font-family: var(--font-headline);
+  letter-spacing: -0.03em;
+}
+
+/* ── Pipeline Grid ── */
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ── Pipeline Card ── */
+.pipeline-card {
+  background: var(--surface-container-low);
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pipeline-card:hover { background: var(--surface-container); }
+.pipeline-card.border-primary { border-left-color: var(--primary); }
+.pipeline-card.border-green { border-left-color: var(--green); }
+.pipeline-card.border-orange { border-left-color: var(--orange); }
+.pipeline-card.border-error { border-left-color: var(--error); }
+.pipeline-card.border-tertiary { border-left-color: var(--tertiary); }
+
+.pipeline-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.pipeline-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+.pipeline-badge.pending { background: var(--surface-container-highest); color: var(--muted); }
+.pipeline-badge.in_progress { background: rgba(173,198,255,0.1); color: var(--primary); }
+.pipeline-badge.completed { background: rgba(52,211,153,0.1); color: var(--green); }
+.pipeline-badge.approved { background: rgba(208,188,255,0.1); color: var(--tertiary); }
+.pipeline-badge.waiting { background: rgba(251,191,36,0.1); color: var(--orange); }
+.pipeline-badge.failed { background: rgba(255,180,171,0.1); color: var(--error); }
+
+.pipeline-date {
+  font-size: 10px;
+  color: var(--on-surface-variant);
+}
+.pipeline-title {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-headline);
+  line-height: 1.3;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pipeline-channel {
+  background: rgba(173,198,255,0.1);
+  color: var(--primary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.pipeline-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.pipeline-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--surface-container-highest);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pipeline-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ── KPI Cards ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.kpi-card {
+  background: var(--surface-container);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--on-surface-variant);
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 900;
+  font-family: var(--font-headline);
+  letter-spacing: -0.03em;
+}
+.kpi-trend {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+.kpi-trend.up { background: rgba(173,198,255,0.1); color: var(--primary); }
+.kpi-trend.purple { background: rgba(208,188,255,0.1); color: var(--tertiary); }
+.kpi-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 48px;
+  margin-top: 12px;
+}
+.kpi-bars > div {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.5s ease;
+}
+
+/* ── Aside Cards ── */
+.aside-card {
+  background: var(--surface-container);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+}
+.aside-card-gradient {
+  background: linear-gradient(135deg, rgba(173,198,255,0.08), transparent);
+}
+.aside-card-title {
+  font-size: 16px;
+  font-weight: 900;
+  font-family: var(--font-headline);
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.aside-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Quick Actions ── */
+.quick-actions-list { display: flex; flex-direction: column; gap: 8px; }
+.quick-action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--surface-container-high);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--on-surface);
+  cursor: pointer;
+  font-family: var(--font-headline);
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.quick-action-btn:hover {
+  background: var(--primary-container);
+  color: var(--on-primary-fixed);
+}
+.quick-action-btn .material-symbols-outlined {
+  transition: transform 0.2s;
+}
+.quick-action-btn:hover .material-symbols-outlined {
+  transform: translateX(3px);
+}
+
+/* ── Alerts ── */
+.alert-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulse 2s infinite;
+}
+.alerts-list { display: flex; flex-direction: column; gap: 12px; }
+.alert-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-container-lowest);
+}
+.alert-item-text { flex: 1; }
+.alert-item-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.alert-item-desc { font-size: 11px; color: var(--on-surface-variant); line-height: 1.4; }
+.alert-item-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── Resource Usage ── */
+.resource-row { margin-bottom: 12px; }
+.resource-row:last-child { margin-bottom: 0; }
+.resource-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.resource-bar {
+  height: 4px;
+  background: var(--surface-container-highest);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.resource-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+/* ── Mobile Dashboard ── */
+@media (max-width: 1024px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .pipeline-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: 1fr; }
+}
 </style>
 <script>
 // ── i18n ──
@@ -335,9 +612,21 @@ const T = {
     // Page
     page_title: 'YouTube Pipeline — Админка',
     // Nav
-    nav_main: 'Главная',
+    nav_main: 'Dashboard',
+    nav_videos: 'Videos',
+    nav_channels: 'Channels',
+    nav_assets: 'Assets',
+    nav_ai: 'AI Insights',
     nav_express: 'Express',
     nav_settings: 'Настройки',
+    nav_support: 'Поддержка',
+    dashboard_subtitle: 'Управляйте вашим контент-конвейером',
+    active_pipeline: 'Active Pipeline',
+    quick_actions: 'Quick Actions',
+    btn_connect_channel: 'Connect Channel',
+    btn_generate_script: 'Generate Script',
+    alerts_title: 'Alerts',
+    resource_usage: 'Resource Usage',
     nav_new_project: '+ Новый проект',
     nav_logout: 'Выйти',
     // Projects list
@@ -797,9 +1086,21 @@ const T = {
   },
   en: {
     page_title: 'YouTube Pipeline — Admin',
-    nav_main: 'Home',
+    nav_main: 'Dashboard',
+    nav_videos: 'Videos',
+    nav_channels: 'Channels',
+    nav_assets: 'Assets',
+    nav_ai: 'AI Insights',
     nav_express: 'Express',
     nav_settings: 'Settings',
+    nav_support: 'Support',
+    dashboard_subtitle: 'Manage your content production pipeline',
+    active_pipeline: 'Active Pipeline',
+    quick_actions: 'Quick Actions',
+    btn_connect_channel: 'Connect Channel',
+    btn_generate_script: 'Generate Script',
+    alerts_title: 'Alerts',
+    resource_usage: 'Resource Usage',
     nav_new_project: '+ New project',
     nav_logout: 'Logout',
     projects_title: 'Projects',
@@ -1262,25 +1563,37 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div class="sidebar-nav">
     <a href="#" onclick="showList(); setActiveNav(this)" class="active" id="navMain">
-      <span class="material-symbols-outlined nav-icon">dashboard</span> <span data-t="nav_main">Главная</span>
+      <span class="material-symbols-outlined nav-icon">dashboard</span> <span data-t="nav_main">Dashboard</span>
+    </a>
+    <a href="#" onclick="showList(); setActiveNav(this)" id="navVideos">
+      <span class="material-symbols-outlined nav-icon">video_library</span> <span data-t="nav_videos">Videos</span>
+    </a>
+    <a href="#" onclick="showList(); setActiveNav(this)" id="navChannels">
+      <span class="material-symbols-outlined nav-icon">subscriptions</span> <span data-t="nav_channels">Channels</span>
+    </a>
+    <a href="#" onclick="showList(); setActiveNav(this)" id="navAssets">
+      <span class="material-symbols-outlined nav-icon">folder_shared</span> <span data-t="nav_assets">Assets</span>
     </a>
     <a href="/express.html" id="navExpress">
-      <span class="material-symbols-outlined nav-icon">bolt</span> <span data-t="nav_express">Express</span>
-    </a>
-    <a href="#" onclick="showSettings(); setActiveNav(this)" id="navSettings">
-      <span class="material-symbols-outlined nav-icon">settings</span> <span data-t="nav_settings">Настройки</span>
+      <span class="material-symbols-outlined nav-icon">psychology</span> <span data-t="nav_ai">AI Insights</span>
     </a>
   </div>
   <div class="sidebar-bottom">
     <button onclick="showModal()" style="width:100%;padding:12px 16px;border-radius:var(--radius-md);font-size:13px;font-weight:700;font-family:var(--font-headline);color:var(--on-primary-fixed);background:var(--primary-container);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;box-shadow:0 4px 12px rgba(77,142,255,0.2);">
       <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
-      <span data-t="nav_new_project">+ Новый проект</span>
+      <span data-t="nav_new_project">New Project</span>
     </button>
-    <div style="display:flex;gap:4px;padding:4px 0;margin-top:10px;">
+    <a href="#" onclick="showSettings(); setActiveNav(this)" id="navSettings" style="display:flex;align-items:center;gap:12px;padding:10px 16px;margin-top:12px;border-radius:var(--radius-md);font-size:13px;color:var(--on-surface-variant);text-decoration:none;transition:all 0.15s;">
+      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">settings</span> <span data-t="nav_settings">Settings</span>
+    </a>
+    <a href="#" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:var(--radius-md);font-size:13px;color:var(--on-surface-variant);text-decoration:none;transition:all 0.15s;">
+      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">help_outline</span> <span data-t="nav_support">Support</span>
+    </a>
+    <div style="display:flex;gap:4px;padding:4px 0;margin-top:8px;">
       <button onclick="setLang('ru')" style="flex:1;padding:6px;border-radius:var(--radius-sm);border:1px solid var(--outline-variant);background:transparent;color:var(--on-surface-variant);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font-body);transition:all 0.15s;" id="langBtnRu">RU</button>
       <button onclick="setLang('en')" style="flex:1;padding:6px;border-radius:var(--radius-sm);border:1px solid var(--outline-variant);background:transparent;color:var(--on-surface-variant);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font-body);transition:all 0.15s;" id="langBtnEn">EN</button>
     </div>
-    <a href="/api/logout" style="display:flex;align-items:center;gap:12px;padding:10px 16px;margin-top:8px;border-radius:var(--radius-md);font-size:13px;color:var(--on-surface-variant);text-decoration:none;transition:all 0.15s;">
+    <a href="/api/logout" style="display:flex;align-items:center;gap:12px;padding:10px 16px;margin-top:4px;border-radius:var(--radius-md);font-size:13px;color:var(--on-surface-variant);text-decoration:none;transition:all 0.15s;">
       <span class="material-symbols-outlined nav-icon" style="font-size:20px;">logout</span> <span data-t="nav_logout">Выйти</span>
     </a>
   </div>
@@ -1317,15 +1630,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Projects List View -->
 <div class="container" id="listView">
-  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px;">
-    <div>
-      <h2 style="font-size:32px;font-weight:800;letter-spacing:-0.03em;font-family:var(--font-headline);line-height:1.1;" data-t="projects_title">Проекты</h2>
-      <p style="color:var(--on-surface-variant);font-size:13px;margin-top:6px;">Manage your content production pipeline</p>
+  <!-- KPI Cards Row -->
+  <div id="kpiCardsRow" class="kpi-grid"></div>
+
+  <!-- Dashboard Grid: Main + Aside -->
+  <div class="dashboard-grid">
+    <div class="dashboard-main">
+      <div class="pipeline-section-header">
+        <h2 class="pipeline-section-title" data-t="active_pipeline">Active Pipeline</h2>
+        <button class="btn btn-outline btn-sm" onclick="showModal()" style="gap:6px;" data-t="btn_new_project"><span class="material-symbols-outlined" style="font-size:16px;">add</span> New</button>
+      </div>
+      <div id="projectsList" class="pipeline-grid"></div>
+      <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;" data-t="empty_projects">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
     </div>
-    <button class="btn btn-blue" onclick="showModal()" style="gap:8px;" data-t="btn_new_project"><span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> + Новый проект</button>
+    <div class="dashboard-aside">
+      <!-- Quick Actions -->
+      <div class="aside-card">
+        <h3 class="aside-card-title" data-t="quick_actions">Quick Actions</h3>
+        <div class="quick-actions-list">
+          <button class="quick-action-btn" onclick="showModal()">
+            <span class="qa-label" data-t="btn_new_project">New Project</span>
+            <span class="material-symbols-outlined">add_circle</span>
+          </button>
+          <button class="quick-action-btn" onclick="showSettings(); setActiveNav(document.getElementById('navSettings'))">
+            <span class="qa-label" data-t="btn_connect_channel">Connect Channel</span>
+            <span class="material-symbols-outlined">cable</span>
+          </button>
+          <button class="quick-action-btn" onclick="showModal()">
+            <span class="qa-label" data-t="btn_generate_script">Generate Script</span>
+            <span class="material-symbols-outlined">bolt</span>
+          </button>
+        </div>
+      </div>
+      <!-- Alerts -->
+      <div class="aside-card">
+        <div class="aside-card-header">
+          <h3 class="aside-card-title" data-t="alerts_title">Alerts</h3>
+          <span class="alert-pulse"></span>
+        </div>
+        <div id="alertsList" class="alerts-list"></div>
+      </div>
+      <!-- Resource Usage -->
+      <div class="aside-card aside-card-gradient">
+        <div class="aside-card-header" style="margin-bottom:16px;">
+          <span class="material-symbols-outlined" style="color:var(--primary);">analytics</span>
+          <h4 class="aside-card-title" data-t="resource_usage" style="margin:0;">Resource Usage</h4>
+        </div>
+        <div id="resourceUsage">
+          <div class="resource-row">
+            <div class="resource-label"><span>AI Compute</span><span>78%</span></div>
+            <div class="resource-bar"><div class="resource-fill" style="width:78%;background:var(--primary);"></div></div>
+          </div>
+          <div class="resource-row">
+            <div class="resource-label"><span>Storage</span><span>42%</span></div>
+            <div class="resource-bar"><div class="resource-fill" style="width:42%;background:var(--tertiary);"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="projectsList" class="projects-grid"></div>
-  <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;" data-t="empty_projects">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
 </div>
 
 <!-- Project Detail View -->
@@ -1832,21 +2195,129 @@ async function loadProjects() {
   empty.style.display = 'none';
 
   list.innerHTML = data.projects.map(p => {
-    const stepsHtml = STEPS.map(s => {
-      const status = p.steps[s.key]?.status || 'pending';
-      return `<div class="step-dot ${status}"></div>`;
-    }).join('');
+    const completedCount = STEPS.filter(s => ['completed','approved'].includes(p.steps[s.key]?.status)).length;
+    const progressPct = Math.round((completedCount / STEPS.length) * 100);
+    const curStep = STEPS.find(s => s.key === p.current_step);
+    const curStepName = curStep ? curStep.name : p.current_step;
+    const curStatus = p.steps[p.current_step]?.status || 'pending';
     const date = new Date(p.created_at).toLocaleDateString('ru-RU');
     const chId = p.channel_id || '';
     const ch = chId ? allChannels.find(c => c.id === chId) : null;
-    const channelBadge = ch ? `<span style="background:rgba(59,130,246,0.12);color:var(--blue);padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600;margin-left:6px;">${esc(ch.name)}</span>` : '';
+    const channelBadge = ch ? `<div style="margin-top:4px;"><span class="pipeline-channel">${esc(ch.name)}</span></div>` : '';
+    // Map status to border color class
+    const borderClass = curStatus === 'completed' || curStatus === 'approved' ? 'border-green'
+      : curStatus === 'in_progress' ? 'border-primary'
+      : curStatus === 'waiting' ? 'border-orange'
+      : curStatus === 'failed' ? 'border-error'
+      : '';
     return `
-      <div class="project-card" onclick="openProject('${p.id}')">
-        <div class="topic">${esc(p.topic)}${channelBadge}</div>
-        <div class="meta">${p.id} • ${date} • Текущий шаг: ${p.current_step}</div>
-        <div class="steps-bar">${stepsHtml}</div>
+      <div class="pipeline-card ${borderClass}" onclick="openProject('${p.id}')">
+        <div class="pipeline-top">
+          <span class="pipeline-badge ${curStatus}">${curStepName}</span>
+          <span class="pipeline-date">${date}</span>
+        </div>
+        <h4 class="pipeline-title">${esc(p.topic)}</h4>
+        ${channelBadge}
+        <div class="pipeline-progress">
+          <div class="pipeline-bar"><div class="pipeline-fill" style="width:${progressPct}%"></div></div>
+        </div>
       </div>`;
   }).join('');
+
+  // Render dashboard widgets
+  renderKPICards(data.projects);
+  renderAlerts(data.projects);
+}
+
+// ── Dashboard Widgets ──
+function renderKPICards(projects) {
+  const row = document.getElementById('kpiCardsRow');
+  if (!row) return;
+  const total = projects.length;
+  const inPipeline = projects.filter(p => {
+    const pubStatus = p.steps?.publish?.status;
+    return pubStatus !== 'completed' && pubStatus !== 'approved';
+  }).length;
+  const published = total - inPipeline;
+
+  // Mini bar data: projects created per week (last 7 weeks)
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const weekCounts = [0,0,0,0,0,0,0];
+  projects.forEach(p => {
+    const age = now - new Date(p.created_at).getTime();
+    const weekIdx = Math.min(6, Math.floor(age / weekMs));
+    weekCounts[6 - weekIdx]++;
+  });
+  const maxW = Math.max(1, ...weekCounts);
+
+  function bars(color, counts) {
+    return counts.map((c, i) => {
+      const h = Math.max(10, (c / maxW) * 100);
+      const opacity = 0.2 + (i / counts.length) * 0.6;
+      return `<div style="background:${color};opacity:${opacity.toFixed(2)};height:${h}%"></div>`;
+    }).join('');
+  }
+
+  row.innerHTML = `
+    <div class="kpi-card">
+      <p class="kpi-label">Total Projects</p>
+      <h3 class="kpi-value">${total}</h3>
+      <div class="kpi-bars">${bars('var(--primary)', weekCounts)}</div>
+    </div>
+    <div class="kpi-card">
+      <p class="kpi-label">In Pipeline</p>
+      <h3 class="kpi-value">${inPipeline}</h3>
+      <div class="kpi-trend purple"><span class="material-symbols-outlined" style="font-size:14px;">trending_up</span> active</div>
+      <div class="kpi-bars">${bars('var(--tertiary)', weekCounts)}</div>
+    </div>
+    <div class="kpi-card">
+      <p class="kpi-label">Published</p>
+      <h3 class="kpi-value">${published}</h3>
+      <div class="kpi-bars">${bars('var(--green)', weekCounts)}</div>
+    </div>
+  `;
+}
+
+function renderAlerts(projects) {
+  const list = document.getElementById('alertsList');
+  if (!list) return;
+  const alerts = [];
+
+  projects.forEach(p => {
+    STEPS.forEach(s => {
+      const st = p.steps[s.key]?.status;
+      if (st === 'failed') {
+        alerts.push({ icon: 'error', color: 'var(--error)', title: s.name + ' Failed', desc: esc(p.topic), time: '' });
+      }
+      if (st === 'waiting') {
+        alerts.push({ icon: 'hourglass_top', color: 'var(--orange)', title: s.name + ' Waiting', desc: esc(p.topic), time: '' });
+      }
+    });
+  });
+
+  // Completed alerts
+  projects.forEach(p => {
+    const pubStatus = p.steps?.publish?.status;
+    if (pubStatus === 'completed' || pubStatus === 'approved') {
+      alerts.push({ icon: 'check_circle', color: 'var(--green)', title: 'Published', desc: esc(p.topic), time: '' });
+    }
+  });
+
+  const items = alerts.slice(0, 3);
+  if (items.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">All clear — no alerts</div>';
+    return;
+  }
+  list.innerHTML = items.map(a => `
+    <div class="alert-item">
+      <div style="margin-top:2px;"><span class="material-symbols-outlined" style="color:${a.color};font-variation-settings:'FILL' 1;">${a.icon}</span></div>
+      <div class="alert-item-text">
+        <div class="alert-item-title">${a.title}</div>
+        <div class="alert-item-desc">${a.desc}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 // ── Open Project ──
