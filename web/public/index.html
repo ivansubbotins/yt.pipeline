@@ -2901,8 +2901,9 @@ async function refreshDetail() {
 
           ${recTitles.length ? `
           <div style="margin-top:12px;">
-            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Рекомендованные заголовки</div>
-            ${recTitles.map(t => `<div style="font-size:12px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);">• ${esc(t)}</div>`).join('')}
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">${t('rec_titles')}</div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic;">Предварительные — финальные заголовки создаются на шаге «Контент-план» по выбранному углу</div>
+            ${recTitles.map(rt => `<div style="font-size:12px;color:var(--text2);padding:4px 0;opacity:0.6;">• ${esc(rt)}</div>`).join('')}
           </div>
           ` : ''}
         </div>`;
@@ -4312,6 +4313,10 @@ function selectAngle(idx, el) {
     c.classList.remove('selected');
     c.querySelector('.check').textContent = '';
   });
+  // Remove previous confirmation
+  const prevConf = document.getElementById('angleConfirmation');
+  if (prevConf) prevConf.remove();
+
   // Select this one
   if (selectedAngleIdx === idx) {
     selectedAngleIdx = null;
@@ -4321,6 +4326,12 @@ function selectAngle(idx, el) {
     el.classList.add('selected');
     el.querySelector('.check').textContent = '✓';
     selectedAngleText = el.querySelector('.title-text').textContent;
+    // Show confirmation
+    const conf = document.createElement('div');
+    conf.id = 'angleConfirmation';
+    conf.style.cssText = 'margin-top:12px;padding:12px 16px;background:rgba(173,198,255,0.08);border-radius:8px;font-size:12px;color:var(--primary);display:flex;align-items:center;gap:8px;';
+    conf.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check_circle</span> Угол выбран — будет использован при генерации контент-плана и сценария';
+    document.getElementById('anglesGrid').after(conf);
   }
   // Save
   if (currentProject) {
