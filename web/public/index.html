@@ -873,23 +873,43 @@ const T = {
     // Page
     page_title: 'YouTube Pipeline — Админка',
     // Nav
-    nav_main: 'Dashboard',
-    nav_videos: 'Videos',
-    nav_channels: 'Channels',
-    nav_assets: 'Assets',
-    nav_ai: 'AI Insights',
+    nav_main: 'Главная',
+    nav_videos: 'Видео',
+    nav_channels: 'Каналы',
+    nav_assets: 'Ресурсы',
+    nav_ai: 'AI Аналитика',
     nav_express: 'Express',
     nav_settings: 'Настройки',
     nav_support: 'Поддержка',
     dashboard_subtitle: 'Управляйте вашим контент-конвейером',
-    active_pipeline: 'Active Pipeline',
-    quick_actions: 'Quick Actions',
-    btn_connect_channel: 'Connect Channel',
-    btn_generate_script: 'Generate Script',
-    alerts_title: 'Alerts',
-    resource_usage: 'Resource Usage',
-    nav_new_project: '+ Новый проект',
+    active_pipeline: 'Активные проекты',
+    quick_actions: 'Быстрые действия',
+    btn_connect_channel: 'Подключить канал',
+    btn_generate_script: 'Сценарий',
+    alerts_title: 'Уведомления',
+    resource_usage: 'Использование ресурсов',
+    nav_new_project: 'Новый проект',
     nav_logout: 'Выйти',
+    ops_center: 'Центр управления',
+    topnav_projects: 'Проекты',
+    topnav_queue: 'Очередь',
+    topnav_archive: 'Архив',
+    topnav_create: 'Создать',
+    topnav_search: 'Поиск по проектам...',
+    back_to_projects: 'Назад к проектам',
+    overall_progress: 'Общий прогресс',
+    status_draft: 'Черновик',
+    status_in_work: 'В работе',
+    status_published: 'Опубликован',
+    kpi_total: 'Всего проектов',
+    kpi_pipeline: 'В работе',
+    kpi_published: 'Опубликовано',
+    kpi_active: 'активно',
+    alerts_empty: 'Всё чисто — нет уведомлений',
+    resource_ai: 'AI Расчёт',
+    resource_storage: 'Хранилище',
+    created_label: 'Создан:',
+    current_step: 'Текущий шаг:',
     // Projects list
     projects_title: 'Проекты',
     btn_new_project: '+ Новый проект',
@@ -1362,8 +1382,27 @@ const T = {
     btn_generate_script: 'Generate Script',
     alerts_title: 'Alerts',
     resource_usage: 'Resource Usage',
-    nav_new_project: '+ New project',
+    nav_new_project: 'New Project',
     nav_logout: 'Logout',
+    ops_center: 'Ops Center',
+    topnav_projects: 'Projects',
+    topnav_queue: 'Queue',
+    topnav_archive: 'Archive',
+    topnav_create: 'Create',
+    topnav_search: 'Search pipeline...',
+    back_to_projects: 'Back to projects',
+    overall_progress: 'Overall progress',
+    status_draft: 'Draft',
+    status_in_work: 'In Progress',
+    status_published: 'Published',
+    kpi_total: 'Total Projects',
+    kpi_pipeline: 'In Pipeline',
+    kpi_published: 'Published',
+    kpi_active: 'active',
+    alerts_empty: 'All clear — no alerts',
+    resource_ai: 'AI Compute',
+    resource_storage: 'Storage',
+    created_label: 'Created:',
     projects_title: 'Projects',
     btn_new_project: '+ New project',
     empty_projects: 'No projects. Click "+ New project" to start.',
@@ -1819,7 +1858,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div>
       <h1>Yt.Pipeline</h1>
-      <div class="ops-label">Ops Center</div>
+      <div class="ops-label" data-t="ops_center">Центр управления</div>
     </div>
   </div>
   <div class="sidebar-nav">
@@ -1868,17 +1907,17 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="topnav-left">
     <div class="topnav-search">
       <span class="material-symbols-outlined topnav-search-icon">search</span>
-      <input type="text" class="topnav-search-input" placeholder="Search pipeline...">
+      <input type="text" class="topnav-search-input" data-t-placeholder="topnav_search" placeholder="Поиск по проектам...">
     </div>
     <nav class="topnav-tabs">
-      <a href="#" class="topnav-tab active" onclick="showList(); setActiveNav(document.getElementById('navMain')); document.querySelectorAll('.topnav-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active');">Projects</a>
-      <a href="#" class="topnav-tab">Queue</a>
-      <a href="#" class="topnav-tab">Archive</a>
+      <a href="#" class="topnav-tab active" onclick="showList(); setActiveNav(document.getElementById('navMain')); document.querySelectorAll('.topnav-tab').forEach(t=>t.classList.remove('active')); this.classList.add('active');" data-t="topnav_projects">Проекты</a>
+      <a href="#" class="topnav-tab" data-t="topnav_queue">Очередь</a>
+      <a href="#" class="topnav-tab" data-t="topnav_archive">Архив</a>
     </nav>
   </div>
   <div class="topnav-right">
     <button class="btn btn-blue btn-sm" onclick="showModal()" style="gap:6px;">
-      <span class="material-symbols-outlined" style="font-size:16px;">add</span> Create Content
+      <span class="material-symbols-outlined" style="font-size:16px;">add</span> <span data-t="topnav_create">Создать</span>
     </button>
     <div class="topnav-actions">
       <span class="material-symbols-outlined topnav-icon-btn">notifications</span>
@@ -1939,11 +1978,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div id="resourceUsage">
           <div class="resource-row">
-            <div class="resource-label"><span>AI Compute</span><span>78%</span></div>
+            <div class="resource-label"><span data-t="resource_ai">AI Расчёт</span><span>78%</span></div>
             <div class="resource-bar"><div class="resource-fill" style="width:78%;background:var(--primary);"></div></div>
           </div>
           <div class="resource-row">
-            <div class="resource-label"><span>Storage</span><span>42%</span></div>
+            <div class="resource-label"><span data-t="resource_storage">Хранилище</span><span>42%</span></div>
             <div class="resource-bar"><div class="resource-fill" style="width:42%;background:var(--tertiary);"></div></div>
           </div>
         </div>
@@ -1957,7 +1996,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- Back link -->
   <a class="detail-back" onclick="showList()">
     <span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span>
-    <span>Назад к проектам</span>
+    <span data-t="back_to_projects">Назад к проектам</span>
   </a>
 
   <!-- Project Header Card -->
@@ -1968,7 +2007,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div class="detail-progress-section">
       <div class="detail-progress-label">
-        <span>Общий прогресс</span>
+        <span data-t="overall_progress">Общий прогресс</span>
         <span id="detailProgressPct">0%</span>
       </div>
       <div class="detail-progress-bar">
@@ -2472,7 +2511,7 @@ async function createProject() {
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Создать';
+  btn.textContent = t('btn_create');
 }
 
 // ── Load Projects ──
@@ -2555,18 +2594,18 @@ function renderKPICards(projects) {
 
   row.innerHTML = `
     <div class="kpi-card">
-      <p class="kpi-label">Total Projects</p>
+      <p class="kpi-label">${t('kpi_total')}</p>
       <h3 class="kpi-value">${total}</h3>
       <div class="kpi-bars">${bars('var(--primary)', weekCounts)}</div>
     </div>
     <div class="kpi-card">
-      <p class="kpi-label">In Pipeline</p>
+      <p class="kpi-label">${t('kpi_pipeline')}</p>
       <h3 class="kpi-value">${inPipeline}</h3>
-      <div class="kpi-trend purple"><span class="material-symbols-outlined" style="font-size:14px;">trending_up</span> active</div>
+      <div class="kpi-trend purple"><span class="material-symbols-outlined" style="font-size:14px;">trending_up</span> ${t('kpi_active')}</div>
       <div class="kpi-bars">${bars('var(--tertiary)', weekCounts)}</div>
     </div>
     <div class="kpi-card">
-      <p class="kpi-label">Published</p>
+      <p class="kpi-label">${t('kpi_published')}</p>
       <h3 class="kpi-value">${published}</h3>
       <div class="kpi-bars">${bars('var(--green)', weekCounts)}</div>
     </div>
@@ -2600,7 +2639,7 @@ function renderAlerts(projects) {
 
   const items = alerts.slice(0, 3);
   if (items.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">All clear — no alerts</div>';
+    list.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">${t('alerts_empty')}</div>`;
     return;
   }
   list.innerHTML = items.map(a => `
@@ -2630,7 +2669,7 @@ async function refreshDetail() {
 
   const { state, files } = data;
   document.getElementById('detailTopic').textContent = state.topic;
-  document.getElementById('detailMeta').textContent = `Создан: ${new Date(state.created_at).toLocaleDateString('ru-RU')}`;
+  document.getElementById('detailMeta').textContent = `${t('created_label')} ${new Date(state.created_at).toLocaleDateString(LANG === 'ru' ? 'ru-RU' : 'en-US')}`;
 
   // Overall progress
   const doneCount = STEPS.filter(s => ['completed','approved'].includes(state.steps[s.key]?.status)).length;
@@ -2639,9 +2678,9 @@ async function refreshDetail() {
   document.getElementById('detailProgressFill').style.width = overallPct + '%';
   // Status badge
   const badge = document.getElementById('detailStatusBadge');
-  if (overallPct === 100) { badge.textContent = 'Published'; badge.style.background = 'rgba(52,211,153,0.15)'; badge.style.color = 'var(--green)'; }
-  else if (overallPct > 0) { badge.textContent = 'In Progress'; badge.style.background = 'rgba(173,198,255,0.1)'; badge.style.color = 'var(--primary)'; }
-  else { badge.textContent = 'Draft'; badge.style.background = ''; badge.style.color = ''; }
+  if (overallPct === 100) { badge.textContent = t('status_published'); badge.style.background = 'rgba(52,211,153,0.15)'; badge.style.color = 'var(--green)'; }
+  else if (overallPct > 0) { badge.textContent = t('status_in_work'); badge.style.background = 'rgba(173,198,255,0.1)'; badge.style.color = 'var(--primary)'; }
+  else { badge.textContent = t('status_draft'); badge.style.background = ''; badge.style.color = ''; }
 
   // Step icons mapping
   const stepIcons = { research: 'search', sources: 'source', content_plan: 'assignment', references: 'image_search', script: 'description', teleprompter: 'teleprompter', covers: 'palette', description: 'edit_note', shooting: 'videocam', editing: 'movie_edit', publish: 'upload', dubbing: 'translate' };
@@ -3561,17 +3600,17 @@ async function refreshDetail() {
   let filesHtml = '';
 
   if (files.thumbnails && files.thumbnails.length) {
-    filesHtml += '<h3 style="margin-bottom:8px;">Обложки</h3>';
+    filesHtml += `<h3 style="margin-bottom:8px;">${t('covers_section')}</h3>`;
     filesHtml += '<div class="thumbs-grid">';
     files.thumbnails.forEach(t => { filesHtml += `<img src="${t}" alt="thumbnail">`; });
     filesHtml += '</div>';
   }
   if (files.teleprompter) {
-    filesHtml += '<h3 style="margin-top:20px; margin-bottom:8px;">Телесуфлёр</h3>';
+    filesHtml += `<h3 style="margin-top:20px; margin-bottom:8px;">${t('teleprompter_section')}</h3>`;
     filesHtml += `<div class="text-output">${esc(files.teleprompter)}</div>`;
   }
   if (files.description) {
-    filesHtml += '<h3 style="margin-top:20px; margin-bottom:8px;">Описание для YouTube</h3>';
+    filesHtml += `<h3 style="margin-top:20px; margin-bottom:8px;">${t('description_section')}</h3>`;
     filesHtml += `<div class="text-output">${esc(files.description)}</div>`;
   }
   filesSection.innerHTML = filesHtml;
@@ -3638,7 +3677,7 @@ async function runStep(step, btn) {
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Запустить';
+  btn.textContent = t('btn_run');
 }
 
 // ── Restart Step ──
@@ -3658,7 +3697,7 @@ async function restartStep(step, btn) {
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Перезапустить';
+  btn.textContent = t('btn_restart');
 }
 
 // ── Run All ──
@@ -3676,7 +3715,7 @@ async function runAll() {
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Запустить все авто-шаги';
+  btn.textContent = t('btn_run_all');
 }
 
 // ── Manual Steps ──
@@ -3720,7 +3759,7 @@ async function startDubbing(btn) {
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Запустить дублирование';
+  btn.textContent = t('btn_start_dubbing');
 }
 
 async function uploadDubbingAudio(btn) {
@@ -3729,7 +3768,7 @@ async function uploadDubbingAudio(btn) {
 
   const file = fileInput.files[0];
   btn.disabled = true;
-  btn.textContent = 'Загрузка...';
+  btn.textContent = t('uploading');
 
   const progressDiv = document.getElementById('dubbingUploadProgress');
   const progressBar = document.getElementById('dubbingUploadBar');
@@ -3754,12 +3793,12 @@ async function uploadDubbingAudio(btn) {
         toast(t('upload_error'), true);
       }
       btn.disabled = false;
-      btn.textContent = 'Загрузить';
+      btn.textContent = t('btn_upload');
       progressDiv.style.display = 'none';
     };
-    xhr.onerror = () => { toast(t('network_error'), true); btn.disabled = false; btn.textContent = 'Загрузить'; };
+    xhr.onerror = () => { toast(t('network_error'), true); btn.disabled = false; btn.textContent = t('btn_upload'); };
     xhr.send(formData);
-  } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = 'Загрузить'; }
+  } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = t('btn_upload'); }
 }
 
 // ── Show List ──
@@ -4101,7 +4140,7 @@ async function generateCustomCover() {
   } catch (e) { toast(e.message, true); }
 
   btn.disabled = false;
-  btn.textContent = 'Сгенерировать';
+  btn.textContent = t('btn_generate_cover');
 }
 
 // ── Load styles on settings page ──
@@ -4757,7 +4796,7 @@ createProject = async function() {
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Создать';
+  btn.textContent = t('btn_create');
 };
 
 // Show channel badge on project cards
@@ -4826,7 +4865,7 @@ async function runWizard(mode) {
   }
 
   btn.disabled = false;
-  btn.textContent = 'Сгенерировать всё';
+  btn.textContent = t('btn_generate_all');
   toast(t('done'));
 }
 
