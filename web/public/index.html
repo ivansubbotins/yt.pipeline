@@ -3,97 +3,234 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Pipeline</title>
+<title>Yt.Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/shared.css">
 <style>
-/* Header removed — using sidebar now */
-
 /* ── Projects List ── */
-.projects-grid { display: grid; gap: 12px; margin-top: 20px; }
-.project-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; cursor: pointer; transition: border-color 0.2s; }
-.project-card:hover { border-color: var(--muted); }
-.project-card .topic { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-.project-card .meta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-.project-card .steps-bar { display: flex; gap: 3px; }
-.step-dot { width: 100%; height: 6px; border-radius: 3px; background: var(--border); }
+.projects-grid { display: grid; gap: 12px; margin-top: 24px; }
+.project-card {
+  background: var(--surface-container);
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.project-card:hover {
+  border-bottom-color: var(--primary);
+  background: var(--surface-container-high);
+}
+.project-card .topic {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-family: var(--font-headline);
+  letter-spacing: -0.02em;
+}
+.project-card .meta {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+.project-card .steps-bar { display: flex; gap: 4px; }
+.step-dot { width: 100%; height: 4px; border-radius: 2px; background: var(--surface-container-highest); transition: background 0.3s; }
 .step-dot.completed { background: var(--green); }
-.step-dot.in_progress { background: var(--blue); animation: pulse 1.5s infinite; }
+.step-dot.in_progress { background: var(--primary-container); animation: pulse 1.5s infinite; }
 .step-dot.waiting { background: var(--orange); }
-.step-dot.failed { background: var(--red); }
-.step-dot.approved { background: var(--purple); }
+.step-dot.failed { background: var(--error); }
+.step-dot.approved { background: var(--tertiary); }
 
 /* ── Project Detail ── */
-.detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-.detail-header .back { font-size: 24px; cursor: pointer; color: var(--muted); text-decoration: none; }
-.detail-header .back:hover { color: var(--text); }
-.detail-header h2 { font-size: 22px; flex: 1; }
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.detail-header .back {
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  transition: all 0.15s;
+}
+.detail-header .back:hover { color: var(--text); background: var(--surface-container); text-decoration: none; }
+.detail-header h2 {
+  font-size: 28px;
+  font-weight: 800;
+  flex: 1;
+  font-family: var(--font-headline);
+  letter-spacing: -0.03em;
+}
 
-.steps-timeline { display: grid; gap: 10px; }
-.step-row { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
-.step-row .num { width: 32px; height: 32px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
-.step-row .num.pending { background: var(--border); color: var(--muted); }
-.step-row .num.completed { background: var(--green); color: #fff; }
-.step-row .num.in_progress { background: var(--blue); color: #fff; animation: pulse 1.5s infinite; }
-.step-row .num.waiting { background: var(--orange); color: #fff; }
-.step-row .num.failed { background: var(--red); color: #fff; }
-.step-row .num.approved { background: var(--purple); color: #fff; }
+.steps-timeline { display: grid; gap: 8px; }
+.step-row {
+  background: var(--surface-container);
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+.step-row:hover { background: var(--surface-container-high); }
+.step-row .num {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+.step-row .num.pending { background: var(--surface-container-highest); color: var(--muted); }
+.step-row .num.completed { background: rgba(52,211,153,0.15); color: var(--green); }
+.step-row .num.in_progress { background: rgba(77,142,255,0.15); color: var(--primary-container); animation: pulse 1.5s infinite; }
+.step-row .num.waiting { background: rgba(251,191,36,0.15); color: var(--orange); }
+.step-row .num.failed { background: rgba(255,180,171,0.15); color: var(--error); }
+.step-row .num.approved { background: rgba(208,188,255,0.15); color: var(--tertiary); }
 .step-row .info { flex: 1; }
-.step-row .info .name { font-weight: 600; font-size: 14px; }
-.step-row .info .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.step-row .status-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.step-row .info .name {
+  font-weight: 600;
+  font-size: 14px;
+  font-family: var(--font-headline);
+}
+.step-row .info .desc { font-size: 12px; color: var(--on-surface-variant); margin-top: 3px; }
+.step-row .status-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-container-highest);
+}
+
+/* Colored border-left for active steps */
+.step-row:has(.num.completed) { border-left-color: var(--green); }
+.step-row:has(.num.in_progress) { border-left-color: var(--primary-container); }
+.step-row:has(.num.waiting) { border-left-color: var(--orange); }
+.step-row:has(.num.failed) { border-left-color: var(--error); }
+.step-row:has(.num.approved) { border-left-color: var(--tertiary); }
 
 /* ── Step Data Panel ── */
-.step-data { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; max-height: 400px; overflow-y: auto; }
-.step-data pre { font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--muted); }
+.step-data {
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.step-data pre { font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: var(--on-surface-variant); }
 
 /* ── Thumbnails ── */
 .thumbs-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-.thumbs-grid img { width: 280px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+.thumbs-grid img { width: 280px; border-radius: var(--radius-lg); border: 2px solid var(--outline-variant); transition: border-color 0.2s; }
+.thumbs-grid img:hover { border-color: var(--primary); }
 
 /* ── Text Output ── */
-.text-output { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; max-height: 300px; overflow-y: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: var(--text); }
+.text-output {
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--on-surface);
+}
 
 /* ── Styles Gallery ── */
 .styles-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-.style-card { position: relative; width: 200px; border: 2px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
-.style-card.selected { border-color: var(--blue); box-shadow: 0 0 8px rgba(59,130,246,0.4); }
-.style-card:hover { border-color: var(--muted); }
+.style-card {
+  position: relative;
+  width: 200px;
+  border: 2px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface-container);
+}
+.style-card.selected { border-color: var(--primary); box-shadow: var(--shadow-glow); }
+.style-card:hover { border-color: var(--outline); }
 .style-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-.style-card .style-name { padding: 6px 8px; font-size: 12px; font-weight: 600; background: var(--card); }
-.style-card .style-prompt { padding: 2px 8px 6px; font-size: 11px; color: var(--muted); background: var(--card); }
-.style-card .style-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: var(--radius-full); background: rgba(0,0,0,0.6); color: #fff; border: none; font-size: 12px; cursor: pointer; display: none; }
-.style-card:hover .style-delete { display: block; }
+.style-card .style-name { padding: 8px 10px; font-size: 12px; font-weight: 600; background: var(--surface-container); }
+.style-card .style-prompt { padding: 2px 10px 8px; font-size: 11px; color: var(--on-surface-variant); background: var(--surface-container); }
+.style-card .style-delete { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: var(--radius-full); background: rgba(0,0,0,0.6); color: #fff; border: none; font-size: 12px; cursor: pointer; display: none; backdrop-filter: blur(4px); }
+.style-card:hover .style-delete { display: flex; align-items: center; justify-content: center; }
 
 /* ── Custom Cover Modal ── */
-.cover-modal { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-2xl); padding: 24px; width: 600px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
-.cover-modal h2 { margin-bottom: 16px; font-size: 18px; }
-.cover-modal label { display: block; font-size: 12px; color: var(--muted); margin-top: 12px; margin-bottom: 4px; }
-.cover-modal .actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.cover-modal {
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-2xl);
+  padding: 28px;
+  width: 640px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.cover-modal h2 { margin-bottom: 20px; font-size: 20px; font-weight: 800; font-family: var(--font-headline); }
+.cover-modal label { display: block; font-size: 10px; color: var(--on-surface-variant); margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+.cover-modal .actions { display: flex; gap: 8px; margin-top: 24px; justify-content: flex-end; }
 
 /* ── Collapsible panels ── */
 .collapse-icon { user-select: none; }
 .step-row[onclick] .info .name::after { content: ''; }
-.step-row[onclick]:hover { border-color: var(--muted); }
+.step-row[onclick]:hover { border-color: transparent; border-left-color: var(--primary); }
 
-.run-all-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+.run-all-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
 
 /* ── Settings ── */
-.ctx-input { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text); font-size: 13px; outline: none; margin-top: 4px; }
-.ctx-input:focus { border-color: var(--accent); }
+.ctx-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface-container-highest);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-body);
+  outline: none;
+  margin-top: 4px;
+  transition: all 0.2s;
+}
+.ctx-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(173,198,255,0.15); }
 select.ctx-input { appearance: none; }
 
 /* ═══ MOBILE ═══ */
 @media (max-width: 768px) {
-  .header { padding: 12px 14px; gap: 8px; flex-wrap: wrap; }
-  .header h1 { font-size: 16px; }
-  .header .btn { font-size: 11px; padding: 6px 10px; }
-  .header .btn-new { margin-left: 0; }
-  .project-card { padding: 14px; }
+  .project-card { padding: 16px; }
   .project-card .topic { font-size: 14px; }
   .cover-modal { width: 95vw; padding: 16px; }
   .detail-header { flex-wrap: wrap; gap: 8px; }
-  .detail-header h2 { font-size: 18px; }
-  .step-row { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  .detail-header h2 { font-size: 20px; }
+  .step-row { padding: 12px 16px; gap: 10px; flex-wrap: wrap; }
   .step-row .info .name { font-size: 13px; }
   .thumbs-grid img { width: 100%; max-width: 280px; }
   .styles-grid { gap: 8px; }
@@ -1015,6 +1152,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
   document.querySelectorAll('[data-t-title]').forEach(el => { el.title = t(el.dataset.tTitle); });
   document.querySelectorAll('[data-t-placeholder]').forEach(el => { el.placeholder = t(el.dataset.tPlaceholder); });
+  // Highlight active lang button
+  const activeLangBtn = document.getElementById(LANG === 'ru' ? 'langBtnRu' : 'langBtnEn');
+  if (activeLangBtn) { activeLangBtn.style.borderColor = 'var(--primary)'; activeLangBtn.style.background = 'rgba(173,198,255,0.12)'; activeLangBtn.style.color = 'var(--primary)'; }
 });
 </script>
 </head>
@@ -1024,30 +1164,36 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Sidebar -->
 <nav class="sidebar">
   <div class="sidebar-logo">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5"><path d="M22.5 7.5a2.5 2.5 0 00-1.8-1.8C19 5.3 12 5.3 12 5.3s-7 0-8.7.4a2.5 2.5 0 00-1.8 1.8A26 26 0 001 12a26 26 0 00.5 4.5 2.5 2.5 0 001.8 1.8c1.7.4 8.7.4 8.7.4s7 0 8.7-.4a2.5 2.5 0 001.8-1.8A26 26 0 0023 12a26 26 0 00-.5-4.5z"/><path d="M10 15.5l5.5-3.5L10 8.5z" fill="var(--red)"/></svg>
-    <h1><span>YT</span> Pipeline</h1>
+    <div style="width:32px;height:32px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--primary-container));display:flex;align-items:center;justify-content:center;">
+      <span class="material-symbols-outlined" style="font-size:18px;color:var(--on-primary);font-variation-settings:'FILL' 1;">plumbing</span>
+    </div>
+    <div>
+      <h1>Yt.Pipeline</h1>
+      <div class="ops-label">Ops Center</div>
+    </div>
   </div>
   <div class="sidebar-nav">
     <a href="#" onclick="showList(); setActiveNav(this)" class="active" id="navMain">
-      <span class="nav-icon">🏠</span> <span data-t="nav_main">Главная</span>
+      <span class="material-symbols-outlined nav-icon">dashboard</span> <span data-t="nav_main">Главная</span>
     </a>
     <a href="/express.html" id="navExpress">
-      <span class="nav-icon">⚡</span> <span data-t="nav_express">Express</span>
+      <span class="material-symbols-outlined nav-icon">bolt</span> <span data-t="nav_express">Express</span>
     </a>
     <a href="#" onclick="showSettings(); setActiveNav(this)" id="navSettings">
-      <span class="nav-icon">⚙</span> <span data-t="nav_settings">Настройки</span>
+      <span class="material-symbols-outlined nav-icon">settings</span> <span data-t="nav_settings">Настройки</span>
     </a>
   </div>
   <div class="sidebar-bottom">
-    <a href="#" onclick="showModal()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);font-size:13px;color:var(--accent);text-decoration:none;border:1px dashed var(--border);justify-content:center;font-weight:600;">
+    <button onclick="showModal()" style="width:100%;padding:12px 16px;border-radius:var(--radius-md);font-size:13px;font-weight:700;font-family:var(--font-headline);color:var(--on-primary-fixed);background:var(--primary-container);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;box-shadow:0 4px 12px rgba(77,142,255,0.2);">
+      <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
       <span data-t="nav_new_project">+ Новый проект</span>
-    </a>
-    <div style="display:flex;gap:4px;padding:4px 12px;margin-top:6px;">
-      <button onclick="setLang('ru')" style="flex:1;padding:4px;border-radius:4px;border:1px solid ${LANG==='ru'?'var(--accent)':'var(--border)'};background:${LANG==='ru'?'rgba(59,130,246,0.15)':'transparent'};color:var(--text);cursor:pointer;font-size:11px;font-weight:600;">RU</button>
-      <button onclick="setLang('en')" style="flex:1;padding:4px;border-radius:4px;border:1px solid ${LANG==='en'?'var(--accent)':'var(--border)'};background:${LANG==='en'?'rgba(59,130,246,0.15)':'transparent'};color:var(--text);cursor:pointer;font-size:11px;font-weight:600;">EN</button>
+    </button>
+    <div style="display:flex;gap:4px;padding:4px 0;margin-top:10px;">
+      <button onclick="setLang('ru')" style="flex:1;padding:6px;border-radius:var(--radius-sm);border:1px solid var(--outline-variant);background:transparent;color:var(--on-surface-variant);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font-body);transition:all 0.15s;" id="langBtnRu">RU</button>
+      <button onclick="setLang('en')" style="flex:1;padding:6px;border-radius:var(--radius-sm);border:1px solid var(--outline-variant);background:transparent;color:var(--on-surface-variant);cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font-body);transition:all 0.15s;" id="langBtnEn">EN</button>
     </div>
-    <a href="/api/logout" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-top:6px;border-radius:var(--radius-lg);font-size:12px;color:var(--muted);text-decoration:none;">
-      <span class="nav-icon">🚪</span> <span data-t="nav_logout">Выйти</span>
+    <a href="/api/logout" style="display:flex;align-items:center;gap:12px;padding:10px 16px;margin-top:8px;border-radius:var(--radius-md);font-size:13px;color:var(--on-surface-variant);text-decoration:none;transition:all 0.15s;">
+      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">logout</span> <span data-t="nav_logout">Выйти</span>
     </a>
   </div>
 </nav>
@@ -1057,9 +1203,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Projects List View -->
 <div class="container" id="listView">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2 style="font-size:20px;" data-t="projects_title">Проекты</h2>
-    <button class="btn btn-blue" onclick="showModal()" data-t="btn_new_project">+ Новый проект</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;">
+    <div>
+      <h2 style="font-size:28px;font-weight:800;letter-spacing:-0.03em;font-family:var(--font-headline);" data-t="projects_title">Проекты</h2>
+    </div>
+    <button class="btn btn-blue" onclick="showModal()" style="gap:8px;" data-t="btn_new_project"><span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> + Новый проект</button>
   </div>
   <div id="projectsList" class="projects-grid"></div>
   <p id="emptyMsg" style="color:var(--muted); text-align:center; margin-top:48px; display:none;" data-t="empty_projects">Нет проектов. Нажми «+ Новый проект» чтобы начать.</p>
@@ -1068,7 +1216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Project Detail View -->
 <div class="container" id="detailView" style="display:none">
   <div class="detail-header">
-    <a class="back" onclick="showList()">←</a>
+    <a class="back" onclick="showList()"><span class="material-symbols-outlined">arrow_back</span></a>
     <h2 id="detailTopic"></h2>
     <span id="detailMeta" style="color:var(--muted); font-size:12px;"></span>
   </div>
@@ -1116,8 +1264,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
       <button class="btn btn-blue" onclick="showAddChannelModal()" data-t="btn_add_channel">+ Добавить канал</button>
     </div>
-    <div id="channelCurrentInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);">
-      <div style="width:40px;height:40px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid var(--accent);">📺</div>
+    <div id="channelCurrentInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;padding:14px;background:var(--surface-container-low);border:1px solid var(--outline-variant);border-radius:var(--radius-lg);">
+      <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(173,198,255,0.1);display:flex;align-items:center;justify-content:center;border:none;"><span class="material-symbols-outlined" style="font-size:24px;color:var(--primary);">subscriptions</span></div>
       <div>
         <div id="channelDisplayName" style="font-size:14px;font-weight:600;">—</div>
         <div id="channelDisplayNiche" style="font-size:11px;color:var(--muted);" data-t="select_or_create_channel">Выберите или создайте канал</div>

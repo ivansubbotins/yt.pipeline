@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Вход — YouTube Pipeline</title>
+<title>Вход — Yt.Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/shared.css">
 <style>
 body {
@@ -11,57 +15,82 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--surface);
 }
 .login-card {
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
   border-radius: var(--radius-2xl);
-  padding: 40px;
-  width: 360px;
+  padding: 44px;
+  width: 400px;
   max-width: 90vw;
   box-shadow: var(--shadow-xl);
 }
-.logo { text-align: center; margin-bottom: 24px; }
-.logo svg { opacity: 0.8; }
-.logo h1 { font-size: 18px; margin-top: 8px; font-weight: 600; }
-.logo p { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.field { margin-bottom: 16px; }
+.logo { text-align: center; margin-bottom: 32px; }
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary), var(--primary-container));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.logo h1 {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  color: var(--primary);
+  font-family: var(--font-headline);
+}
+.logo p {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+.field { margin-bottom: 18px; }
 .field label { margin-bottom: 6px; }
 .error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.3);
-  color: var(--red);
-  padding: 8px 12px;
+  background: rgba(147,0,10,0.15);
+  border: 1px solid rgba(255,180,171,0.3);
+  color: var(--error);
+  padding: 10px 14px;
   border-radius: var(--radius-md);
   font-size: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   display: none;
 }
 .login-btn {
   width: 100%;
-  padding: 10px;
-  background: var(--blue);
-  color: #fff;
+  padding: 12px;
+  background: var(--primary-container);
+  color: var(--on-primary-fixed);
   border: none;
   border-radius: var(--radius-md);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: var(--font-headline);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: all 0.15s;
+  box-shadow: 0 4px 16px rgba(77,142,255,0.25);
 }
-.login-btn:hover { opacity: 0.9; }
-.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-btn:hover { box-shadow: 0 6px 24px rgba(77,142,255,0.35); filter: brightness(1.05); }
+.login-btn:active { transform: scale(0.98); }
+.login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
 </style>
 </head>
 <body>
 <div class="login-card">
   <div class="logo">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M22.5 7.5a2.5 2.5 0 00-1.8-1.8C19 5.3 12 5.3 12 5.3s-7 0-8.7.4a2.5 2.5 0 00-1.8 1.8A26 26 0 001 12a26 26 0 00.5 4.5 2.5 2.5 0 001.8 1.8c1.7.4 8.7.4 8.7.4s7 0 8.7-.4a2.5 2.5 0 001.8-1.8A26 26 0 0023 12a26 26 0 00-.5-4.5z"/>
-      <path d="M10 15.5l5.5-3.5L10 8.5z"/>
-    </svg>
-    <h1>YouTube Pipeline</h1>
-    <p>Войдите для доступа к панели</p>
+    <div class="logo-icon">
+      <span class="material-symbols-outlined" style="font-size:24px;color:var(--on-primary);font-variation-settings:'FILL' 1;">plumbing</span>
+    </div>
+    <h1>Yt.Pipeline</h1>
+    <p>Ops Center</p>
   </div>
 
   <div class="error" id="error"></div>
@@ -124,15 +153,15 @@ async function login(e) {
       document.getElementById('totp').focus();
       err.textContent = 'Введите код из Google Authenticator';
       err.style.display = 'block';
-      err.style.background = 'rgba(59,130,246,0.1)';
-      err.style.borderColor = 'rgba(59,130,246,0.3)';
-      err.style.color = 'var(--blue)';
+      err.style.background = 'rgba(173,198,255,0.1)';
+      err.style.borderColor = 'rgba(173,198,255,0.3)';
+      err.style.color = 'var(--primary)';
     } else {
       err.textContent = data.error || 'Ошибка входа';
       err.style.display = 'block';
-      err.style.background = 'rgba(239,68,68,0.1)';
-      err.style.borderColor = 'rgba(239,68,68,0.3)';
-      err.style.color = 'var(--red)';
+      err.style.background = 'rgba(147,0,10,0.15)';
+      err.style.borderColor = 'rgba(255,180,171,0.3)';
+      err.style.color = 'var(--error)';
     }
   } catch (ex) {
     err.textContent = 'Ошибка сети';
