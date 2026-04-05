@@ -3602,6 +3602,12 @@ async function refreshDetail() {
           ${progressIndicator}
           <div class="step-card-name">${s.name}</div>
           <div class="step-card-desc">${s.desc}</div>
+          ${stepState.data?._usage ? `<div style="display:flex;gap:12px;font-size:10px;color:var(--muted);margin-bottom:8px;align-items:center;">
+            <span title="Input tokens"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;">arrow_upward</span> ${(stepState.data._usage.input_tokens || 0).toLocaleString()}</span>
+            <span title="Output tokens"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;">arrow_downward</span> ${(stepState.data._usage.output_tokens || 0).toLocaleString()}</span>
+            <span title="Cost" style="color:var(--primary);">$${(stepState.data._usage.cost_usd || 0).toFixed(4)}</span>
+            ${stepState.data._usage.calls > 1 ? '<span>(' + stepState.data._usage.calls + ' calls)</span>' : ''}
+          </div>` : ''}
           ${cardAction}
           ${dataToggle ? `<div style="margin-top:8px;">${dataToggle}</div>` : ''}
           ${isLocked ? '<div class="step-card-lock"><span class="material-symbols-outlined">lock</span></div>' : ''}
