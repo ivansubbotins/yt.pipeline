@@ -267,52 +267,36 @@ function notifyWebhooks(event, projectId, data) {
   }
 }
 
-// ── Anthropic API call ──
+// ── Anthropic API call (via Python SDK — bypasses Node.js ETIMEDOUT on Russian VPS) ──
 function callClaude(systemPrompt, userMessage) {
   return new Promise((resolve, reject) => {
-    if (!ANTHROPIC_API_KEY) return reject(new Error('ANTHROPIC_API_KEY not set'));
-    const https = require('https');
-    const body = JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
+    const { execFile } = require('child_process');
+    const pythonScript = path.join(__dirname, 'claude_call.py');
+    console.log('[Claude] Calling via Python SDK...');
+    execFile('python3', [pythonScript, systemPrompt, userMessage], {
+      timeout: 120000,
+      maxBuffer: 10 * 1024 * 1024,
+      cwd: path.join(__dirname, '..'),
+    }, (err, stdout, stderr) => {
+      if (err) {
+        console.error('[Claude Python Error]', err.message, stderr?.substring(0, 200));
+        return reject(new Error('Claude error: ' + (err.message || 'unknown')));
+      }
+      try {
+        const result = JSON.parse(stdout);
+        if (result.ok) {
+          const u = result.usage || {};
+          console.log(`[Claude] OK: ${u.input_tokens || '?'} in / ${u.output_tokens || '?'} out`);
+          resolve(result.text);
+        } else {
+          console.error('[Claude API Error]', result.error);
+          reject(new Error(result.error || 'Claude error'));
+        }
+      } catch (e) {
+        console.error('[Claude Parse Error]', stdout?.substring(0, 300));
+        reject(e);
+      }
     });
-    console.log('[Claude] Sending request, body length:', body.length);
-    const req = https.request({
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Length': Buffer.byteLength(body),
-      },
-      timeout: 60000,
-    }, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        console.log('[Claude] Response status:', res.statusCode, 'length:', data.length);
-        try {
-          const json = JSON.parse(data);
-          if (json.content && json.content[0]) {
-            const usage = json.usage || {};
-            console.log(`[Claude] OK: ${usage.input_tokens || '?'} in / ${usage.output_tokens || '?'} out`);
-            resolve(json.content[0].text);
-          } else {
-            const errMsg = json.error?.message || 'No content from Claude';
-            console.error('[Claude API Error]', res.statusCode, errMsg);
-            reject(new Error(errMsg));
-          }
-        } catch (e) { console.error('[Claude Parse Error]', data.substring(0, 300)); reject(e); }
-      });
-    });
-    req.on('error', (e) => { console.error('[Claude Request Error]', e.code, e.message, e.stack?.split('\n')[1]); reject(new Error('Claude network error: ' + (e.code || e.message || 'unknown'))); });
-    req.on('timeout', () => { console.error('[Claude Timeout]'); req.destroy(); reject(new Error('Claude API timeout (60s)')); });
-    req.write(body);
-    req.end();
   });
 }
 
