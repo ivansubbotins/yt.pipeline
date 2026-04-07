@@ -295,8 +295,12 @@ function callClaude(systemPrompt, userMessage) {
         try {
           const json = JSON.parse(data);
           if (json.content && json.content[0]) resolve(json.content[0].text);
-          else reject(new Error(json.error?.message || 'No content'));
-        } catch (e) { reject(e); }
+          else {
+            const errMsg = json.error?.message || 'No content from Claude';
+            console.error('[Claude API Error]', errMsg);
+            reject(new Error(errMsg));
+          }
+        } catch (e) { console.error('[Claude API Parse Error]', data.substring(0, 200)); reject(e); }
       });
     });
     req.on('error', reject);
