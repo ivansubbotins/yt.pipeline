@@ -278,6 +278,7 @@ function callClaude(systemPrompt, userMessage) {
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     });
+    console.log('[Claude] Sending request, body length:', body.length);
     const req = https.request({
       hostname: 'api.anthropic.com',
       path: '/v1/messages',
@@ -288,22 +289,28 @@ function callClaude(systemPrompt, userMessage) {
         'anthropic-version': '2023-06-01',
         'Content-Length': Buffer.byteLength(body),
       },
+      timeout: 60000,
     }, res => {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
+        console.log('[Claude] Response status:', res.statusCode, 'length:', data.length);
         try {
           const json = JSON.parse(data);
-          if (json.content && json.content[0]) resolve(json.content[0].text);
-          else {
+          if (json.content && json.content[0]) {
+            const usage = json.usage || {};
+            console.log(`[Claude] OK: ${usage.input_tokens || '?'} in / ${usage.output_tokens || '?'} out`);
+            resolve(json.content[0].text);
+          } else {
             const errMsg = json.error?.message || 'No content from Claude';
-            console.error('[Claude API Error]', errMsg);
+            console.error('[Claude API Error]', res.statusCode, errMsg);
             reject(new Error(errMsg));
           }
-        } catch (e) { console.error('[Claude API Parse Error]', data.substring(0, 200)); reject(e); }
+        } catch (e) { console.error('[Claude Parse Error]', data.substring(0, 300)); reject(e); }
       });
     });
-    req.on('error', reject);
+    req.on('error', (e) => { console.error('[Claude Request Error]', e.message); reject(e); });
+    req.on('timeout', () => { console.error('[Claude Timeout]'); req.destroy(); reject(new Error('Claude API timeout (60s)')); });
     req.write(body);
     req.end();
   });
