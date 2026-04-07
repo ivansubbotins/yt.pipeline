@@ -30,6 +30,9 @@
   <a href="/" class="back-btn" title="Назад"><span class="material-symbols-outlined">arrow_back</span></a>
   <h1><span>Express</span> Publish</h1>
   <div class="spacer"></div>
+  <button class="btn btn-primary btn-sm" onclick="saveAsProject()" id="btnSaveProject" style="gap:6px;margin-right:8px;">
+    <span class="material-symbols-outlined" style="font-size:16px;">save</span> Save as Project
+  </button>
   <a href="/api/logout" class="btn btn-outline btn-xs" style="text-decoration:none;color:var(--muted);">Выйти</a>
 </div>
 
@@ -330,6 +333,35 @@ function updateProgress(step) {
 }
 
 // ═══ Step 1: Generate ═══
+async function saveAsProject() {
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) { toast('Сначала введите тему', true); return; }
+  const btn = document.getElementById('btnSaveProject');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Сохранение...';
+  try {
+    const data = await api('/api/express/save-project', {
+      topic,
+      titles: state.titles || [],
+      descriptions: state.descriptions || [],
+      tags: state.tags || [],
+      selected_title: state.selectedTitles?.length > 0 ? state.titles[state.selectedTitles[0]] : (state.titles?.[0] || topic),
+      selected_description: state.selectedDesc >= 0 ? state.descriptions[state.selectedDesc] : (state.descriptions?.[0] || ''),
+      express_id: state.expressId || '',
+      script: document.getElementById('script').value.trim(),
+    });
+    if (data.ok) {
+      toast('Проект сохранён! ID: ' + data.project_id);
+      // Open project in main pipeline
+      setTimeout(() => { window.location.href = '/?project=' + data.project_id; }, 1500);
+    } else {
+      toast(data.error || 'Ошибка сохранения', true);
+    }
+  } catch(e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">save</span> Save as Project';
+}
+
 async function generateContent() {
   const topic = document.getElementById('topic').value.trim();
   if (!topic) { toast('Введите тему', true); return; }

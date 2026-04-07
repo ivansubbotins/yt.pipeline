@@ -5195,6 +5195,15 @@ showSettings = function() {
 loadProjects();
 loadChannels();
 initStyles();
+
+// Auto-open project from URL param (e.g., ?project=xxx)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const projectId = params.get('project');
+  if (projectId) {
+    setTimeout(() => openProject(projectId), 500);
+  }
+})();
 </script>
 </body>
 </html>

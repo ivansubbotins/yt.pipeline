@@ -2264,6 +2264,121 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     return;
   }
 
+  // POST /api/express/save-project — Save Express session as a full pipeline project
+  if (pathname === '/api/express/save-project' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const topic = body.topic || 'Express Project';
+      const titles = body.titles || [];
+      const descriptions = body.descriptions || [];
+      const tags = body.tags || [];
+      const selectedTitle = body.selected_title || titles[0] || topic;
+      const selectedDesc = body.selected_description || descriptions[0] || '';
+      const expressId = body.express_id || '';
+      const script = body.script || '';
+
+      // Create project slug
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const slugPart = topic.toLowerCase().replace(/[^а-яa-z0-9]/gi, '-').replace(/-+/g, '-').substring(0, 50);
+      const projectId = `${dateStr}-${slugPart}`;
+      const projectDir = path.join(DATA_DIR, projectId);
+
+      if (fs.existsSync(projectDir)) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, project_id: projectId, message: 'Project already exists' }));
+        return;
+      }
+
+      fs.mkdirSync(path.join(projectDir, 'thumbnails'), { recursive: true });
+
+      // Copy thumbnails from express project if exists
+      if (expressId) {
+        const expressThumbDir = path.join(DATA_DIR, expressId, 'thumbnails');
+        if (fs.existsSync(expressThumbDir)) {
+          const files = fs.readdirSync(expressThumbDir).filter(f => f.endsWith('.jpg') || f.endsWith('.png'));
+          files.forEach((f, i) => {
+            const dst = `thumbnail_${i + 1}.jpg`;
+            fs.copyFileSync(path.join(expressThumbDir, f), path.join(projectDir, 'thumbnails', dst));
+          });
+          if (files.length > 0) {
+            fs.copyFileSync(path.join(expressThumbDir, files[0]), path.join(projectDir, 'thumbnail.jpg'));
+          }
+        }
+      }
+
+      // Build steps state
+      const steps = {};
+      const stepKeys = ['research','sources','content_plan','references','script','teleprompter','covers','description','shooting','editing','publish','dubbing'];
+      stepKeys.forEach(s => { steps[s] = { status: 'pending', data: {}, log: [] }; });
+
+      // Pre-fill completed steps from express data
+      if (titles.length || descriptions.length) {
+        steps.content_plan.status = 'completed';
+        steps.content_plan.data = {
+          title: selectedTitle,
+          titles: titles,
+          hook: '',
+          structure: [],
+          cta: '',
+          _from_express: true
+        };
+      }
+      if (selectedDesc) {
+        steps.description.status = 'completed';
+        steps.description.data = {
+          title: selectedTitle,
+          description: selectedDesc,
+          tags: tags,
+          hashtags: tags.slice(0, 5),
+          _from_express: true
+        };
+      }
+      if (expressId && fs.existsSync(path.join(projectDir, 'thumbnails'))) {
+        const thumbFiles = fs.readdirSync(path.join(projectDir, 'thumbnails'));
+        if (thumbFiles.length > 0) {
+          steps.covers.status = 'completed';
+          steps.covers.data = {
+            thumbnails: thumbFiles,
+            generated_files: thumbFiles,
+            generation_mode: 'express',
+            _from_express: true
+          };
+        }
+      }
+      if (script) {
+        steps.script.status = 'completed';
+        steps.script.data = { raw_script: script, _from_express: true };
+      }
+
+      // Determine current step
+      let currentStep = 'research';
+      if (steps.content_plan.status === 'completed') currentStep = 'references';
+      if (steps.covers.status === 'completed') currentStep = 'shooting';
+
+      const state = {
+        project_id: projectId,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString(),
+        topic: topic,
+        channel_id: body.channel_id || '',
+        current_step: currentStep,
+        steps: steps
+      };
+
+      fs.writeFileSync(path.join(projectDir, 'state.json'), JSON.stringify(state, null, 2), 'utf8');
+
+      console.log(`[Express Save] Created project ${projectId} from express session`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, project_id: projectId }));
+    } catch (err) {
+      console.error('[Express Save Error]', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
   // POST /api/express/publish — Publish video to YouTube
   if (pathname === '/api/express/publish' && req.method === 'POST') {
     try {
