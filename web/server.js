@@ -309,7 +309,7 @@ function callClaude(systemPrompt, userMessage) {
         } catch (e) { console.error('[Claude Parse Error]', data.substring(0, 300)); reject(e); }
       });
     });
-    req.on('error', (e) => { console.error('[Claude Request Error]', e.message); reject(e); });
+    req.on('error', (e) => { console.error('[Claude Request Error]', e.code, e.message, e.stack?.split('\n')[1]); reject(new Error('Claude network error: ' + (e.code || e.message || 'unknown'))); });
     req.on('timeout', () => { console.error('[Claude Timeout]'); req.destroy(); reject(new Error('Claude API timeout (60s)')); });
     req.write(body);
     req.end();
