@@ -647,6 +647,8 @@ const TEXT_STYLES = [
 const params = new URLSearchParams(window.location.search);
 const projectId = params.get('project');
 
+let projectTopic = '';
+
 const editorState = {
   projectId,
   layers: [
@@ -1505,6 +1507,17 @@ function generatePromptFromLayers() {
     }
   });
 
+  // Video topic context — ensures the scene is relevant to the video
+  if (projectTopic) {
+    parts.unshift(`SCENE CONTEXT: This is a YouTube thumbnail for a video about "${projectTopic}". The background, setting, and visual elements MUST be relevant to this topic.`);
+  }
+
+  // Also use the Russian prompt as scene description
+  const ruPrompt = el('promptRu').value.trim();
+  if (ruPrompt) {
+    parts.unshift(`Scene description: ${ruPrompt}`);
+  }
+
   // Format
   const fmtMap = { '16:9': '16:9 landscape', '9:16': '9:16 vertical portrait', '1:1': 'square 1:1' };
   parts.push(`YouTube thumbnail style, vibrant colors, ${fmtMap[editorState.format] || '16:9 landscape'}`);
@@ -1819,7 +1832,7 @@ async function init() {
   if (!projectId) { toast('Не указан проект', true); return; }
   try {
     const data = await api(`/api/project/${projectId}`);
-    if (data.ok) el('projectName').textContent = data.state.topic;
+    if (data.ok) { projectTopic = data.state.topic || ''; el('projectName').textContent = projectTopic; }
   } catch(e) {}
 
   fitCanvas();
