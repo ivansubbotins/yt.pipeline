@@ -6,6 +6,13 @@ youtube_token.json
 data/
 logs/
 
+# Runtime-uploaded / AI-generated assets (churn at runtime → never commit)
+assets/expert.jpg
+assets/expert.png
+assets/generated/
+assets/personas/
+backups/
+
 # Python
 __pycache__/
 *.pyc
