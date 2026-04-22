@@ -535,10 +535,45 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // GET /oauth/start — Initiate YouTube OAuth (optionally for a specific channel)
+  if (pathname === '/oauth/start' && req.method === 'GET') {
+    if (!isAuthenticated(req)) {
+      res.writeHead(302, { 'Location': '/login.html' });
+      res.end();
+      return;
+    }
+    const channelId = url.searchParams.get('channel_id') || '';
+    const scopes = [
+      'https://www.googleapis.com/auth/youtube.upload',
+      'https://www.googleapis.com/auth/youtube',
+      'https://www.googleapis.com/auth/youtube.readonly',
+    ];
+    const state = channelId ? Buffer.from(JSON.stringify({ channel_id: channelId })).toString('base64url') : '';
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
+      `client_id=${encodeURIComponent(YOUTUBE_CLIENT_ID)}` +
+      `&redirect_uri=${encodeURIComponent(YOUTUBE_REDIRECT_URI)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent(scopes.join(' '))}` +
+      `&access_type=offline` +
+      `&prompt=consent` +
+      (state ? `&state=${state}` : '');
+    res.writeHead(302, { 'Location': authUrl });
+    res.end();
+    return;
+  }
+
   // GET /oauth/callback — YouTube OAuth2 callback (no auth required)
   if (pathname === '/oauth/callback' && req.method === 'GET') {
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
+    const stateRaw = url.searchParams.get('state') || '';
+    let callbackChannelId = '';
+    if (stateRaw) {
+      try {
+        const decoded = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
+        callbackChannelId = decoded.channel_id || '';
+      } catch(e) { console.warn('OAuth state parse failed:', e.message); }
+    }
     if (error) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(`<html><body style="background:#0c0c0c;color:#ef4444;font-family:sans-serif;padding:40px;text-align:center;"><h2>Ошибка OAuth: ${error}</h2><a href="/" style="color:#3b82f6;">Назад</a></body></html>`);
@@ -575,15 +610,28 @@ http.createServer(async (req, res) => {
             res.end(`<html><body style="background:#0c0c0c;color:#ef4444;font-family:sans-serif;padding:40px;text-align:center;"><h2>Ошибка: ${tokenData.error_description || tokenData.error}</h2><a href="/" style="color:#3b82f6;">Назад</a></body></html>`);
             return;
           }
-          // Save token
-          const tokenPath = path.join(PIPELINE_DIR, 'youtube_token.json');
+          // Save token — to per-channel location if state had channel_id, otherwise default
+          let tokenPath;
+          let savedFor;
+          if (callbackChannelId) {
+            const channelDir = path.join(DATA_DIR, 'channels', callbackChannelId);
+            fs.mkdirSync(channelDir, { recursive: true });
+            tokenPath = path.join(channelDir, 'token.json');
+            savedFor = `канала ${callbackChannelId}`;
+            // Also invalidate stale videos cache for this channel
+            const cacheFile = path.join(channelDir, 'videos_cache.json');
+            if (fs.existsSync(cacheFile)) { fs.unlinkSync(cacheFile); console.log('Invalidated stale cache for', callbackChannelId); }
+          } else {
+            tokenPath = path.join(PIPELINE_DIR, 'youtube_token.json');
+            savedFor = 'основного аккаунта';
+          }
           fs.writeFileSync(tokenPath, JSON.stringify(tokenData, null, 2));
-          console.log('YouTube OAuth token saved successfully');
+          console.log('YouTube OAuth token saved:', tokenPath);
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
           res.end(`<html><body style="background:#0c0c0c;color:#22c55e;font-family:sans-serif;padding:40px;text-align:center;">
-            <h2>YouTube подключён!</h2>
-            <p style="color:#bbb;margin-top:12px;">Токен сохранён. Теперь можно публиковать видео.</p>
-            <a href="/express.html" style="color:#3b82f6;font-size:16px;">Перейти к Express Publish →</a>
+            <h2>YouTube подключён для ${savedFor}!</h2>
+            <p style="color:#bbb;margin-top:12px;">Токен сохранён. Теперь можно загружать видео канала.</p>
+            <a href="/" style="color:#3b82f6;font-size:16px;">Вернуться в админку →</a>
           </body></html>`);
         } catch(e) {
           res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
