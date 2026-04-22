@@ -4678,6 +4678,47 @@ async function loadChannelContext() {
     if (el('utmMedium')) el('utmMedium').value = ctx.utm_defaults.medium || 'video_description';
     if (el('utmCampaign')) el('utmCampaign').value = ctx.utm_defaults.campaign || '';
   }
+
+  // Auto-load saved recommendations (if cache exists)
+  try {
+    const recsData = await api(`/api/channels/${currentChannelId}/recommendations`);
+    if (recsData.ok && recsData.cached && recsData.recommendations?.length) {
+      // Render cached recs silently
+      const recs = recsData.recommendations;
+      const section = document.getElementById('channelRecsSection');
+      const listEl = document.getElementById('channelRecsList');
+      section.style.display = '';
+      const savedAt = recsData.generated_at ? new Date(recsData.generated_at).toLocaleString('ru-RU') : '';
+      listEl.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:rgba(173,198,255,0.06);border-radius:6px;">
+          <div style="font-size:11px;color:var(--on-surface-variant);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bookmark</span> Сохранено: ${esc(savedAt)}</div>
+          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> Перегенерировать</button>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">Темы, которые залетают:</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">${(recsData.top_performing_themes||[]).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+        </div>
+        ${recsData.underperforming_themes?.length ? `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">Темы, которые не работают:</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">${recsData.underperforming_themes.map(t => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+        </div>` : ''}
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Рекомендованные темы</div>
+        <div style="display:grid;gap:6px;">
+          ${recs.map(r => `
+            <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:600;">${esc(r.topic)}</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px;">${esc(r.rationale||'')}</div>
+                ${r.related_existing ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Связано с: ${esc(r.related_existing)}</div>` : ''}
+              </div>
+              <span style="background:${r.estimated_appeal === 'high' ? 'var(--green)' : 'var(--orange)'};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;">${r.estimated_appeal === 'high' ? 'ВЫСОКИЙ' : 'СРЕДНИЙ'}</span>
+              <button class="btn btn-blue btn-xs" onclick="createProjectFromRec('${esc(r.topic)}')">Создать</button>
+            </div>
+          `).join('')}
+        </div>`;
+    }
+  } catch(e) { /* silently skip if no cache */ }
 }
 
 function showAddChannelModal() {
@@ -4832,10 +4873,12 @@ async function loadChannelVideos() {
 }
 
 // ── Topic Recommendations ──
-async function loadRecommendations() {
+async function loadRecommendations(opts = {}) {
   const chId2 = currentChannelId || 'default';
-  toast(t('generating_recs'));
-  const data = await api(`/api/channels/${chId2}/recommendations`);
+  const refresh = opts.refresh === true;
+  toast(refresh ? t('generating_recs') : 'Загрузка рекомендаций...');
+  const url = `/api/channels/${chId2}/recommendations${refresh ? '?refresh=1' : ''}`;
+  const data = await api(url);
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
 
   const recs = data.recommendations || [];
@@ -4844,7 +4887,18 @@ async function loadRecommendations() {
   section.style.display = '';
 
   if (data.top_performing_themes) {
+    const savedAt = data.generated_at ? new Date(data.generated_at).toLocaleString('ru-RU') : '';
+    const cachedBadge = data.cached
+      ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:rgba(173,198,255,0.06);border-radius:6px;">
+          <div style="font-size:11px;color:var(--on-surface-variant);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bookmark</span> Сохранено: ${esc(savedAt)}</div>
+          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> Перегенерировать</button>
+        </div>` : `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:rgba(52,211,153,0.06);border-radius:6px;">
+          <div style="font-size:11px;color:var(--green);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">check_circle</span> Сгенерировано сейчас — сохранено</div>
+          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> Перегенерировать</button>
+        </div>`;
     list.innerHTML = `
+      ${cachedBadge}
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">Темы, которые залетают:</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">${(data.top_performing_themes || []).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>

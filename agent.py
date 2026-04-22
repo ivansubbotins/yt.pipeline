@@ -462,6 +462,28 @@ def cmd_recommend_topics(args):
         for text in stream.text_stream:
             result += text
 
+    # Cache recommendations to disk so they persist across page reloads
+    if channel_id:
+        try:
+            # Extract JSON from result
+            start = result.find("{")
+            end = result.rfind("}") + 1
+            if start >= 0 and end > start:
+                parsed = json_mod.loads(result[start:end])
+                cache_path = CHANNELS_DIR / channel_id / "recommendations_cache.json"
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(cache_path, "w", encoding="utf-8") as f:
+                    json_mod.dump({
+                        "recommendations": parsed.get("recommendations", []),
+                        "top_performing_themes": parsed.get("top_performing_themes", []),
+                        "underperforming_themes": parsed.get("underperforming_themes", []),
+                        "generated_at": datetime.now().isoformat(),
+                    }, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            # Non-fatal: if caching fails, still return the result to client
+            import sys
+            print(f"[cache-save-warn] {e}", file=sys.stderr)
+
     print(result)
 
 

@@ -1398,10 +1398,25 @@ http.createServer(async (req, res) => {
     return;
   }
 
-  // GET /api/channels/:id/recommendations — Topic recommendations
+  // GET /api/channels/:id/recommendations — Topic recommendations (with cache)
   if (pathname.match(/^\/api\/channels\/[^/]+\/recommendations$/) && req.method === 'GET') {
     try {
       const channelId = pathname.split('/')[3];
+      const forceRefresh = url.searchParams.get('refresh') === '1';
+
+      // Check cache first (no TTL — only refreshed on explicit request or by adding new videos)
+      if (channelId !== 'default' && !forceRefresh) {
+        const cacheFile = path.join(DATA_DIR, 'channels', channelId, 'recommendations_cache.json');
+        if (fs.existsSync(cacheFile)) {
+          try {
+            const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true, cached: true, ...cached }));
+            return;
+          } catch(e) { console.warn('recs cache parse failed:', e.message); }
+        }
+      }
+
       const output = await runAgent(['recommend-topics', channelId === 'default' ? '' : channelId]);
 
       // Check for not_authorized error
@@ -1421,11 +1436,21 @@ http.createServer(async (req, res) => {
         if (match) recommendations = JSON.parse(match[0]);
       } catch(e) {}
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, ...recommendations }));
+      res.end(JSON.stringify({ ok: true, cached: false, ...recommendations }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: err.message }));
     }
+    return;
+  }
+
+  // DELETE /api/channels/:id/recommendations — clear cache (manual "refresh")
+  if (pathname.match(/^\/api\/channels\/[^/]+\/recommendations$/) && req.method === 'DELETE') {
+    const channelId = pathname.split('/')[3];
+    const cacheFile = path.join(DATA_DIR, 'channels', channelId, 'recommendations_cache.json');
+    if (fs.existsSync(cacheFile)) fs.unlinkSync(cacheFile);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
     return;
   }
 
