@@ -169,13 +169,22 @@ def save_channel_context_by_id(channel_id: str, ctx: dict):
     with open(channel_dir / "context.json", "w", encoding="utf-8") as f:
         json.dump(ctx, f, ensure_ascii=False, indent=2)
 
-def get_channel_token_path(channel_id: str) -> Path:
-    """Get OAuth token path for a channel."""
+def get_channel_token_path(channel_id: str, strict: bool = False) -> Path:
+    """Get OAuth token path for a channel.
+
+    If strict=True and channel_id is given but no token exists, raises FileNotFoundError
+    instead of silently falling back to default token (which would load wrong channel's videos).
+    """
     if not channel_id:
         return YOUTUBE_TOKEN_FILE
     token_path = CHANNELS_DIR / channel_id / "token.json"
     if token_path.exists():
         return token_path
+    if strict:
+        raise FileNotFoundError(
+            f"No OAuth token for channel '{channel_id}'. "
+            f"Authorize this channel via /oauth/start?channel_id={channel_id} first."
+        )
     return YOUTUBE_TOKEN_FILE  # fallback to default
 
 # Teleprompter settings

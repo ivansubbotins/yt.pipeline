@@ -362,7 +362,13 @@ def cmd_channel_videos(args):
     from config import get_channel_token_path
     from youtube_api import YouTubeAPI
 
-    token_path = get_channel_token_path(args.channel_id)
+    # Use strict mode when a channel_id is given — refuse to fall back to default token,
+    # otherwise we'd load the main channel's videos for a newly-added unauthorized channel.
+    try:
+        token_path = get_channel_token_path(args.channel_id, strict=bool(args.channel_id))
+    except FileNotFoundError as e:
+        print(json_mod.dumps({"error": "not_authorized", "message": str(e), "channel_id": args.channel_id}, ensure_ascii=False))
+        return
     yt = YouTubeAPI(token_file=token_path)
     yt.authenticate()
     videos = yt.list_channel_videos(max_results=args.max)
@@ -396,7 +402,11 @@ def cmd_recommend_topics(args):
             cached = json_mod.load(f)
         videos = cached.get("videos", [])
     else:
-        token_path = get_channel_token_path(channel_id)
+        try:
+            token_path = get_channel_token_path(channel_id, strict=bool(channel_id))
+        except FileNotFoundError as e:
+            print(json_mod.dumps({"error": "not_authorized", "message": str(e), "channel_id": channel_id}, ensure_ascii=False))
+            return
         yt = YouTubeAPI(token_file=token_path)
         yt.authenticate()
         videos = yt.list_channel_videos(max_results=50)

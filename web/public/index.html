@@ -4779,6 +4779,23 @@ async function loadChannelVideos() {
   const chId = currentChannelId || 'default';
   toast(t('loading_videos'));
   const data = await api(`/api/channels/${chId}/videos`);
+
+  // Handle unauthorized channel specifically
+  if (!data.ok && data.error === 'channel_not_authorized') {
+    const section = document.getElementById('channelVideosSection');
+    const list = document.getElementById('channelVideosList');
+    section.style.display = '';
+    list.innerHTML = `
+      <div style="padding:16px;background:rgba(251,191,36,0.08);border-left:3px solid var(--orange);border-radius:8px;">
+        <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">Канал не подключён к YouTube</div>
+        <div style="font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;line-height:1.5;">${esc(data.message || 'Этот канал не авторизован через OAuth. Чтобы загружать его видео, нужно подключить YouTube-аккаунт именно для этого канала.')}</div>
+        <button class="btn btn-outline btn-sm" onclick="window.open('/oauth/start?channel_id=${encodeURIComponent(chId)}', '_blank')" style="gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">login</span> Подключить YouTube
+        </button>
+      </div>`;
+    toast('Канал не авторизован', true);
+    return;
+  }
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
 
   const videos = data.videos || [];

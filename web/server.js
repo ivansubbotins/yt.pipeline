@@ -1316,6 +1316,18 @@ http.createServer(async (req, res) => {
       // Fetch fresh
       const output = await runAgent(['channel-videos', isDefault ? '' : channelId]);
       console.log('channel-videos output length:', output.length, 'first 200:', output.substring(0, 200));
+
+      // Check for not_authorized error from Python
+      const notAuthMatch = output.match(/\{"error":\s*"not_authorized"[\s\S]*?\}/);
+      if (notAuthMatch) {
+        try {
+          const errObj = JSON.parse(notAuthMatch[0]);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'channel_not_authorized', message: errObj.message || 'Канал не авторизован через OAuth. Сначала подключите YouTube-аккаунт для этого канала.', channel_id: errObj.channel_id }));
+          return;
+        } catch(e) {}
+      }
+
       let videos = [];
       try {
         // Output may contain Python log lines before JSON — find the JSON array starting with [\n  {
@@ -1343,6 +1355,18 @@ http.createServer(async (req, res) => {
     try {
       const channelId = pathname.split('/')[3];
       const output = await runAgent(['recommend-topics', channelId === 'default' ? '' : channelId]);
+
+      // Check for not_authorized error
+      const notAuthMatch = output.match(/\{"error":\s*"not_authorized"[\s\S]*?\}/);
+      if (notAuthMatch) {
+        try {
+          const errObj = JSON.parse(notAuthMatch[0]);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'channel_not_authorized', message: errObj.message || 'Канал не авторизован. Подключите YouTube для этого канала.', channel_id: errObj.channel_id }));
+          return;
+        } catch(e) {}
+      }
+
       let recommendations = {};
       try {
         const match = output.match(/\{[\s\S]*\}/);
