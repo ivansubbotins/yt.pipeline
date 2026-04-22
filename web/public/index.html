@@ -2471,8 +2471,10 @@ const STEPS = [
 let currentProject = null;
 
 // ── API ──
-async function api(url, body) {
-  const opts = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+async function api(url, body, method) {
+  const opts = body
+    ? { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : (method ? { method } : {});
   const res = await fetch(url, opts);
   if (res.status === 401) { window.location.href = '/login.html'; return {}; }
   return res.json();
@@ -3985,9 +3987,22 @@ async function saveContext() {
     tags_always: el('ctx-tags_always').value.split(',').map(s => s.trim()).filter(Boolean),
   };
 
+  // Include niche + target_audience — they're per-channel fields shown in the UI
+  const nicheInput = el('ctx-niche');
+  const audienceInput = el('ctx-target-audience');
+  if (nicheInput) ctx.niche = nicheInput.value;
+  if (audienceInput) ctx.target_audience = audienceInput.value;
+
   try {
-    const data = await api('/api/context', { context: ctx });
-    if (data.ok) toast(t('settings_saved'));
+    // If a specific channel is selected, save to that channel's context (not default).
+    // Otherwise fall back to global context file.
+    let data;
+    if (currentChannelId) {
+      data = await api(`/api/channels/${currentChannelId}`, { context: ctx }, 'PUT');
+    } else {
+      data = await api('/api/context', { context: ctx });
+    }
+    if (data.ok) toast(t('settings_saved') + (currentChannelId ? ' (канал)' : ''));
     else toast(data.error || 'Ошибка', true);
   } catch (e) { toast(e.message, true); }
 
