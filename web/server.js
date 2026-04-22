@@ -414,8 +414,16 @@ function listProjectFiles(projectId) {
 
 // ── HTTP Server ──
 http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathname = decodeURIComponent(url.pathname);
+  let url, pathname;
+  try {
+    url = new URL(req.url, `http://${req.headers.host}`);
+    try { pathname = decodeURIComponent(url.pathname); }
+    catch { pathname = url.pathname; } // malformed %-encoding — use raw pathname
+  } catch (e) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'Bad request URL' }));
+    return;
+  }
 
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');

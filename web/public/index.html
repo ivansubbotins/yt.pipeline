@@ -3967,79 +3967,96 @@ async function loadContext() {
 }
 
 async function saveContext() {
-  const ctx = {
-    author: {
-      name: el('ctx-author-name').value,
-      full_name: el('ctx-author-full_name').value,
-      who: el('ctx-author-who').value,
-      expertise: el('ctx-author-expertise').value.split(',').map(s => s.trim()).filter(Boolean),
-      experience: el('ctx-author-experience').value,
-      tone: el('ctx-author-tone').value,
-    },
-    channel: {
-      name: el('ctx-channel-name').value,
-      youtube_url: el('ctx-channel-youtube_url').value,
-      telegram_url: el('ctx-channel-telegram_url').value,
-      telegram_group: el('ctx-channel-telegram_group').value,
-      website: el('ctx-channel-website').value,
-      social_links: {},
-    },
-    cta: {
-      subscribe: 'Подписывайтесь на канал и нажмите колокольчик!',
-      like_comment: 'Ставьте лайк и напишите в комментариях',
-      lead_magnet: {
-        enabled: el('ctx-cta-lead_magnet-enabled').checked,
-        text: el('ctx-cta-lead_magnet-text').value,
-        url: el('ctx-cta-lead_magnet-url').value,
-        placement: el('ctx-cta-lead_magnet-placement').value,
-      },
-      mid_roll: {
-        enabled: el('ctx-cta-mid_roll-enabled').checked,
-        text: el('ctx-cta-mid_roll-text').value,
-        url: el('ctx-cta-mid_roll-url').value,
-        placement_after_block: parseInt(el('ctx-cta-mid_roll-placement_after_block').value) || 3,
-      },
-      end_screen: {
-        enabled: el('ctx-cta-end_screen-enabled').checked,
-        text: el('ctx-cta-end_screen-text').value,
-      },
-    },
-    description_links: channelLinks.map(link => ({
-      label: link.label,
-      url: link.utm ? buildUtmUrl(link.url) : link.url,
-      emoji: link.emoji || '',
-      type: link.type,
-      raw_url: link.url,
-      utm: link.utm,
-    })),
-    links_raw: channelLinks,
-    utm_defaults: {
-      source: el('utmSource')?.value || 'youtube',
-      medium: el('utmMedium')?.value || 'video_description',
-      campaign: el('utmCampaign')?.value || '',
-    },
-    hashtags_always: el('ctx-hashtags_always').value.split(',').map(s => s.trim()).filter(Boolean),
-    tags_always: el('ctx-tags_always').value.split(',').map(s => s.trim()).filter(Boolean),
-  };
+  console.log('[saveContext] started, currentChannelId =', currentChannelId);
 
-  // Include niche + target_audience — they're per-channel fields shown in the UI
-  const nicheInput = el('ctx-niche');
-  const audienceInput = el('ctx-target-audience');
-  if (nicheInput) ctx.niche = nicheInput.value;
-  if (audienceInput) ctx.target_audience = audienceInput.value;
+  // Safe readers — never throw on missing element
+  const val = id => { const e = el(id); return e ? (e.value || '') : ''; };
+  const chk = id => { const e = el(id); return e ? !!e.checked : false; };
+  const split = id => val(id).split(',').map(s => s.trim()).filter(Boolean);
+
+  let ctx;
+  try {
+    ctx = {
+      author: {
+        name: val('ctx-author-name'),
+        full_name: val('ctx-author-full_name'),
+        who: val('ctx-author-who'),
+        expertise: split('ctx-author-expertise'),
+        experience: val('ctx-author-experience'),
+        tone: val('ctx-author-tone'),
+      },
+      channel: {
+        name: val('ctx-channel-name'),
+        youtube_url: val('ctx-channel-youtube_url'),
+        telegram_url: val('ctx-channel-telegram_url'),
+        telegram_group: val('ctx-channel-telegram_group'),
+        website: val('ctx-channel-website'),
+        social_links: {},
+      },
+      cta: {
+        subscribe: 'Подписывайтесь на канал и нажмите колокольчик!',
+        like_comment: 'Ставьте лайк и напишите в комментариях',
+        lead_magnet: {
+          enabled: chk('ctx-cta-lead_magnet-enabled'),
+          text: val('ctx-cta-lead_magnet-text'),
+          url: val('ctx-cta-lead_magnet-url'),
+          placement: val('ctx-cta-lead_magnet-placement') || 'intro',
+        },
+        mid_roll: {
+          enabled: chk('ctx-cta-mid_roll-enabled'),
+          text: val('ctx-cta-mid_roll-text'),
+          url: val('ctx-cta-mid_roll-url'),
+          placement_after_block: parseInt(val('ctx-cta-mid_roll-placement_after_block')) || 3,
+        },
+        end_screen: {
+          enabled: chk('ctx-cta-end_screen-enabled'),
+          text: val('ctx-cta-end_screen-text'),
+        },
+      },
+      description_links: (Array.isArray(channelLinks) ? channelLinks : []).map(link => ({
+        label: link.label,
+        url: link.utm ? (typeof buildUtmUrl === 'function' ? buildUtmUrl(link.url) : link.url) : link.url,
+        emoji: link.emoji || '',
+        type: link.type,
+        raw_url: link.url,
+        utm: link.utm,
+      })),
+      links_raw: Array.isArray(channelLinks) ? channelLinks : [],
+      utm_defaults: {
+        source: val('utmSource') || 'youtube',
+        medium: val('utmMedium') || 'video_description',
+        campaign: val('utmCampaign'),
+      },
+      hashtags_always: split('ctx-hashtags_always'),
+      tags_always: split('ctx-tags_always'),
+      niche: val('ctx-niche'),
+      target_audience: val('ctx-target-audience'),
+    };
+  } catch (e) {
+    console.error('[saveContext] failed to build payload:', e);
+    toast('Ошибка сбора полей: ' + e.message, true);
+    return;
+  }
+
+  console.log('[saveContext] sending payload, channel:', currentChannelId || '(default)', 'keys:', Object.keys(ctx));
 
   try {
-    // If a specific channel is selected, save to that channel's context (not default).
-    // Otherwise fall back to global context file.
     let data;
     if (currentChannelId) {
       data = await api(`/api/channels/${currentChannelId}`, { context: ctx }, 'PUT');
     } else {
       data = await api('/api/context', { context: ctx });
     }
-    if (data.ok) toast(t('settings_saved') + (currentChannelId ? ' (канал)' : ''));
-    else toast(data.error || 'Ошибка', true);
-  } catch (e) { toast(e.message, true); }
+    console.log('[saveContext] response:', data);
+    if (data && data.ok) {
+      toast(t('settings_saved') + (currentChannelId ? ' (канал)' : ''));
+    } else {
+      toast((data && data.error) ? data.error : 'Ошибка сохранения', true);
+    }
+  } catch (e) {
+    console.error('[saveContext] request failed:', e);
+    toast('Сеть/сервер: ' + e.message, true);
+  }
 
   // Upload expert photo if selected
   const fileInput = el('expertPhotoInput');
