@@ -106,7 +106,14 @@
 
   <!-- Tags -->
   <div class="section" id="tagsSection" style="display:none;">
-    <h2 style="font-size:13px;font-weight:600;margin-bottom:8px;">Теги</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
+      <h2 style="font-size:13px;font-weight:600;margin:0;">Теги <span id="tagsCount" style="color:var(--muted);font-weight:400;"></span></h2>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-outline btn-sm" onclick="copyTags('comma')" title="Через запятую: tag1, tag2, tag3">Копировать (запятая)</button>
+        <button class="btn btn-outline btn-sm" onclick="copyTags('hash')" title="Как хэштеги: #tag1 #tag2 #tag3">Как хэштеги</button>
+        <button class="btn btn-outline btn-sm" onclick="copyTags('youtube')" title="Для поля Tags в YouTube Studio">YouTube</button>
+      </div>
+    </div>
     <div id="tagsContainer" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     <div style="margin-top:8px;display:flex;gap:6px;">
       <input id="newTag" placeholder="Добавить тег..." style="flex:1;padding:6px 10px;font-size:12px;">
@@ -842,6 +849,33 @@ function renderTags() {
   container.innerHTML = state.tags.map((t, i) =>
     `<span class="tag">${esc(t)}<span class="tag-x" onclick="removeTag(${i})">×</span></span>`
   ).join('');
+  const countEl = document.getElementById('tagsCount');
+  if (countEl) {
+    const total = state.tags.length;
+    const chars = state.tags.join(', ').length;
+    countEl.textContent = total ? `(${total} шт., ${chars}/500 симв.)` : '';
+    countEl.style.color = chars > 500 ? 'var(--red)' : 'var(--muted)';
+  }
+}
+
+async function copyTags(format) {
+  if (!state.tags.length) { toast('Нет тегов для копирования', true); return; }
+  let text;
+  if (format === 'hash') text = state.tags.map(t => '#' + t.replace(/\s+/g, '')).join(' ');
+  else if (format === 'youtube') text = state.tags.join(','); // YouTube Studio expects no spaces
+  else text = state.tags.join(', ');
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(`Скопировано ${state.tags.length} тегов (${text.length} симв.)`);
+  } catch(e) {
+    // Fallback for older browsers / non-HTTPS
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast(`Скопировано ${state.tags.length} тегов`); }
+    catch(_) { toast('Не удалось скопировать: ' + e.message, true); }
+    document.body.removeChild(ta);
+  }
 }
 
 function addTag() {
