@@ -813,11 +813,21 @@ async function loadVersionsList() {
   try {
     const data = await api(`/api/project/${projectId}`);
     if (data.ok && data.files?.thumbnails) {
-      editorState.versions = data.files.thumbnails.filter(f => f.includes('custom_'));
-      editorState.activeVersion = editorState.versions.length - 1;
+      // Accept both editor-generated (custom_*.jpg) and pipeline-generated
+      // (thumbnail_*.jpg) covers, so Express-saved projects also show up here.
+      editorState.versions = data.files.thumbnails.filter(f =>
+        /custom_\d+|thumbnail_\d+/i.test(f)
+      );
+      // Pick primary cover from steps.covers.data.primary_index when available
+      const primaryIdx = data.state?.steps?.covers?.data?.primary_index;
+      if (typeof primaryIdx === 'number' && primaryIdx >= 0 && primaryIdx < editorState.versions.length) {
+        editorState.activeVersion = primaryIdx;
+      } else {
+        editorState.activeVersion = editorState.versions.length - 1;
+      }
       renderLayers();
       if (editorState.versions.length > 0) switchVersion(editorState.activeVersion);
-      toast(`${editorState.versions.length} версий`);
+      if (editorState.versions.length > 0) toast(`${editorState.versions.length} версий загружено`);
     }
   } catch(e) { toast(e.message, true); }
 }

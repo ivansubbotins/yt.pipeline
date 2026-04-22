@@ -2381,6 +2381,7 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
       const selectedDesc = body.selected_description || descriptions[0] || '';
       const expressId = body.express_id || '';
       const script = body.script || '';
+      const selectedCoverIndex = (typeof body.selected_cover_index === 'number') ? body.selected_cover_index : -1;
 
       // Create project slug
       const now = new Date();
@@ -2388,16 +2389,13 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
       const slugPart = topic.toLowerCase().replace(/[^а-яa-z0-9]/gi, '-').replace(/-+/g, '-').substring(0, 50);
       const projectId = `${dateStr}-${slugPart}`;
       const projectDir = path.join(DATA_DIR, projectId);
-
-      if (fs.existsSync(projectDir)) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, project_id: projectId, message: 'Project already exists' }));
-        return;
-      }
+      const alreadyExists = fs.existsSync(projectDir);
 
       fs.mkdirSync(path.join(projectDir, 'thumbnails'), { recursive: true });
 
-      // Copy thumbnails from express project if exists
+      // Copy thumbnails from express project if exists.
+      // If project already exists, we still re-copy to pick up newly generated covers.
+      let copiedFiles = [];
       if (expressId) {
         const expressThumbDir = path.join(DATA_DIR, expressId, 'thumbnails');
         if (fs.existsSync(expressThumbDir)) {
@@ -2405,11 +2403,40 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
           files.forEach((f, i) => {
             const dst = `thumbnail_${i + 1}.jpg`;
             fs.copyFileSync(path.join(expressThumbDir, f), path.join(projectDir, 'thumbnails', dst));
+            copiedFiles.push(dst);
           });
+          // Pick primary thumbnail based on selectedCoverIndex (else first)
           if (files.length > 0) {
-            fs.copyFileSync(path.join(expressThumbDir, files[0]), path.join(projectDir, 'thumbnail.jpg'));
+            const primaryIdx = (selectedCoverIndex >= 0 && selectedCoverIndex < files.length) ? selectedCoverIndex : 0;
+            fs.copyFileSync(path.join(expressThumbDir, files[primaryIdx]), path.join(projectDir, 'thumbnail.jpg'));
           }
         }
+      }
+
+      // If project already existed, just update covers data + return existing id
+      if (alreadyExists) {
+        const stateFile = path.join(projectDir, 'state.json');
+        if (fs.existsSync(stateFile)) {
+          try {
+            const existingState = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+            if (copiedFiles.length > 0) {
+              existingState.steps.covers = existingState.steps.covers || { status: 'pending', data: {}, log: [] };
+              existingState.steps.covers.status = 'completed';
+              existingState.steps.covers.data = {
+                thumbnails: copiedFiles,
+                generated_files: copiedFiles,
+                generation_mode: 'express',
+                primary_index: selectedCoverIndex >= 0 ? selectedCoverIndex : 0,
+                _from_express: true,
+              };
+              existingState.updated_at = now.toISOString();
+              fs.writeFileSync(stateFile, JSON.stringify(existingState, null, 2), 'utf8');
+            }
+          } catch(e) { console.warn('save-project: existing state update failed:', e.message); }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, project_id: projectId, updated: true, copied_covers: copiedFiles.length }));
+        return;
       }
 
       // Build steps state
@@ -2447,6 +2474,7 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
             thumbnails: thumbFiles,
             generated_files: thumbFiles,
             generation_mode: 'express',
+            primary_index: selectedCoverIndex >= 0 ? selectedCoverIndex : 0,
             _from_express: true
           };
         }

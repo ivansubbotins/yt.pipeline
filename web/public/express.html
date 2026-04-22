@@ -150,7 +150,7 @@
       <div class="covers-grid" id="coversGrid"></div>
       <div class="actions-bar">
         <button class="btn btn-outline" onclick="showPromptsStep()">Вернуться к промптам</button>
-        <a href="#" class="btn btn-outline" id="editorLink" style="display:none;text-decoration:none;" target="_blank">Открыть в Cover Editor</a>
+        <button class="btn btn-blue" id="editorLink" style="display:none;" onclick="openInCoverEditor()">Открыть в Cover Editor</button>
       </div>
     </div>
 
@@ -340,6 +340,50 @@ function updateProgress(step) {
 }
 
 // ═══ Step 1: Generate ═══
+// Open the selected cover in /editor.html for fine-tuning (clothing, text, etc.)
+// Strategy: silently save Express session as a real project (so editor can load by project id),
+// pass selected_cover_index so it becomes the primary thumbnail.
+async function openInCoverEditor() {
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) { toast('Сначала введите тему', true); return; }
+  if (!state.covers || !state.covers.length) { toast('Сначала сгенерируйте обложки', true); return; }
+
+  const btn = document.getElementById('editorLink');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Открываю...';
+  try {
+    // Pick first selected cover, or the first one if user hasn't selected anything
+    const selectedIdx = (state.selectedCovers && state.selectedCovers.length)
+      ? state.selectedCovers[0]
+      : 0;
+
+    const data = await api('/api/express/save-project', {
+      topic,
+      titles: state.titles || [],
+      descriptions: state.descriptions || [],
+      tags: state.tags || [],
+      selected_title: state.selectedTitles?.length > 0 ? state.titles[state.selectedTitles[0]] : (state.titles?.[0] || topic),
+      selected_description: state.selectedDesc >= 0 ? state.descriptions[state.selectedDesc] : (state.descriptions?.[0] || ''),
+      express_id: state.expressId || '',
+      selected_cover_index: selectedIdx,
+      script: document.getElementById('script').value.trim(),
+    });
+    if (data.ok && data.project_id) {
+      toast('Открываю Cover Editor...');
+      // Open in same tab so user can keep editing — back button returns to Express list
+      window.location.href = '/editor.html?project=' + encodeURIComponent(data.project_id);
+    } else {
+      toast(data.error || 'Не удалось сохранить проект', true);
+    }
+  } catch(e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
 async function saveAsProject() {
   const topic = document.getElementById('topic').value.trim();
   if (!topic) { toast('Сначала введите тему', true); return; }
