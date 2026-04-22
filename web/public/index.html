@@ -3707,15 +3707,49 @@ async function runStep(step, btn) {
   btn.innerHTML = '<span class="loading"></span>Работаю...';
   try {
     const data = await api('/api/run-step', { project_id: currentProject, step });
-    if (data.ok) {
-      toast(`Шаг "${step}" выполнен!`);
-      await refreshDetail();
-    } else {
+    if (!data.ok) {
       toast(data.error || 'Ошибка', true);
+      btn.disabled = false;
+      btn.textContent = t('btn_run');
+      return;
     }
+    toast(`Шаг "${step}" запущен. Ожидаем результат...`);
+    await refreshDetail();
+    // Poll until the step is no longer in_progress. Timeout: 30 min.
+    await pollStepStatus(currentProject, step, { maxSeconds: 1800, intervalMs: 5000 });
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
   btn.textContent = t('btn_run');
+}
+
+// Poll project state until target step finishes (completed/approved/failed/waiting)
+async function pollStepStatus(projectId, step, { maxSeconds = 1800, intervalMs = 5000 } = {}) {
+  const startAt = Date.now();
+  let lastStatus = null;
+  while ((Date.now() - startAt) / 1000 < maxSeconds) {
+    // Stop polling if user switched away from this project
+    if (currentProject !== projectId) return;
+    try {
+      const data = await api(`/api/project/${projectId}`);
+      if (data.ok && data.state) {
+        const st = data.state.steps?.[step]?.status || 'pending';
+        if (st !== lastStatus) {
+          lastStatus = st;
+          // Re-render whenever status transitions
+          if (currentProject === projectId) await refreshDetail();
+        }
+        if (['completed','approved','waiting','failed'].includes(st)) {
+          const msg = st === 'completed' || st === 'approved' ? `Шаг "${step}" готов` :
+                      st === 'failed' ? `Шаг "${step}" упал` :
+                      `Шаг "${step}": ${st}`;
+          toast(msg, st === 'failed');
+          return;
+        }
+      }
+    } catch(e) { /* transient — keep polling */ }
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+  toast(`Шаг "${step}" — таймаут ожидания (${Math.round(maxSeconds/60)} мин). Проверьте позже.`, true);
 }
 
 // ── Restart Step ──
@@ -3728,8 +3762,9 @@ async function restartStep(step, btn) {
     if (!resetData.ok) { toast(resetData.error || 'Ошибка сброса', true); return; }
     const runData = await api('/api/run-step', { project_id: currentProject, step });
     if (runData.ok) {
-      toast(`Шаг «${step}» перезапущен!`);
+      toast(`Шаг «${step}» перезапущен. Ожидаем результат...`);
       await refreshDetail();
+      await pollStepStatus(currentProject, step, { maxSeconds: 1800, intervalMs: 5000 });
     } else {
       toast(runData.error || 'Ошибка запуска', true);
     }

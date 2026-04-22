@@ -2831,7 +2831,7 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     return;
   }
 
-  // POST /api/run-step — run a specific step
+  // POST /api/run-step — fire Python agent in background; client polls /api/project/:id
   if (pathname === '/api/run-step' && req.method === 'POST') {
     try {
       const body = JSON.parse(await readBody(req));
@@ -2840,10 +2840,30 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
         const configFile = path.join(DATA_DIR, body.project_id, 'dubbing_config.json');
         fs.writeFileSync(configFile, JSON.stringify({ languages: body.languages, auto_publish: false }, null, 2), 'utf8');
       }
-      const output = await runAgent(['step', body.project_id, body.step]);
+
+      // Mark step as in_progress immediately so UI polling sees it
       const state = readState(body.project_id);
+      if (state && state.steps[body.step]) {
+        state.steps[body.step].status = 'in_progress';
+        state.steps[body.step].log = state.steps[body.step].log || [];
+        state.steps[body.step].log.push({ time: new Date().toISOString(), message: 'Queued via API' });
+        state.updated_at = new Date().toISOString();
+        fs.writeFileSync(path.join(DATA_DIR, body.project_id, 'state.json'), JSON.stringify(state, null, 2), 'utf8');
+      }
+
+      // Fire agent in background (no await)
+      runAgent(['step', body.project_id, body.step])
+        .then(output => {
+          console.log(`[run-step] ${body.project_id}/${body.step} completed, output length:`, output.length);
+        })
+        .catch(err => {
+          console.error(`[run-step] ${body.project_id}/${body.step} failed:`, err.message);
+          // Python agent should have marked status=failed in state; nothing more to do here
+        });
+
+      // Respond immediately — client will poll state
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, output, state }));
+      res.end(JSON.stringify({ ok: true, started: true, async: true, step: body.step, state }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: err.message }));
