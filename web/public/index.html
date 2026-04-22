@@ -3019,7 +3019,7 @@ async function refreshDetail() {
 
         <!-- Expert photo check -->
         <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;margin-bottom:12px;display:flex;gap:12px;align-items:center;">
-          <img id="refExpertPhoto" src="/api/assets/expert.jpg" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--green);"
+          <img id="refExpertPhoto" src="/api/assets/expert.jpg${state.channel_id ? '?channel_id=' + encodeURIComponent(state.channel_id) : ''}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--green);"
                onerror="this.style.borderColor='var(--red)';this.src='';this.style.background='var(--card)';this.alt='⚠';document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--red);font-weight:600>Фото не загружено!</span> Загрузите в Настройках.'"
                onload="document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--green)>Фото загружено</span>'">
           <div id="expertPhotoStatus" style="font-size:12px;">Проверяю фото...</div>
@@ -4048,9 +4048,21 @@ async function saveContext() {
       toast(t('uploading_photo'));
       const fd = new FormData();
       fd.append('photo', fileInput.files[0]);
-      const resp = await fetch('/api/upload-expert', { method: 'POST', body: fd });
+      // Attach to the selected channel, if any — otherwise global asset
+      const uploadUrl = currentChannelId
+        ? `/api/upload-expert?channel_id=${encodeURIComponent(currentChannelId)}`
+        : '/api/upload-expert';
+      const resp = await fetch(uploadUrl, { method: 'POST', body: fd });
       const r = await resp.json();
-      if (r.ok) toast(t('expert_photo_uploaded'));
+      if (r.ok) {
+        toast(t('expert_photo_uploaded') + (currentChannelId ? ' (канал)' : ''));
+        // Refresh preview — cache-buster ensures we see the new image
+        const preview = el('refExpertPhoto');
+        if (preview) {
+          const suffix = currentChannelId ? `?channel_id=${encodeURIComponent(currentChannelId)}&t=${Date.now()}` : `?t=${Date.now()}`;
+          preview.src = '/api/assets/expert.jpg' + suffix;
+        }
+      }
       else toast(r.error || 'Ошибка загрузки', true);
     } catch (e) { toast(t('photo_upload_error') + e.message, true); }
   }
@@ -4727,6 +4739,19 @@ async function loadChannelContext() {
     if (el('utmSource')) el('utmSource').value = ctx.utm_defaults.source || 'youtube';
     if (el('utmMedium')) el('utmMedium').value = ctx.utm_defaults.medium || 'video_description';
     if (el('utmCampaign')) el('utmCampaign').value = ctx.utm_defaults.campaign || '';
+  }
+
+  // Render expert photo preview for this channel (falls back to global if no per-channel photo)
+  const expPreview = el('expertPreview');
+  if (expPreview) {
+    const src = `/api/assets/expert.jpg?channel_id=${encodeURIComponent(currentChannelId)}&t=${Date.now()}`;
+    expPreview.innerHTML = `
+      <div style="display:flex;gap:10px;align-items:center;">
+        <img src="${src}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--surface-container-highest);"
+             onerror="this.style.display='none';this.nextElementSibling.textContent='Для этого канала фото не загружено';"
+             onload="this.nextElementSibling.textContent='Фото канала';">
+        <span style="font-size:11px;color:var(--on-surface-variant);">Загружаю...</span>
+      </div>`;
   }
 
   // Auto-load saved recommendations (if cache exists)

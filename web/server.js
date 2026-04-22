@@ -2968,15 +2968,25 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     return;
   }
 
-  // POST /api/upload-expert — upload expert photo (multipart form or raw)
+  // POST /api/upload-expert?channel_id=X — upload expert photo
+  // If channel_id given, saves to data/channels/<id>/expert.jpg (per-channel).
+  // Otherwise saves to global assets/expert.jpg.
   if (pathname === '/api/upload-expert' && req.method === 'POST') {
     try {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
       const rawBuffer = Buffer.concat(chunks);
-      const assetsDir = path.join(PIPELINE_DIR, 'assets');
-      if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
-      const expertPath = path.join(assetsDir, 'expert.jpg');
+      const channelId = url.searchParams.get('channel_id') || '';
+      let assetsDir, expertPath;
+      if (channelId) {
+        assetsDir = path.join(DATA_DIR, 'channels', channelId);
+        if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
+        expertPath = path.join(assetsDir, 'expert.jpg');
+      } else {
+        assetsDir = path.join(PIPELINE_DIR, 'assets');
+        if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
+        expertPath = path.join(assetsDir, 'expert.jpg');
+      }
 
       const contentType = req.headers['content-type'] || '';
       if (contentType.includes('multipart/form-data')) {
@@ -3134,9 +3144,18 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
     return;
   }
 
-  // GET /api/assets/expert.jpg — serve expert photo directly
+  // GET /api/assets/expert.jpg[?channel_id=X] — serve expert photo
+  // With channel_id: prefer data/channels/<id>/expert.jpg, fall back to global.
+  // Without: always global.
   if (pathname === '/api/assets/expert.jpg' && req.method === 'GET') {
-    const expertPath = path.join(PIPELINE_DIR, 'assets', 'expert.jpg');
+    const channelId = url.searchParams.get('channel_id') || '';
+    let expertPath;
+    if (channelId) {
+      const perChannel = path.join(DATA_DIR, 'channels', channelId, 'expert.jpg');
+      expertPath = fs.existsSync(perChannel) ? perChannel : path.join(PIPELINE_DIR, 'assets', 'expert.jpg');
+    } else {
+      expertPath = path.join(PIPELINE_DIR, 'assets', 'expert.jpg');
+    }
     if (!fs.existsSync(expertPath)) { res.writeHead(404); res.end('Not found'); return; }
     res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-cache' });
     fs.createReadStream(expertPath).pipe(res);

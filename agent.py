@@ -218,13 +218,33 @@ def cmd_generate_cover_custom(args):
     if text_style_id and text_style_id in TEXT_STYLE_PROMPTS:
         prompt += f" Text style: {TEXT_STYLE_PROMPTS[text_style_id]}."
 
-    # Find expert photo
+    # Find expert photo — prefer per-channel if project has channel_id
+    from config import CHANNELS_DIR
+    from state import PipelineState
     expert_photo = None
-    for name in ["expert.jpg", "expert.png"]:
-        p = BASE_DIR / "assets" / name
-        if p.exists():
-            expert_photo = str(p)
-            break
+
+    # Try to read project's channel_id from state.json (before we create the Pipeline below)
+    try:
+        tmp_state = PipelineState(args.project_id)
+        project_channel_id = tmp_state.channel_id or ""
+    except Exception:
+        project_channel_id = ""
+
+    if project_channel_id:
+        for name in ["expert.jpg", "expert.png"]:
+            p = CHANNELS_DIR / project_channel_id / name
+            if p.exists():
+                expert_photo = str(p)
+                print(f"[cover] using per-channel expert photo: {p}")
+                break
+
+    # Fallback to global
+    if not expert_photo:
+        for name in ["expert.jpg", "expert.png"]:
+            p = BASE_DIR / "assets" / name
+            if p.exists():
+                expert_photo = str(p)
+                break
 
     if not expert_photo:
         print("Error: no expert photo found")
