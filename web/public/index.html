@@ -939,7 +939,7 @@ const T = {
     toast_save_error: 'Ошибка сохранения',
     saved_channel_suffix: ' (канал)',
     toast_upload_error: 'Ошибка загрузки',
-    toast_generic_error: 'Ошибка',
+    toast_generic_error: t('toast_generic_error'),
     // Empty states
     empty_covers: 'Нет обложек',
     empty_videos: 'Нет видео',
@@ -980,6 +980,103 @@ const T = {
     btn_generate_banner: 'Сгенерировать баннер',
     btn_generate_avatar: 'Сгенерировать аватар',
     chars_of_limit: '{n} / 1000 символов',
+    // References / concepts
+    covers_count_suffix: 'обложек',
+    tip_growing_channel_title: 'СОВЕТ ДЛЯ РАСТУЩЕГО КАНАЛА',
+    tip_growing_channel_body: 'Без узнаваемого лица обложка должна компенсировать другими элементами: крупный контрастный текст (2-3 слова), яркая эмоция на лице, интригующий визуал. Используйте стрелки, обводки, эффект «до/после». Топовые каналы показали: максимальный CTR = крупное лицо + 2-3 слова КАПСОМ + яркий фон.',
+    text_label: 'Текст:',
+    inspired_by_label: 'Вдохновлено:',
+    ctr_label: 'CTR:',
+    main_hook_label: 'основной',
+    // Content plan
+    video_titles_label: 'Заголовки видео',
+    hook_label: 'Хук — первые 30 секунд',
+    hook_choose_hint: 'Выберите один вариант хука для вашего видео.',
+    recommended_label: 'Рекомендованный',
+    video_structure: 'Структура видео',
+    total_duration_label: 'Общий хрон.:',
+    cover_label: 'Обложка',
+    cover_emotion: 'Эмоция обложки',
+    why_this_works: 'ПОЧЕМУ ЭТОТ ПЛАН СРАБОТАЕТ',
+    blocks_label: 'Блоков',
+    duration_label: 'Хронометраж',
+    duration_with_words: 'Хронометраж ({words} слов)',
+    tone_label: 'Тон:',
+    key_messages: 'КЛЮЧЕВЫЕ СООБЩЕНИЯ',
+    climax_setup: 'Подводка к кульминации:',
+    pacing_label: 'Темп:',
+    words_real: 'Слов (реально)',
+    duration_wpm: 'Хронометраж (150 сл/мин)',
+    scenes_label: 'Сцен',
+    btn_copy_all: 'Скопировать весь текст',
+    teleprompter_short_warn: 'Текст слишком короткий для видео такой длины. Рекомендуется перегенерировать.',
+    scene_prefix: 'Сцена',
+    words_count: 'слов',
+    rhythm_label: 'Ритм:',
+    audio_track: 'Аудиодорожка (от монтажёра)',
+    audio_track_hint: 'Загрузите MP3 или WAV аудио из финального видео. Видео не нужно — только звук.',
+    choose_languages: 'Выберите языки для дублирования',
+    done_label: 'Готово',
+    errors_label: 'Ошибки',
+    // Recommendations (cached panel)
+    saved_at: 'Сохранено: {date}',
+    btn_regenerate: 'Перегенерировать',
+    generated_now_saved: 'Сгенерировано сейчас — сохранено',
+    themes_working: 'Темы, которые залетают:',
+    themes_not_working: 'Темы, которые не работают:',
+    recommended_topics: 'Рекомендованные темы',
+    related_to: 'Связано с:',
+    appeal_high: 'ВЫСОКИЙ',
+    appeal_medium: 'СРЕДНИЙ',
+    // Channel prompts
+    prompt_channel_name: 'Название канала (будет отображаться в списке):',
+    prompt_channel_niche: 'Ниша канала (например: бизнес, маркетинг, AI):',
+    prompt_channel_audience: 'Целевая аудитория (например: предприниматели 25-45):',
+    prompt_channel_url: 'YouTube URL канала (необязательно):',
+    // Misc channel UI
+    main_channel: t('main_channel'),
+    default_channel: 'Канал по умолчанию',
+    niche_audience_info: 'Ниша: {niche} | ЦА: {audience}',
+    audience_not_set: 'не задана',
+    // Channel not auth card
+    channel_not_connected: 'Канал не подключён к YouTube',
+    channel_not_auth_desc: 'Этот канал не авторизован через OAuth. Чтобы загружать его видео, нужно подключить YouTube-аккаунт именно для этого канала.',
+    btn_connect_youtube: 'Подключить YouTube',
+    // Photo preview
+    photo_uploading: 'Загружаю...',
+    photo_not_for_channel: 'Для этого канала фото не загружено',
+    photo_of_channel: 'Фото канала',
+    // Videos header
+    videos_total: 'Всего {count} видео | Ср. просмотры: {avg}K',
+    // Title editing prompts
+    prompt_edit_title: 'Редактировать заголовок:',
+    chars_count_suffix: '{n} символов',
+    confirm_delete_title: 'Удалить этот заголовок?',
+    confirm_delete_desc: 'Удалить это описание?',
+    // Wizard generation
+    toast_generating_task: 'Генерирую {task}...',
+    task_description: 'описание',
+    task_banner: 'баннер',
+    task_avatar: 'аватар',
+    short_desc_prefix: 'Короткое: {text}',
+    error_with_msg: 'Ошибка: {msg}',
+    toast_generating_asset: 'Генерирую {type}... Это может занять 30-60 сек',
+    toast_asset_generated: '{type} сгенерирован!',
+    // Source list extras
+    from_research_badge: 'из Research',
+    toast_source_added_yt: 'YouTube-видео добавлено! Транскрипт скачается при запуске.',
+    toast_source_added_plain: 'Источник добавлен!',
+    // Dubbing confirm
+    confirm_dubbing: 'Запустить дублирование на {count} языков?\\n\\n{list}\\n\\nЭто может занять 10-30 минут.',
+    toast_dubbing_done: 'Дублирование завершено!',
+    toast_dubbing_err: 'Ошибка дублирования',
+    // 2FA disabled left
+    toast_2fa_disabled_now: '2FA отключена',
+    btn_edit: 'Редактировать',
+    btn_delete: 'Удалить',
+    btn_copy: 'Скопировать',
+    toast_generation_error: 'Ошибка генерации',
+    btn_setup_2fa: 'Настроить 2FA',
     // Projects list
     projects_title: 'Проекты',
     btn_new_project: '+ Новый проект',
@@ -1171,7 +1268,7 @@ const T = {
     status_in_progress: 'Выполняется',
     status_completed: 'Готово',
     status_waiting: 'Ожидание',
-    status_failed: 'Ошибка',
+    status_failed: t('toast_generic_error'),
     status_approved: 'Подтверждено',
     // Buttons
     btn_locked: 'Заблокировано',
@@ -1309,7 +1406,7 @@ const T = {
     description_section: 'Описание для YouTube',
     // Toast / confirm messages
     project_created: 'Проект создан!',
-    error_generic: 'Ошибка',
+    error_generic: t('toast_generic_error'),
     load_error: 'Не удалось загрузить',
     step_done: 'выполнен!',
     step_prefix: 'Шаг',
@@ -1389,7 +1486,7 @@ const T = {
     channel_prompt_url: 'YouTube URL канала (необязательно):',
     channel_created: 'создан!',
     channel_prefix: 'Канал',
-    main_channel: 'Основной канал',
+    main_channel: t('main_channel'),
     default_channel: 'Канал по умолчанию',
     niche_label: 'Ниша:',
     ta_label: 'ЦА:',
@@ -1543,6 +1640,94 @@ const T = {
     btn_generate_banner: 'Generate banner',
     btn_generate_avatar: 'Generate avatar',
     chars_of_limit: '{n} / 1000 characters',
+    // References / concepts
+    covers_count_suffix: 'covers',
+    tip_growing_channel_title: 'TIP FOR A GROWING CHANNEL',
+    tip_growing_channel_body: 'Without a recognizable face, the thumbnail must compensate with other elements: large high-contrast text (2-3 words), a vivid emotion, an intriguing visual. Use arrows, outlines, before/after. Top channels show: max CTR = big face + 2-3 ALL-CAPS words + bright background.',
+    text_label: 'Text:',
+    inspired_by_label: 'Inspired by:',
+    ctr_label: 'CTR:',
+    main_hook_label: 'main',
+    // Content plan
+    video_titles_label: 'Video titles',
+    hook_label: 'Hook — first 30 seconds',
+    hook_choose_hint: 'Choose one hook variant for your video.',
+    recommended_label: 'Recommended',
+    video_structure: 'Video structure',
+    total_duration_label: 'Total duration:',
+    cover_label: 'Cover',
+    cover_emotion: 'Cover emotion',
+    why_this_works: 'WHY THIS PLAN WILL WORK',
+    blocks_label: 'Blocks',
+    duration_label: 'Duration',
+    duration_with_words: 'Duration ({words} words)',
+    tone_label: 'Tone:',
+    key_messages: 'KEY MESSAGES',
+    climax_setup: 'Climax setup:',
+    pacing_label: 'Pacing:',
+    words_real: 'Words (actual)',
+    duration_wpm: 'Duration (150 wpm)',
+    scenes_label: 'Scenes',
+    btn_copy_all: 'Copy all text',
+    teleprompter_short_warn: 'Text too short for a video of this length. Consider regenerating.',
+    scene_prefix: 'Scene',
+    words_count: 'words',
+    rhythm_label: 'Rhythm:',
+    audio_track: 'Audio track (from editor)',
+    audio_track_hint: 'Upload MP3 or WAV audio from the final video. Video file not needed — just the sound.',
+    choose_languages: 'Choose languages for dubbing',
+    done_label: 'Done',
+    errors_label: 'Errors',
+    // Recommendations
+    saved_at: 'Saved: {date}',
+    btn_regenerate: 'Regenerate',
+    generated_now_saved: 'Generated now — saved',
+    themes_working: 'Themes that work:',
+    themes_not_working: 'Themes that don\'t work:',
+    recommended_topics: 'Recommended topics',
+    related_to: 'Related to:',
+    appeal_high: 'HIGH',
+    appeal_medium: 'MEDIUM',
+    // Channel prompts
+    prompt_channel_name: 'Channel name (will appear in the list):',
+    prompt_channel_niche: 'Channel niche (e.g. business, marketing, AI):',
+    prompt_channel_audience: 'Target audience (e.g. entrepreneurs 25-45):',
+    prompt_channel_url: 'YouTube channel URL (optional):',
+    main_channel: 'Main channel',
+    default_channel: 'Default channel',
+    niche_audience_info: 'Niche: {niche} | Audience: {audience}',
+    audience_not_set: 'not set',
+    channel_not_connected: 'Channel not connected to YouTube',
+    channel_not_auth_desc: 'This channel is not authorized via OAuth. To load its videos, connect the YouTube account for this specific channel.',
+    btn_connect_youtube: 'Connect YouTube',
+    photo_uploading: 'Loading...',
+    photo_not_for_channel: 'No photo uploaded for this channel',
+    photo_of_channel: 'Channel photo',
+    videos_total: 'Total {count} videos | Avg views: {avg}K',
+    prompt_edit_title: 'Edit title:',
+    chars_count_suffix: '{n} characters',
+    confirm_delete_title: 'Delete this title?',
+    confirm_delete_desc: 'Delete this description?',
+    toast_generating_task: 'Generating {task}...',
+    task_description: 'description',
+    task_banner: 'banner',
+    task_avatar: 'avatar',
+    short_desc_prefix: 'Short: {text}',
+    error_with_msg: 'Error: {msg}',
+    toast_generating_asset: 'Generating {type}... May take 30-60 sec',
+    toast_asset_generated: '{type} generated!',
+    from_research_badge: 'from Research',
+    toast_source_added_yt: 'YouTube video added! Transcript will be fetched on run.',
+    toast_source_added_plain: 'Source added!',
+    confirm_dubbing: 'Start dubbing to {count} languages?\\n\\n{list}\\n\\nMay take 10-30 minutes.',
+    toast_dubbing_done: 'Dubbing completed!',
+    toast_dubbing_err: 'Dubbing error',
+    toast_2fa_disabled_now: '2FA disabled',
+    btn_edit: 'Edit',
+    btn_delete: 'Delete',
+    btn_copy: 'Copy',
+    toast_generation_error: 'Generation error',
+    btn_setup_2fa: 'Set up 2FA',
     projects_title: 'Projects',
     btn_new_project: '+ New project',
     empty_projects: 'No projects. Click "+ New project" to start.',
@@ -2646,7 +2831,7 @@ async function createProject() {
   if (!topic) return;
   const btn = document.getElementById('btnCreate');
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Создаю...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_creating')}`;
   try {
     const data = await api('/api/new', { topic });
     if (data.ok) {
@@ -2655,7 +2840,7 @@ async function createProject() {
       hideModal();
       await loadProjects();
     } else {
-      toast(data.error || 'Ошибка', true);
+      toast(data.error || t('toast_generic_error'), true);
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
@@ -2850,28 +3035,28 @@ async function refreshDetail() {
     let actionBtn = '';
     if (s.auto && (status === 'pending' || status === 'failed')) {
       if (isLocked) {
-        actionBtn = `<button class="btn btn-outline btn-sm" disabled style="opacity:0.3;" title="Сначала завершите предыдущий шаг">Заблокировано</button>`;
+        actionBtn = `<button class="btn btn-outline btn-sm" disabled style="opacity:0.3;" title="${t('prev_step_hint')}">${t('btn_locked')}</button>`;
       } else {
-        actionBtn = `<button class="btn btn-blue btn-sm" onclick="runStepValidated('${s.key}', this)">Запустить</button>`;
+        actionBtn = `<button class="btn btn-blue btn-sm" onclick="runStepValidated('${s.key}', this)">${t('btn_run')}</button>`;
       }
     } else if (s.auto && (status === 'completed' || status === 'approved')) {
-      actionBtn = `<button class="btn btn-outline btn-sm" onclick="restartStep('${s.key}', this)">Перезапустить</button>`;
+      actionBtn = `<button class="btn btn-outline btn-sm" onclick="restartStep('${s.key}', this)">${t('btn_restart')}</button>`;
     } else if (s.key === 'shooting' && status === 'waiting') {
-      actionBtn = `<button class="btn btn-green btn-sm" onclick="shotDone(this)">Съёмка готова</button>`;
+      actionBtn = `<button class="btn btn-green btn-sm" onclick="shotDone(this)">${t('btn_shot_done')}</button>`;
     } else if (s.key === 'editing' && status === 'waiting') {
-      actionBtn = `<button class="btn btn-green btn-sm" onclick="editDone(this)">Монтаж готов</button>`;
+      actionBtn = `<button class="btn btn-green btn-sm" onclick="editDone(this)">${t('btn_edit_done')}</button>`;
     } else if (s.key === 'dubbing' && (status === 'pending' || status === 'failed')) {
       // Dubbing is always unlocked — works independently if video exists
-      actionBtn = `<button class="btn btn-blue btn-sm" onclick="startDubbing(this)">Запустить дублирование</button>`;
+      actionBtn = `<button class="btn btn-blue btn-sm" onclick="startDubbing(this)">${t('btn_start_dubbing')}</button>`;
     } else if (s.key === 'dubbing' && (status === 'completed' || status === 'approved')) {
-      actionBtn = `<button class="btn btn-outline btn-sm" onclick="startDubbing(this)">Перезапустить</button>`;
+      actionBtn = `<button class="btn btn-outline btn-sm" onclick="startDubbing(this)">${t('btn_restart')}</button>`;
     } else if (!s.auto && status === 'pending' && isLocked) {
-      actionBtn = `<button class="btn btn-outline btn-sm" disabled style="opacity:0.3;">Заблокировано</button>`;
+      actionBtn = `<button class="btn btn-outline btn-sm" disabled style="opacity:0.3;">${t('btn_locked')}</button>`;
     }
 
     let dataToggle = '';
     if (stepState.data && Object.keys(stepState.data).length > 0) {
-      dataToggle = `<button class="btn btn-outline btn-sm" onclick="toggleData('data-${s.key}')">Данные</button>`;
+      dataToggle = `<button class="btn btn-outline btn-sm" onclick="toggleData('data-${s.key}')">${t('btn_data')}</button>`;
     }
 
     // Research results panel
@@ -2901,21 +3086,21 @@ async function refreshDetail() {
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
             <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--blue);">${totalVideos}</div>
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Видео найдено</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('videos_found')}</div>
             </div>
             <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--green);">${(avgRu/1000).toFixed(0)}K</div>
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. просмотры RU</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('avg_views_ru')}</div>
             </div>
             <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
               <div style="font-size:22px;font-weight:700;color:var(--purple);">${(avgEn/1000).toFixed(0)}K</div>
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. просмотры EN</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('avg_views_en')}</div>
             </div>
             ${avgDuration ? `
             <div style="background:var(--surface-container-low);border:1px solid var(--orange);border-radius:8px;padding:12px;flex:1;min-width:120px;text-align:center;">
-              <div style="font-size:22px;font-weight:700;color:var(--orange);">${avgDuration} мин</div>
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Ср. длительность</div>
-              <div style="font-size:10px;color:var(--orange);margin-top:2px;">Рек.: ${recDuration} мин</div>
+              <div style="font-size:22px;font-weight:700;color:var(--orange);">${avgDuration} ${t('min_suffix')}</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('avg_duration')}</div>
+              <div style="font-size:10px;color:var(--orange);margin-top:2px;">${t('rec_prefix')} ${recDuration} ${t('min_suffix')}</div>
             </div>
             ` : ''}
           </div>
@@ -2932,12 +3117,12 @@ async function refreshDetail() {
             </a>
             ` : ''}
             <div style="flex:1;">
-              <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Самое залетевшее видео</div>
+              <div style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${t('best_video')}</div>
               <a href="https://youtube.com/watch?v=${esc(bestVideo.video_id || '')}" target="_blank" style="font-size:16px;font-weight:700;color:var(--text);text-decoration:none;">${esc(bestVideo.title)}</a>
-              ${bestVideo.views ? `<div style="font-size:14px;color:var(--green);margin-top:6px;font-weight:700;">${bestVideo.views >= 1000000 ? (bestVideo.views/1000000).toFixed(1) + 'M' : (bestVideo.views/1000).toFixed(0) + 'K'} просмотров</div>` : ''}
+              ${bestVideo.views ? `<div style="font-size:14px;color:var(--green);margin-top:6px;font-weight:700;">${bestVideo.views >= 1000000 ? (bestVideo.views/1000000).toFixed(1) + 'M' : (bestVideo.views/1000).toFixed(0) + 'K'} ${t('views_suffix')}</div>` : ''}
               ${(() => {
                 const bsubs = bestVideo.subscribers || subsLookup[bestVideo.video_id] || 0;
-                return bsubs ? '<div style="font-size:12px;color:var(--text2);margin-top:2px;">' + (bsubs >= 1000000 ? (bsubs/1000000).toFixed(1) + 'M' : (bsubs/1000).toFixed(1) + 'K') + ' подписчиков на канале</div>' : '';
+                return bsubs ? '<div style="font-size:12px;color:var(--text2);margin-top:2px;">' + (bsubs >= 1000000 ? (bsubs/1000000).toFixed(1) + 'M' : (bsubs/1000).toFixed(1) + 'K') + ' ' + t('subs_on_channel') + '</div>' : '';
               })()}
               <div style="font-size:13px;color:var(--text2);margin-top:8px;line-height:1.5;">${esc(bestVideo.why_it_works || '')}</div>
             </div>
@@ -2946,12 +3131,12 @@ async function refreshDetail() {
 
           <!-- Breakthrough videos -->
           ${breakthroughs.length ? `
-          <div style="font-size:11px;color:var(--orange);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Прорывные ролики — маленький канал, огромные просмотры</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Каналы до 50K подписчиков с непропорционально большими просмотрами. Это самые ценные сигналы — тема залетает независимо от размера канала.</div>
+          <div style="font-size:11px;color:var(--orange);font-weight:700;text-transform:uppercase;margin-bottom:4px;">${t('breakthrough_label')}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${t('breakthrough_desc')}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:10px;margin-bottom:16px;">
             ${breakthroughs.map(b => {
               const daysAgo = b.days_since_publish || 0;
-              const ageText = daysAgo <= 7 ? daysAgo + ' дн. назад' : daysAgo <= 30 ? Math.round(daysAgo/7) + ' нед. назад' : daysAgo <= 365 ? Math.round(daysAgo/30) + ' мес. назад' : '1+ год';
+              const ageText = daysAgo <= 7 ? daysAgo + ' ' + t('days_ago') : daysAgo <= 30 ? Math.round(daysAgo/7) + ' ' + t('weeks_ago') : daysAgo <= 365 ? Math.round(daysAgo/30) + ' ' + t('months_ago') : t('year_plus');
               const vpd = b.views_per_day || 0;
               const speedColor = vpd > 500 ? 'var(--green)' : vpd > 100 ? 'var(--orange)' : 'var(--muted)';
               const speedIcon = vpd > 500 ? '▲▲' : vpd > 100 ? '▲' : '→';
@@ -2963,16 +3148,16 @@ async function refreshDetail() {
                     <span style="background:var(--orange);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">x${Math.round(b.breakthrough_score)}</span>
                     <span style="background:rgba(0,0,0,0.8);color:var(--text);padding:2px 6px;border-radius:4px;font-size:10px;">${ageText}</span>
                   </div>
-                  <div style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:10px;color:${speedColor};">${speedIcon} ${vpd > 1000 ? (vpd/1000).toFixed(1) + 'K' : Math.round(vpd)} просм/день</div>
+                  <div style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:10px;color:${speedColor};">${speedIcon} ${vpd > 1000 ? (vpd/1000).toFixed(1) + 'K' : Math.round(vpd)} ${t('views_per_day')}</div>
                   <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;color:var(--green);">
-                    ${b.views >= 1000000 ? (b.views/1000000).toFixed(1) + 'M' : (b.views/1000).toFixed(0) + 'K'} просм.
+                    ${b.views >= 1000000 ? (b.views/1000000).toFixed(1) + 'M' : (b.views/1000).toFixed(0) + 'K'} ${t('views_short')}
                   </div>
                 </a>
                 <div style="padding:10px;">
                   <a href="https://youtube.com/watch?v=${esc(b.video_id)}" target="_blank" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;display:block;line-height:1.3;">${esc(b.title)}</a>
                   <div style="display:flex;justify-content:space-between;margin-top:4px;">
                     <span style="font-size:11px;color:var(--muted);">${esc(b.channel)}</span>
-                    <span style="font-size:11px;color:var(--text2);">${(b.subscribers/1000).toFixed(1)}K подп.</span>
+                    <span style="font-size:11px;color:var(--text2);">${(b.subscribers/1000).toFixed(1)}K ${t('subs_short')}</span>
                   </div>
                 </div>
               </div>`;
@@ -2981,22 +3166,22 @@ async function refreshDetail() {
           ` : ''}
 
           <!-- Top competitors -->
-          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Все конкуренты</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">${t('all_competitors')}</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:10px;margin-bottom:16px;" id="competitorsGrid">
             ${competitors.slice(0, 8).map((c, ci) => `
               <div style="background:var(--surface-container-low);border:1px solid ${c.is_breakthrough ? 'var(--orange)' : 'var(--border)'};border-radius:8px;overflow:hidden;">
                 <a href="https://youtube.com/watch?v=${esc(c.video_id || '')}" target="_blank" style="display:block;position:relative;">
                   <img src="https://img.youtube.com/vi/${esc(c.video_id || '')}/mqdefault.jpg" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;" onerror="this.style.display='none'">
-                  ${c.is_breakthrough ? `<div style="position:absolute;top:6px;left:6px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">ПРОРЫВ</div>` : ''}
+                  ${c.is_breakthrough ? `<div style="position:absolute;top:6px;left:6px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">${t('breakthrough_badge')}</div>` : ''}
                   <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;color:var(--green);">
-                    ${c.views ? (c.views >= 1000000 ? (c.views/1000000).toFixed(1) + 'M' : (c.views/1000).toFixed(0) + 'K') + ' просм.' : ''}
+                    ${c.views ? (c.views >= 1000000 ? (c.views/1000000).toFixed(1) + 'M' : (c.views/1000).toFixed(0) + 'K') + ' ' + t('views_short') : ''}
                   </div>
                 </a>
                 <div style="padding:10px;">
                   <a href="https://youtube.com/watch?v=${esc(c.video_id || '')}" target="_blank" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;display:block;line-height:1.3;">${esc(c.video_title || '')}</a>
                   ${(() => {
                     const subs = c.subscribers || subsLookup[c.video_id] || 0;
-                    const subsText = subs ? (subs >= 1000000 ? (subs/1000000).toFixed(1) + 'M' : (subs/1000).toFixed(1) + 'K') + ' подп.' : '';
+                    const subsText = subs ? (subs >= 1000000 ? (subs/1000000).toFixed(1) + 'M' : (subs/1000).toFixed(1) + 'K') + ' ' + t('subs_short') : '';
                     return '<div style="display:flex;justify-content:space-between;margin-top:3px;"><span style="font-size:11px;color:var(--muted);">' + esc(c.channel || '') + '</span>' + (subsText ? '<span style="font-size:11px;color:var(--text2);">' + subsText + '</span>' : '') + '</div>';
                   })()}
                   <div style="font-size:10px;margin-top:6px;">
@@ -3011,8 +3196,8 @@ async function refreshDetail() {
           </div>
 
           <!-- Trending angles — selectable with explanations -->
-          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">О чём будем снимать видео?</div>
-          <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Выберите угол подачи. AI проанализировал конкурентов и предлагает варианты — от самого перспективного к менее очевидным.</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">${t('angle_question')}</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">${t('angle_desc')}</div>
 
           <div class="options-grid" id="anglesGrid">
             <!-- Hot angle (AI's #1 recommendation) -->
@@ -3020,8 +3205,8 @@ async function refreshDetail() {
               <div class="option-card" id="angle-hot" onclick="selectAngle('hot', this)" style="border-color:var(--orange);background:rgba(245,158,11,0.04);">
                 <div class="check"></div>
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                  <span style="background:var(--orange);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;">Рекомендация AI</span>
-                  <span style="font-size:10px;color:var(--orange);">Максимальный потенциал просмотров</span>
+                  <span style="background:var(--orange);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;">${t('ai_recommendation')}</span>
+                  <span style="font-size:10px;color:var(--orange);">${t('max_views_potential')}</span>
                 </div>
                 <div class="title-text">${esc(hotAngle)}</div>
                 ${rd.recommended_approach ? `<div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.4;">${esc(rd.recommended_approach)}</div>` : ''}
@@ -3032,7 +3217,7 @@ async function refreshDetail() {
             ${angles.filter(a => a !== hotAngle).map((a, ai) => `
               <div class="option-card" id="angle-${ai}" onclick="selectAngle(${ai}, this)">
                 <div class="check"></div>
-                <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Вариант ${ai + 1}</div>
+                <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">${t('variant_prefix')} ${ai + 1}</div>
                 <div class="title-text">${esc(a)}</div>
               </div>
             `).join('')}
@@ -3040,7 +3225,7 @@ async function refreshDetail() {
 
           ${gaps.length ? `
           <div style="margin-top:12px;">
-            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Что упускают конкуренты</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">${t('gaps_title')}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               ${gaps.map(g => `<span style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);color:var(--purple);padding:4px 8px;border-radius:4px;font-size:11px;">${esc(g)}</span>`).join('')}
             </div>
@@ -3068,30 +3253,30 @@ async function refreshDetail() {
 
         <!-- Add source -->
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-          <input id="sourceUrlInput" placeholder="Вставьте URL статьи или YouTube-видео..." style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;">
-          <button class="btn btn-blue btn-sm" onclick="addSourceSmart()">+ Добавить</button>
-          <button class="btn btn-outline btn-sm" onclick="showAddTextSource()">+ Текст</button>
-          <button class="btn btn-purple btn-sm" onclick="showAddNotebook()" style="background:var(--purple);">+ NotebookLM</button>
+          <input id="sourceUrlInput" placeholder="${t('source_url_ph')}" style="flex:1;min-width:200px;padding:8px 10px;font-size:12px;">
+          <button class="btn btn-blue btn-sm" onclick="addSourceSmart()">${t('btn_add_source')}</button>
+          <button class="btn btn-outline btn-sm" onclick="showAddTextSource()">${t('btn_add_text')}</button>
+          <button class="btn btn-purple btn-sm" onclick="showAddNotebook()" style="background:var(--purple);">${t('btn_add_notebook')}</button>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:-6px;margin-bottom:8px;">YouTube-ссылки определяются автоматически — транскрипт скачивается бесплатно</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:-6px;margin-bottom:8px;">${t('source_yt_hint')}</div>
 
         <div id="addNotebookArea" style="display:none;margin-bottom:10px;background:rgba(168,85,247,0.05);border:1px solid var(--purple);border-radius:8px;padding:12px;">
-          <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">Подключить NotebookLM</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Создайте блокнот в NotebookLM, добавьте YouTube-видео/PDF/статьи, и вставьте ID блокнота.<br>Авторизация живёт ~12-24ч. Если истекла — запустите <code style="background:var(--surface-container-low);padding:2px 4px;border-radius:3px;">nlm login</code> в терминале.</div>
-          <input id="notebookIdInput" placeholder="ID блокнота NotebookLM..." style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
-          <input id="notebookTitleInput" placeholder="Название (необязательно)" style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
+          <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:6px;">${t('notebook_title')}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${t('notebook_desc')}<br>${t('notebook_auth_hint')} <code style="background:var(--surface-container-low);padding:2px 4px;border-radius:3px;">nlm login</code> ${t('notebook_auth_cmd')}</div>
+          <input id="notebookIdInput" placeholder="${t('notebook_id_ph')}" style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
+          <input id="notebookTitleInput" placeholder="${t('notebook_name_ph')}" style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-purple btn-sm" onclick="addNotebookSource()">Подключить</button>
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addNotebookArea').style.display='none'">Отмена</button>
+            <button class="btn btn-purple btn-sm" onclick="addNotebookSource()">${t('btn_connect')}</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addNotebookArea').style.display='none'">${t('btn_cancel')}</button>
           </div>
         </div>
 
         <div id="addTextSourceArea" style="display:none;margin-bottom:10px;">
-          <input id="sourceTextTitle" placeholder="Название заметки..." style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
-          <textarea id="sourceTextContent" rows="4" placeholder="Вставьте текст, заметки, факты..." style="font-size:12px;"></textarea>
+          <input id="sourceTextTitle" placeholder="${t('source_text_title_ph')}" style="margin-bottom:6px;padding:8px 10px;font-size:12px;">
+          <textarea id="sourceTextContent" rows="4" placeholder="${t('source_text_ph')}" style="font-size:12px;"></textarea>
           <div style="display:flex;gap:6px;margin-top:6px;">
-            <button class="btn btn-green btn-sm" onclick="addSourceText()">Добавить текст</button>
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addTextSourceArea').style.display='none'">Отмена</button>
+            <button class="btn btn-green btn-sm" onclick="addSourceText()">${t('btn_add_text_confirm')}</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('addTextSourceArea').style.display='none'">${t('btn_cancel')}</button>
           </div>
         </div>
 
@@ -3100,11 +3285,11 @@ async function refreshDetail() {
 
         ${hasExtracted ? `
         <!-- Extracted data -->
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Извлечённые данные</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">${t('extracted_data')}</div>
 
         ${sd.summary ? `
         <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px;margin-bottom:10px;">
-          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">РЕЗЮМЕ ИСТОЧНИКОВ</div>
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">${t('sources_summary')}</div>
           <div style="font-size:12px;color:var(--text2);line-height:1.5;">${esc(sd.summary)}</div>
         </div>
         ` : ''}
@@ -3112,15 +3297,15 @@ async function refreshDetail() {
         <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;margin-bottom:10px;">
           ${(sd.facts || []).map(f => `
             <div style="background:var(--surface-container-low);border:none;border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 10px;">
-              <div style="font-size:9px;color:var(--green);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Факт</div>
+              <div style="font-size:9px;color:var(--green);font-weight:600;text-transform:uppercase;margin-bottom:2px;">${t('label_fact')}</div>
               <div style="font-size:12px;color:var(--text);line-height:1.4;">${esc(f.text || '')}</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:3px;">Источник: ${esc(f.source || '?')}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">${t('source_label')} ${esc(f.source || '?')}</div>
             </div>
           `).join('')}
 
           ${(sd.quotes || []).map(q => `
             <div style="background:var(--surface-container-low);border:none;border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:8px 10px;">
-              <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Цитата</div>
+              <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase;margin-bottom:2px;">${t('label_quote')}</div>
               <div style="font-size:12px;color:var(--text);line-height:1.4;font-style:italic;">"${esc(q.text || '')}"</div>
               <div style="font-size:10px;color:var(--muted);margin-top:3px;">— ${esc(q.author || '?')} (${esc(q.source || '')})</div>
             </div>
@@ -3128,22 +3313,22 @@ async function refreshDetail() {
 
           ${(sd.statistics || []).map(s => `
             <div style="background:var(--surface-container-low);border:none;border-left:3px solid var(--orange);border-radius:0 6px 6px 0;padding:8px 10px;">
-              <div style="font-size:9px;color:var(--orange);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Статистика</div>
+              <div style="font-size:9px;color:var(--orange);font-weight:600;text-transform:uppercase;margin-bottom:2px;">${t('label_stat')}</div>
               <div style="font-size:16px;font-weight:700;color:var(--orange);">${esc(s.metric || '')}</div>
               <div style="font-size:11px;color:var(--text2);">${esc(s.context || '')}</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px;">Источник: ${esc(s.source || '?')}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">${t('source_label')} ${esc(s.source || '?')}</div>
             </div>
           `).join('')}
         </div>
 
         ${(sd.key_insights || []).length ? `
         <div style="margin-bottom:10px;">
-          <div style="font-size:10px;color:var(--purple);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Ключевые инсайты</div>
+          <div style="font-size:10px;color:var(--purple);font-weight:600;text-transform:uppercase;margin-bottom:4px;">${t('key_insights')}</div>
           ${sd.key_insights.map(ins => `<div style="font-size:12px;color:var(--text2);padding:3px 0;">• ${esc(ins)}</div>`).join('')}
         </div>
         ` : ''}
         ` : `
-        ${!isSkipped ? '<div style="font-size:12px;color:var(--muted);padding:12px;text-align:center;">Добавьте источники и нажмите "Запустить" чтобы извлечь факты и цитаты.</div>' : ''}
+        ${!isSkipped ? `<div style="font-size:12px;color:var(--muted);padding:12px;text-align:center;">${t('add_sources_hint')}</div>` : ''}
         `}
       </div>`;
     }
@@ -3166,59 +3351,59 @@ async function refreshDetail() {
         <!-- Expert photo check -->
         <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;margin-bottom:12px;display:flex;gap:12px;align-items:center;">
           <img id="refExpertPhoto" src="/api/assets/expert.jpg${state.channel_id ? '?channel_id=' + encodeURIComponent(state.channel_id) : ''}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid var(--green);"
-               onerror="this.style.borderColor='var(--red)';this.src='';this.style.background='var(--card)';this.alt='⚠';document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--red);font-weight:600>Фото не загружено!</span> Загрузите в Настройках.'"
-               onload="document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--green)>Фото загружено</span>'">
-          <div id="expertPhotoStatus" style="font-size:12px;">Проверяю фото...</div>
+               onerror="this.style.borderColor='var(--red)';this.src='';this.style.background='var(--card)';this.alt='⚠';document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--red);font-weight:600>'+t('photo_not_uploaded')+'</span> '+t('photo_upload_settings')"
+               onload="document.getElementById('expertPhotoStatus').innerHTML='<span style=color:var(--green)>'+t('photo_uploaded')+'</span>'">
+          <div id="expertPhotoStatus" style="font-size:12px;">${t('checking_photo')}</div>
         </div>
 
         <!-- Pattern analysis -->
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Анализ обложек конкурентов (${totalRefs} обложек)</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">${t('cover_analysis')} (${totalRefs} ${t('covers_count_suffix')})</div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:8px;margin-bottom:16px;">
           <!-- Fonts -->
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="margin-bottom:4px;"><span class="material-symbols-outlined" style="font-size:18px;color:var(--muted);">font_download</span></div>
-            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Шрифты</div>
-            <div style="font-size:11px;color:var(--text2);">Стили: ${esc((fonts.dominant_styles || []).join(', '))}</div>
-            <div style="font-size:11px;color:var(--text2);">Длина: ${esc(fonts.text_length || '—')}</div>
-            <div style="font-size:11px;color:var(--text2);">Позиция: ${esc(fonts.text_position || '—')}</div>
-            <div style="font-size:11px;color:var(--text2);">Регистр: ${esc(fonts.capitalization || '—')}</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">${t('label_fonts')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('fonts_styles')} ${esc((fonts.dominant_styles || []).join(', '))}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('fonts_length')} ${esc(fonts.text_length || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('fonts_position')} ${esc(fonts.text_position || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('fonts_case')} ${esc(fonts.capitalization || '—')}</div>
           </div>
 
           <!-- Colors -->
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="margin-bottom:4px;"><span class="material-symbols-outlined" style="font-size:18px;color:var(--muted);">palette</span></div>
-            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Цвета</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">${t('label_colors')}</div>
             <div style="display:flex;gap:4px;margin-bottom:4px;">
               ${((colors.dominant_palettes || [])[0] || []).map(c => `<div style="width:20px;height:20px;border-radius:4px;background:${esc(c)};border:1px solid rgba(255,255,255,0.1);"></div>`).join('')}
             </div>
-            <div style="font-size:11px;color:var(--text2);">Контраст: ${esc(colors.contrast_level || '—')}</div>
-            <div style="font-size:11px;color:var(--text2);">Фон: ${esc(colors.background_type || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('colors_contrast')} ${esc(colors.contrast_level || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('colors_bg')} ${esc(colors.background_type || '—')}</div>
           </div>
 
           <!-- Composition -->
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="margin-bottom:4px;"><span class="material-symbols-outlined" style="font-size:18px;color:var(--muted);">grid_on</span></div>
-            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Композиция</div>
-            <div style="font-size:11px;color:var(--text2);">Лицо: ${esc(composition.face_present || '—')}</div>
-            <div style="font-size:11px;color:var(--text2);">Позиция: ${esc(composition.face_position || '—')}</div>
-            <div style="font-size:11px;color:var(--text2);">Размер: ${esc(composition.face_size || '—')}</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">${t('label_composition')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('comp_face')} ${esc(composition.face_present || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('comp_face_pos')} ${esc(composition.face_position || '—')}</div>
+            <div style="font-size:11px;color:var(--text2);">${t('comp_face_size')} ${esc(composition.face_size || '—')}</div>
           </div>
 
           <!-- Clickbait -->
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:12px;">
             <div style="margin-bottom:4px;"><span class="material-symbols-outlined" style="font-size:18px;color:var(--muted);">ads_click</span></div>
-            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">Кликбейт-элементы</div>
+            <div style="font-size:11px;font-weight:600;margin-bottom:4px;">${t('label_clickbait')}</div>
             ${clickbait.map(c => `<div style="font-size:11px;color:var(--text2);">• ${esc(c)}</div>`).join('')}
           </div>
         </div>
 
         <!-- Reference thumbnails from research -->
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Обложки конкурентов</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">${t('competitor_covers')}</div>
         <div id="refThumbsGrid" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;overflow-x:auto;"></div>
 
         <!-- Concepts -->
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Концепции обложек</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">${t('cover_concepts')}</div>
         <div style="display:grid;gap:10px;margin-bottom:12px;">
           ${concepts.map((c, ci) => {
             const isRec = c.name === recommended;
@@ -3226,42 +3411,42 @@ async function refreshDetail() {
             <div style="background:${isRec ? 'rgba(34,197,94,0.05)' : 'var(--bg)'};border:2px solid ${isRec ? 'var(--green)' : 'var(--border)'};border-radius:10px;padding:14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-size:14px;font-weight:700;color:var(--purple);">${esc(c.name || 'Концепт ' + (ci+1))}</span>
-                  ${isRec ? '<span style="background:var(--green);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;">РЕКОМЕНДОВАННЫЙ</span>' : ''}
+                  <span style="font-size:14px;font-weight:700;color:var(--purple);">${esc(c.name || t('concept_prefix') + ' ' + (ci+1))}</span>
+                  ${isRec ? `<span style="background:var(--green);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;">${t('recommended_badge')}</span>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:4px;">
-                  <span style="font-size:12px;font-weight:700;color:var(--orange);">CTR: ${c.ctr_score || '?'}/10</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--orange);">${t('ctr_label')} ${c.ctr_score || '?'}/10</span>
                 </div>
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div>
-                  <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Сцена (промпт)</div>
+                  <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">${t('scene_prompt')}</div>
                   <div style="font-size:12px;color:var(--text2);line-height:1.4;">${esc(c.scene_description || '')}</div>
                 </div>
                 <div>
-                  <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Эмоция и стиль</div>
-                  <div style="font-size:12px;color:var(--text2);">Эмоция: ${esc(c.emotion || c.expert_expression || '—')}</div>
-                  <div style="font-size:12px;color:var(--text2);">Стиль: ${esc(c.style || '—')}</div>
-                  <div style="font-size:12px;color:var(--text2);">Эксперт: ${esc(c.expert_position || '—')}</div>
+                  <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">${t('emotion_style')}</div>
+                  <div style="font-size:12px;color:var(--text2);">${t('emotion_label')} ${esc(c.emotion || c.expert_expression || '—')}</div>
+                  <div style="font-size:12px;color:var(--text2);">${t('style_label')} ${esc(c.style || '—')}</div>
+                  <div style="font-size:12px;color:var(--text2);">${t('expert_label')} ${esc(c.expert_position || '—')}</div>
                 </div>
               </div>
 
               <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
                 <div style="font-size:22px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:${esc(c.text_color || '#fff')};text-shadow:0 0 4px ${esc(c.text_stroke_color || '#000')};background:linear-gradient(135deg, ${(c.background_colors || ['#333','#111']).join(',')});padding:6px 14px;border-radius:6px;">${esc(c.text_overlay || '')}</div>
-                <div style="font-size:10px;color:var(--muted);">Текст: ${esc(c.text_position || '—')}</div>
+                <div style="font-size:10px;color:var(--muted);">${t('text_label')} ${esc(c.text_position || '—')}</div>
               </div>
 
               ${c.ctr_reasoning ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic;">${esc(c.ctr_reasoning)}</div>` : ''}
-              ${c.inspired_by ? `<div style="font-size:10px;color:var(--text2);margin-top:2px;">Вдохновлено: ${esc(c.inspired_by)}</div>` : ''}
+              ${c.inspired_by ? `<div style="font-size:10px;color:var(--text2);margin-top:2px;">${t('inspired_by_label')} ${esc(c.inspired_by)}</div>` : ''}
             </div>`;
           }).join('')}
         </div>
 
         <!-- Tip for small channels -->
         <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px;">
-          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">СОВЕТ ДЛЯ РАСТУЩЕГО КАНАЛА</div>
-          <div style="font-size:12px;color:var(--text2);line-height:1.5;">Без узнаваемого лица обложка должна компенсировать другими элементами: крупный контрастный текст (2-3 слова), яркая эмоция на лице, интригующий визуал. Используйте стрелки, обводки, эффект «до/после». Топовые каналы показали: максимальный CTR = крупное лицо + 2-3 слова КАПСОМ + яркий фон.</div>
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">${t('tip_growing_channel_title')}</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">${t('tip_growing_channel_body')}</div>
         </div>
 
       </div>`;
@@ -3272,7 +3457,7 @@ async function refreshDetail() {
     if (s.key === 'content_plan' && stepState.data && (status === 'completed' || status === 'approved')) {
       const cpd = stepState.data;
       const titles = cpd.titles || [cpd.title, cpd.subtitle].filter(Boolean);
-      const hooks = cpd.hooks || (cpd.hook ? [{ style: 'основной', text: cpd.hook, why: '' }] : []);
+      const hooks = cpd.hooks || (cpd.hook ? [{ style: t('main_hook_label'), text: cpd.hook, why: '' }] : []);
       const structure = cpd.structure || [];
       const thumbText = cpd.thumbnail_text || '';
       const thumbEmotion = cpd.thumbnail_emotion || '';
@@ -3283,17 +3468,17 @@ async function refreshDetail() {
       titlePanel = `<div style="margin-top:12px;">
 
         <!-- Titles -->
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">Заголовки видео</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">${t('video_titles_label')}</div>
         <div class="options-grid" id="dashTitlesGrid">
           ${titles.map((t, ti) => `
             <div class="option-card" id="dtitle-${ti}" onclick="toggleDashTitle(${ti})">
               <div class="check"></div>
               <div class="card-actions">
-                <button onclick="event.stopPropagation(); editDashTitle(${ti})" title="Редактировать">✏</button>
-                <button class="btn-delete" onclick="event.stopPropagation(); removeDashTitle(${ti})" title="Удалить">×</button>
+                <button onclick="event.stopPropagation(); editDashTitle(${ti})" title="${t('btn_edit')}">✏</button>
+                <button class="btn-delete" onclick="event.stopPropagation(); removeDashTitle(${ti})" title="${t('btn_delete')}">×</button>
               </div>
               <div class="title-text">${esc(t)}</div>
-              <div class="char-count">${t.length} символов</div>
+              <div class="char-count">${tp('chars_count_suffix', { n: t.length })}</div>
             </div>
           `).join('')}
         </div>
@@ -3301,15 +3486,15 @@ async function refreshDetail() {
         <!-- Hooks (selectable) -->
         ${hooks.length ? `
         <div style="margin-top:16px;">
-          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Хук — первые 30 секунд</div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">Выберите один вариант хука для вашего видео.</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">${t('hook_label')}</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">${t('hook_choose_hint')}</div>
           <div style="display:grid;gap:8px;" id="hooksGrid">
             ${hooks.map((h, hi) => `
               <div class="option-card" id="hook-${hi}" onclick="selectHook(${hi})" style="padding:14px;">
                 <div class="check"></div>
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                  <span style="background:${hi === 0 ? 'var(--green)' : 'var(--border)'};color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;text-transform:uppercase;">${esc(h.style || 'Вариант ' + (hi+1))}</span>
-                  ${hi === 0 ? '<span style="font-size:10px;color:var(--green);">Рекомендованный</span>' : ''}
+                  <span style="background:${hi === 0 ? 'var(--green)' : 'var(--border)'};color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;text-transform:uppercase;">${esc(h.style || (t('variant_prefix') + ' ' + (hi+1)))}</span>
+                  ${hi === 0 ? `<span style="font-size:10px;color:var(--green);">${t('recommended_label')}</span>` : ''}
                 </div>
                 <div class="title-text" style="font-size:13px;line-height:1.6;font-weight:400;white-space:pre-wrap;padding-right:32px;">${esc(h.text || '')}</div>
                 ${h.why ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;">${esc(h.why)}</div>` : ''}
@@ -3323,8 +3508,8 @@ async function refreshDetail() {
         ${structure.length ? `
         <div style="margin-top:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;">Структура видео</div>
-            <div style="font-size:12px;color:var(--text2);">Общий хрон.: <strong>${totalMin} мин</strong></div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;">${t('video_structure')}</div>
+            <div style="font-size:12px;color:var(--text2);">${t('total_duration_label')} <strong>${totalMin} ${t('min_suffix')}</strong></div>
           </div>
 
           <!-- Timeline bar -->
@@ -3332,7 +3517,7 @@ async function refreshDetail() {
             ${structure.map((b, bi) => {
               const colors = ['var(--red)', 'var(--blue)', 'var(--green)', 'var(--purple)', 'var(--orange)', 'var(--magenta)', 'var(--blue)', 'var(--green)'];
               const pct = totalMin > 0 ? (b.duration_minutes / totalMin * 100) : 10;
-              return `<div style="flex:${pct};background:${colors[bi % colors.length]};border-radius:2px;" title="${esc(b.section)}: ${b.duration_minutes} мин"></div>`;
+              return `<div style="flex:${pct};background:${colors[bi % colors.length]};border-radius:2px;" title="${esc(b.section)}: ${b.duration_minutes} ${t('min_suffix')}"></div>`;
             }).join('')}
           </div>
 
@@ -3352,7 +3537,7 @@ async function refreshDetail() {
                   <div style="flex-shrink:0;text-align:center;min-width:50px;">
                     <div style="font-size:18px;">${icon}</div>
                     <div style="font-size:10px;color:var(--muted);margin-top:2px;">${startMin}:00</div>
-                    <div style="font-size:11px;font-weight:700;color:${color};">${b.duration_minutes} мин</div>
+                    <div style="font-size:11px;font-weight:700;color:${color};">${b.duration_minutes} ${t('min_suffix')}</div>
                   </div>
                   <div style="flex:1;">
                     <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${esc(b.section || '')}</div>
@@ -3370,14 +3555,14 @@ async function refreshDetail() {
         <!-- Thumbnail Text & Emotion -->
         ${thumbText || thumbEmotion ? `
         <div style="margin-top:16px;">
-          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">Обложка</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;">${t('cover_label')}</div>
           <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <!-- Emotion -->
             ${thumbEmotion ? `
             <div style="background:var(--surface-container-low);border:none;border-radius:10px;padding:16px;text-align:center;min-width:120px;">
               <div style="font-size:40px;margin-bottom:6px;">${emotionEmoji[thumbEmotion.toLowerCase()] || '—'}</div>
               <div style="font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;">${esc(thumbEmotion)}</div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px;">Эмоция обложки</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">${t('cover_emotion')}</div>
             </div>
             ` : ''}
             <!-- Text variants -->
@@ -3385,7 +3570,7 @@ async function refreshDetail() {
               ${thumbVariants.map((tv, tvi) => `
                 <div style="background:var(--surface-container-low);border:2px solid ${tvi === 0 ? 'var(--orange)' : 'var(--border)'};border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
                   <div style="font-size:18px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">${esc(tv)}</div>
-                  ${tvi === 0 ? '<span style="font-size:9px;color:var(--orange);font-weight:600;">РЕКОМЕНДОВАННЫЙ</span>' : ''}
+                  ${tvi === 0 ? `<span style="font-size:9px;color:var(--orange);font-weight:600;">${t('recommended_badge')}</span>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -3396,7 +3581,7 @@ async function refreshDetail() {
         <!-- Why it will work -->
         ${cpd.why_this_will_work ? `
         <div style="margin-top:16px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px;">
-          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">ПОЧЕМУ ЭТОТ ПЛАН СРАБОТАЕТ</div>
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:4px;">${t('why_this_works')}</div>
           <div style="font-size:12px;color:var(--text2);line-height:1.5;">${esc(cpd.why_this_will_work)}</div>
         </div>
         ` : ''}
@@ -3446,15 +3631,15 @@ async function refreshDetail() {
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
             <div style="font-size:20px;font-weight:700;color:var(--blue);">${blocks.length}</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Блоков</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('blocks_label')}</div>
           </div>
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
-            <div style="font-size:20px;font-weight:700;color:var(--green);">~${realDurMin} мин</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж (${wordCount} слов)</div>
+            <div style="font-size:20px;font-weight:700;color:var(--green);">~${realDurMin} ${t('min_suffix')}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${tp('duration_with_words', { words: wordCount })}</div>
           </div>
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;flex:1;min-width:100px;text-align:center;">
             <div style="font-size:20px;font-weight:700;color:var(--purple);">${sd.tone ? '✓' : '—'}</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Тон: ${esc((sd.tone || '').substring(0, 20))}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('tone_label')} ${esc((sd.tone || '').substring(0, 20))}</div>
           </div>
         </div>
 
@@ -3515,20 +3700,20 @@ async function refreshDetail() {
 
         ${keyMessages.length ? `
         <div style="margin-top:14px;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:8px;padding:12px;">
-          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:6px;">КЛЮЧЕВЫЕ СООБЩЕНИЯ</div>
+          <div style="font-size:11px;color:var(--blue);font-weight:600;margin-bottom:6px;">${t('key_messages')}</div>
           ${keyMessages.map(function(m) { return '<div style="font-size:12px;color:var(--text2);padding:2px 0;">• ' + esc(m) + '</div>'; }).join('')}
         </div>
         ` : ''}
 
         ${sd.climax_setup ? `
         <div style="margin-top:8px;font-size:11px;color:var(--muted);">
-          <span style="font-weight:600;">Подводка к кульминации:</span> ${esc(sd.climax_setup)}
+          <span style="font-weight:600;">${t('climax_setup')}</span> ${esc(sd.climax_setup)}
         </div>
         ` : ''}
 
         ${sd.pacing_notes ? `
         <div style="margin-top:4px;font-size:11px;color:var(--muted);">
-          <span style="font-weight:600;">Темп:</span> ${esc(sd.pacing_notes)}
+          <span style="font-weight:600;">${t('pacing_label')}</span> ${esc(sd.pacing_notes)}
         </div>
         ` : ''}
 
@@ -3559,20 +3744,20 @@ async function refreshDetail() {
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
           <div style="background:var(--surface-container-low);border:1px solid ${isShort ? 'var(--red)' : 'var(--border)'};border-radius:8px;padding:10px;text-align:center;min-width:100px;">
             <div style="font-size:20px;font-weight:700;color:${isShort ? 'var(--red)' : 'var(--blue)'};">${realWordCount}</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Слов (реально)</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('words_real')}</div>
           </div>
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;text-align:center;min-width:100px;">
             <div style="font-size:20px;font-weight:700;color:var(--green);">~${realReadMin} мин</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Хронометраж (150 сл/мин)</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('duration_wpm')}</div>
           </div>
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;text-align:center;min-width:100px;">
             <div style="font-size:20px;font-weight:700;color:var(--purple);">${scenes.length}</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Сцен</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">${t('scenes_label')}</div>
           </div>
           <div style="flex:1;"></div>
-          <button class="btn btn-blue btn-sm" onclick="copyTeleprompterAll()">Скопировать весь текст</button>
+          <button class="btn btn-blue btn-sm" onclick="copyTeleprompterAll()">${t('btn_copy_all')}</button>
         </div>
-        ${isShort ? '<div style="background:rgba(239,68,68,0.08);border:1px solid var(--red);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--red);">⚠ Текст слишком короткий для видео 10+ минут. Нужно минимум 1500 слов (сейчас ' + realWordCount + '). Перегенерируйте телесуфлёр.</div>' : ''}`;
+        ${isShort ? '<div style="background:rgba(239,68,68,0.08);border:1px solid var(--red);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--red);">⚠ ' + t('teleprompter_short_warn') + ' (' + realWordCount + ' ' + t('words_count') + ')</div>' : ''}`;
         })()}
 
         <!-- Scenes -->
@@ -3587,13 +3772,13 @@ async function refreshDetail() {
               <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);">
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="font-size:16px;">${icon}</span>
-                  <span style="font-size:13px;font-weight:700;">${esc(sc.scene_name || 'Сцена ' + (si+1))}</span>
+                  <span style="font-size:13px;font-weight:700;">${esc(sc.scene_name || (t('scene_prefix') + ' ' + (si+1)))}</span>
                   ${sc.timestamp ? '<span style="font-size:10px;color:var(--muted);">' + esc(sc.timestamp) + '</span>' : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   ${sc.emotion_tone ? '<span style="font-size:10px;color:var(--muted);font-style:italic;">' + esc(sc.emotion_tone) + '</span>' : ''}
-                  <span style="font-size:10px;color:var(--muted);">${wordCount} слов</span>
-                  <button class="btn btn-outline btn-xs" onclick="copySceneText(${si})" title="Скопировать"><span class="material-symbols-outlined" style="font-size:14px;">content_copy</span></button>
+                  <span style="font-size:10px;color:var(--muted);">${wordCount} ${t('words_count')}</span>
+                  <button class="btn btn-outline btn-xs" onclick="copySceneText(${si})" title="${t('btn_copy')}"><span class="material-symbols-outlined" style="font-size:14px;">content_copy</span></button>
                 </div>
               </div>
               <div style="padding:14px 16px;font-size:15px;line-height:1.8;white-space:pre-wrap;color:var(--text);font-family:var(--font-sans);" id="scene-text-${si}">${esc(text)}</div>
@@ -3603,7 +3788,7 @@ async function refreshDetail() {
 
         ${td.pacing_summary ? `
         <div style="margin-top:10px;font-size:11px;color:var(--muted);">
-          <span style="font-weight:600;">Ритм:</span> ${esc(td.pacing_summary)}
+          <span style="font-weight:600;">${t('rhythm_label')}</span> ${esc(td.pacing_summary)}
         </div>
         ` : ''}
 
@@ -3631,12 +3816,12 @@ async function refreshDetail() {
         <div style="margin-top:12px;background:var(--surface-container-low);border:none;border-radius:10px;padding:16px;">
           <!-- Audio upload -->
           <div style="margin-bottom:16px;">
-            <div style="font-weight:700;font-size:14px;margin-bottom:8px;">Аудиодорожка (от монтажёра)</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Загрузите MP3 или WAV аудио из финального видео. Видео не нужно — только звук.</div>
+            <div style="font-weight:700;font-size:14px;margin-bottom:8px;">${t('audio_track')}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${t('audio_track_hint')}</div>
             <div id="dubbingAudioStatus" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
             <div style="display:flex;gap:8px;align-items:center;">
               <input type="file" id="dubbingAudioFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" style="font-size:12px;flex:1;">
-              <button class="btn btn-outline btn-sm" onclick="uploadDubbingAudio(this)">Загрузить</button>
+              <button class="btn btn-outline btn-sm" onclick="uploadDubbingAudio(this)">${t('btn_upload')}</button>
             </div>
             <div id="dubbingUploadProgress" style="display:none;margin-top:6px;">
               <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
@@ -3645,7 +3830,7 @@ async function refreshDetail() {
             </div>
           </div>
           <!-- Language selection -->
-          <div style="font-weight:700;font-size:14px;margin-bottom:12px;">Выберите языки для дублирования</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:12px;">${t('choose_languages')}</div>
           <div id="dubbingLangSelect" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;">
             ${Object.entries(allLangs).map(([code, info]) => `
               <label style="display:flex;align-items:center;gap:8px;padding:10px;border:none;border-radius:8px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -3668,12 +3853,12 @@ async function refreshDetail() {
           <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
             <div style="background:var(--surface-container-low);border:1px solid var(--green);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
               <div style="font-size:22px;font-weight:700;color:var(--green);">${completed.length}</div>
-              <div style="font-size:10px;color:var(--muted);">Готово</div>
+              <div style="font-size:10px;color:var(--muted);">${t('done_label')}</div>
             </div>
             ${failed.length ? `
             <div style="background:var(--surface-container-low);border:1px solid var(--red);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
               <div style="font-size:22px;font-weight:700;color:var(--red);">${failed.length}</div>
-              <div style="font-size:10px;color:var(--muted);">Ошибки</div>
+              <div style="font-size:10px;color:var(--muted);">${t('errors_label')}</div>
             </div>` : ''}
           </div>
           <div style="display:grid;gap:8px;">
@@ -3962,17 +4147,17 @@ async function startDubbing(btn) {
     return;
   }
 
-  if (!confirm(`Запустить дублирование на ${languages.length} языков?\n\n${languages.join(', ')}\n\nЭто может занять 10-30 минут.`)) return;
+  if (!confirm(tp('confirm_dubbing', { count: languages.length, list: languages.join(', ') }))) return;
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Дублирование...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_dubbing')}`;
   try {
     const data = await api('/api/run-step', { project_id: currentProject, step: 'dubbing', languages });
     if (data.ok) {
-      toast(`Дублирование завершено!`);
+      toast(t('toast_dubbing_done'));
       await refreshDetail();
     } else {
-      toast(data.error || 'Ошибка дублирования', true);
+      toast(data.error || t('toast_dubbing_err'), true);
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
@@ -4253,7 +4438,7 @@ function renderStylesGallery() {
       <img src="/api/styles/${s.id}/image" alt="${esc(s.name)}">
       <div class="style-name">${esc(s.name)}</div>
       ${s.prompt ? `<div class="style-prompt">${esc(s.prompt)}</div>` : ''}
-      <button class="style-delete" onclick="event.stopPropagation(); deleteStyle('${s.id}')" title="Удалить">×</button>
+      <button class="style-delete" onclick="event.stopPropagation(); deleteStyle('${s.id}')" title="${t('btn_delete')}">×</button>
     </div>
   `).join('');
 }
@@ -4296,13 +4481,13 @@ async function uploadStyle() {
       fileInput.value = '';
       await loadStyles();
     } else {
-      toast(r.error || 'Ошибка', true);
+      toast(r.error || t('toast_generic_error'), true);
     }
   } catch (e) { toast(e.message, true); }
 }
 
 async function deleteStyle(id) {
-  if (!confirm('Удалить этот стиль?')) return;
+  if (!confirm(t('confirm_delete_style'))) return;
   await fetch(`/api/styles/${id}`, { method: 'DELETE' });
   if (selectedStyleId === id) selectedStyleId = '';
   await loadStyles();
@@ -4354,7 +4539,7 @@ function renderCoverStyleSelect() {
   const container = document.getElementById('coverStyleSelect');
   if (!container) return;
   if (allStyles.length === 0) {
-    container.innerHTML = '<p style="color:var(--muted);font-size:12px;">Нет стилей. Загрузите в настройках.</p>';
+    container.innerHTML = `<p style="color:var(--muted);font-size:12px;">${t('no_styles_modal')}</p>`;
     return;
   }
   container.innerHTML = allStyles.map(s => `
@@ -4379,7 +4564,7 @@ async function generateCustomCover() {
 
   const btn = el('btnGenCover');
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Генерирую...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_generating')}`;
 
   try {
     const data = await api('/api/generate-cover-custom', {
@@ -4394,7 +4579,7 @@ async function generateCustomCover() {
       hideCoverModal();
       await refreshDetail();
     } else {
-      toast(data.error || 'Ошибка генерации', true);
+      toast(data.error || t('toast_generation_error'), true);
     }
   } catch (e) { toast(e.message, true); }
 
@@ -4438,11 +4623,11 @@ async function addSourceSmart() {
 
   const data = await api(`/api/project/${currentProject}/sources`, { type, url });
   if (data.ok) {
-    toast(isYoutube ? 'YouTube-видео добавлено! Транскрипт скачается при запуске.' : 'Источник добавлен!');
+    toast(isYoutube ? t('toast_source_added_yt') : t('toast_source_added_plain'));
     input.value = '';
     loadSourcesList();
   } else {
-    toast(data.error || 'Ошибка', true);
+    toast(data.error || t('toast_generic_error'), true);
   }
 }
 
@@ -4456,7 +4641,7 @@ async function addSourceText() {
   if (!content) { toast(t('enter_text'), true); return; }
   if (!currentProject) return;
 
-  const data = await api(`/api/project/${currentProject}/sources`, { type: 'text', title: title || 'Заметки', content });
+  const data = await api(`/api/project/${currentProject}/sources`, { type: 'text', title: title || t('expert_notes_empty'), content });
   if (data.ok) {
     toast(t('text_added'));
     document.getElementById('sourceTextTitle').value = '';
@@ -4464,12 +4649,12 @@ async function addSourceText() {
     document.getElementById('addTextSourceArea').style.display = 'none';
     loadSourcesList();
   } else {
-    toast(data.error || 'Ошибка', true);
+    toast(data.error || t('toast_generic_error'), true);
   }
 }
 
 async function removeSource(sourceId) {
-  if (!confirm('Удалить этот источник?')) return;
+  if (!confirm(t('confirm_delete_source'))) return;
   await fetch(`/api/project/${currentProject}/sources/${sourceId}`, { method: 'DELETE' });
   toast(t('source_deleted'));
   loadSourcesList();
@@ -4502,9 +4687,9 @@ async function loadSourcesList() {
           <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title || preview)}</div>
           ${isUrl || isYt ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.url)}</div>` : ''}
           <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
-            ${item.auto_added ? '<span style="font-size:9px;background:rgba(59,130,246,0.12);color:var(--blue);padding:1px 4px;border-radius:2px;">из Research</span>' : ''}
-            ${item.word_count ? `<span style="font-size:10px;color:var(--muted);">${item.word_count} слов</span>` : ''}
-            ${item.views ? `<span style="font-size:10px;color:var(--green);">${(item.views/1000).toFixed(0)}K просм.</span>` : ''}
+            ${item.auto_added ? `<span style="font-size:9px;background:rgba(59,130,246,0.12);color:var(--blue);padding:1px 4px;border-radius:2px;">${t('from_research_badge')}</span>` : ''}
+            ${item.word_count ? `<span style="font-size:10px;color:var(--muted);">${item.word_count} ${t('words_count')}</span>` : ''}
+            ${item.views ? `<span style="font-size:10px;color:var(--green);">${(item.views/1000).toFixed(0)}K ${t('views_short')}</span>` : ''}
             ${item.breakthrough_score ? `<span style="font-size:10px;color:var(--orange);">x${Math.round(item.breakthrough_score)}</span>` : ''}
           </div>
         </div>
@@ -4530,13 +4715,13 @@ async function addNotebookSource() {
     title: title || 'NotebookLM',
   });
   if (data.ok) {
-    toast('NotebookLM блокнот подключён!');
+    toast(t('toast_notebook_connected'));
     document.getElementById('notebookIdInput').value = '';
     document.getElementById('notebookTitleInput').value = '';
     document.getElementById('addNotebookArea').style.display = 'none';
     loadSourcesList();
   } else {
-    toast(data.error || 'Ошибка', true);
+    toast(data.error || t('toast_generic_error'), true);
   }
 }
 
@@ -4709,17 +4894,17 @@ function editDashTitle(i) {
   if (!card) return;
   const textEl = card.querySelector('.title-text');
   const current = textEl.textContent;
-  const newText = prompt('Редактировать заголовок:', current);
+  const newText = prompt(t('prompt_edit_title'), current);
   if (newText !== null && newText.trim()) {
     textEl.textContent = newText.trim();
-    card.querySelector('.char-count').textContent = newText.trim().length + ' символов';
+    card.querySelector('.char-count').textContent = tp('chars_count_suffix', { n: newText.trim().length });
     dashTitles[i] = newText.trim();
     saveDashTitles();
   }
 }
 
 function removeDashTitle(i) {
-  if (!confirm('Удалить этот заголовок?')) return;
+  if (!confirm(t('confirm_delete_title'))) return;
   dashTitles.splice(i, 1);
   dashSelectedTitles = dashSelectedTitles
     .filter(idx => idx !== i)
@@ -4808,7 +4993,7 @@ async function loadChannels() {
 
   // Get default channel name from context
   const ctxData = await api('/api/context');
-  const defaultName = ctxData.context?.channel?.name || ctxData.context?.author?.name || 'Основной канал';
+  const defaultName = ctxData.context?.channel?.name || ctxData.context?.author?.name || t('main_channel');
 
   // Populate both selectors
   const selectors = ['channelSelect', 'channelSelectNew'];
@@ -4843,8 +5028,8 @@ function updateChannelDisplay() {
       nicheEl.textContent = ch.niche || t('status_niche_not_set');
     }
   } else {
-    nameEl.textContent = sel.options[0]?.textContent || 'Основной канал';
-    nicheEl.textContent = 'Канал по умолчанию';
+    nameEl.textContent = sel.options[0]?.textContent || t('main_channel');
+    nicheEl.textContent = t('default_channel');
   }
 }
 
@@ -4875,7 +5060,7 @@ async function loadChannelContext() {
   el('ctx-niche').value = ctx.niche || '';
   el('ctx-target-audience').value = ctx.target_audience || '';
   nicheInfo.style.display = ctx.niche ? '' : 'none';
-  nicheInfo.textContent = ctx.niche ? `Ниша: ${ctx.niche} | ЦА: ${ctx.target_audience || 'не задана'}` : '';
+  nicheInfo.textContent = ctx.niche ? tp('niche_audience_info', { niche: ctx.niche, audience: ctx.target_audience || t('audience_not_set') }) : '';
 
   // Fill author/channel forms from channel context
   const a = ctx.author || {};
@@ -4909,9 +5094,9 @@ async function loadChannelContext() {
     expPreview.innerHTML = `
       <div style="display:flex;gap:10px;align-items:center;">
         <img src="${src}" style="width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--surface-container-highest);"
-             onerror="this.style.display='none';this.nextElementSibling.textContent='Для этого канала фото не загружено';"
-             onload="this.nextElementSibling.textContent='Фото канала';">
-        <span style="font-size:11px;color:var(--on-surface-variant);">Загружаю...</span>
+             onerror="this.style.display='none';this.nextElementSibling.textContent=t('photo_not_for_channel');"
+             onload="this.nextElementSibling.textContent=t('photo_of_channel');">
+        <span style="font-size:11px;color:var(--on-surface-variant);">${t('photo_uploading')}</span>
       </div>`;
   }
 
@@ -4927,29 +5112,29 @@ async function loadChannelContext() {
       const savedAt = recsData.generated_at ? new Date(recsData.generated_at).toLocaleString('ru-RU') : '';
       listEl.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:rgba(173,198,255,0.06);border-radius:6px;">
-          <div style="font-size:11px;color:var(--on-surface-variant);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bookmark</span> Сохранено: ${esc(savedAt)}</div>
-          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> Перегенерировать</button>
+          <div style="font-size:11px;color:var(--on-surface-variant);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bookmark</span> ${tp('saved_at', { date: esc(savedAt) })}</div>
+          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> ${t('btn_regenerate')}</button>
         </div>
         <div style="margin-bottom:12px;">
-          <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">Темы, которые залетают:</div>
+          <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">${t('themes_working')}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;">${(recsData.top_performing_themes||[]).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
         </div>
         ${recsData.underperforming_themes?.length ? `
         <div style="margin-bottom:12px;">
-          <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">Темы, которые не работают:</div>
+          <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">${t('themes_not_working')}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;">${recsData.underperforming_themes.map(t => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
         </div>` : ''}
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Рекомендованные темы</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">${t('recommended_topics')}</div>
         <div style="display:grid;gap:6px;">
           ${recs.map(r => `
             <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
               <div style="flex:1;">
                 <div style="font-size:13px;font-weight:600;">${esc(r.topic)}</div>
                 <div style="font-size:11px;color:var(--text2);margin-top:2px;">${esc(r.rationale||'')}</div>
-                ${r.related_existing ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Связано с: ${esc(r.related_existing)}</div>` : ''}
+                ${r.related_existing ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${t('related_to')} ${esc(r.related_existing)}</div>` : ''}
               </div>
-              <span style="background:${r.estimated_appeal === 'high' ? 'var(--green)' : 'var(--orange)'};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;">${r.estimated_appeal === 'high' ? 'ВЫСОКИЙ' : 'СРЕДНИЙ'}</span>
-              <button class="btn btn-blue btn-xs" onclick="createProjectFromRec('${esc(r.topic)}')">Создать</button>
+              <span style="background:${r.estimated_appeal === 'high' ? 'var(--green)' : 'var(--orange)'};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;">${r.estimated_appeal === 'high' ? t('appeal_high') : t('appeal_medium')}</span>
+              <button class="btn btn-blue btn-xs" onclick="createProjectFromRec('${esc(r.topic)}')">${t('btn_create')}</button>
             </div>
           `).join('')}
         </div>`;
@@ -4958,23 +5143,23 @@ async function loadChannelContext() {
 }
 
 function showAddChannelModal() {
-  const name = prompt('Название канала (будет отображаться в списке):');
+  const name = prompt(t('prompt_channel_name'));
   if (!name) return;
-  const niche = prompt('Ниша канала (например: бизнес, маркетинг, AI):') || '';
-  const audience = prompt('Целевая аудитория (например: предприниматели 25-45):') || '';
-  const url = prompt('YouTube URL канала (необязательно):') || '';
+  const niche = prompt(t('prompt_channel_niche')) || '';
+  const audience = prompt(t('prompt_channel_audience')) || '';
+  const url = prompt(t('prompt_channel_url')) || '';
   createChannel(name, niche, url, audience);
 }
 
 async function createChannel(name, niche, youtube_url, target_audience) {
   const data = await api('/api/channels', { name, niche, youtube_url, target_audience });
   if (data.ok) {
-    toast(`Канал "${name}" создан!`);
+    toast(tp('toast_channel_created', { name }));
     await loadChannels();
     document.getElementById('channelSelect').value = data.channel_id;
     loadChannelContext();
   } else {
-    toast(data.error || 'Ошибка', true);
+    toast(data.error || t('toast_generic_error'), true);
   }
 }
 
@@ -5017,7 +5202,7 @@ saveContext = async function() {
   };
   const data = await api(`/api/channels/${currentChannelId}`, { context: ctx });
   if (data.ok) toast(t('channel_settings_saved'));
-  else toast(data.error || 'Ошибка', true);
+  else toast(data.error || t('toast_generic_error'), true);
 };
 
 // ── Audience Fit Check ──
@@ -5064,16 +5249,16 @@ async function loadChannelVideos() {
     section.style.display = '';
     list.innerHTML = `
       <div style="padding:16px;background:rgba(251,191,36,0.08);border-left:3px solid var(--orange);border-radius:8px;">
-        <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">Канал не подключён к YouTube</div>
-        <div style="font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;line-height:1.5;">${esc(data.message || 'Этот канал не авторизован через OAuth. Чтобы загружать его видео, нужно подключить YouTube-аккаунт именно для этого канала.')}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">${t('channel_not_connected')}</div>
+        <div style="font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;line-height:1.5;">${esc(data.message || t('channel_not_auth_desc'))}</div>
         <button class="btn btn-outline btn-sm" onclick="window.open('/oauth/start?channel_id=${encodeURIComponent(chId)}', '_blank')" style="gap:6px;">
-          <span class="material-symbols-outlined" style="font-size:16px;">login</span> Подключить YouTube
+          <span class="material-symbols-outlined" style="font-size:16px;">login</span> ${t('btn_connect_youtube')}
         </button>
       </div>`;
     toast(t('toast_channel_not_authorized'), true);
     return;
   }
-  if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
+  if (!data.ok) { toast(data.error || t('toast_generic_error'), true); return; }
 
   const videos = data.videos || [];
   const section = document.getElementById('channelVideosSection');
@@ -5085,7 +5270,7 @@ async function loadChannelVideos() {
   const avgViews = videos.reduce((s, v) => s + v.views, 0) / videos.length;
 
   list.innerHTML = `
-    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Всего ${videos.length} видео | Ср. просмотры: ${(avgViews/1000).toFixed(1)}K</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${tp('videos_total', { count: videos.length, avg: (avgViews/1000).toFixed(1) })}</div>
     <div style="display:grid;gap:4px;max-height:400px;overflow-y:auto;">
       ${videos.map(v => {
         const aboveAvg = v.views > avgViews;
@@ -5115,7 +5300,7 @@ async function loadRecommendations(opts = {}) {
   toast(refresh ? t('generating_recs') : t('toast_loading_recommendations'));
   const url = `/api/channels/${chId2}/recommendations${refresh ? '?refresh=1' : ''}`;
   const data = await api(url);
-  if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
+  if (!data.ok) { toast(data.error || t('toast_generic_error'), true); return; }
 
   const recs = data.recommendations || [];
   const section = document.getElementById('channelRecsSection');
@@ -5126,35 +5311,35 @@ async function loadRecommendations(opts = {}) {
     const savedAt = data.generated_at ? new Date(data.generated_at).toLocaleString('ru-RU') : '';
     const cachedBadge = data.cached
       ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:rgba(173,198,255,0.06);border-radius:6px;">
-          <div style="font-size:11px;color:var(--on-surface-variant);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bookmark</span> Сохранено: ${esc(savedAt)}</div>
-          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> Перегенерировать</button>
+          <div style="font-size:11px;color:var(--on-surface-variant);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">bookmark</span> ${tp('saved_at', { date: esc(savedAt) })}</div>
+          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> ${t('btn_regenerate')}</button>
         </div>` : `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:rgba(52,211,153,0.06);border-radius:6px;">
-          <div style="font-size:11px;color:var(--green);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">check_circle</span> Сгенерировано сейчас — сохранено</div>
-          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> Перегенерировать</button>
+          <div style="font-size:11px;color:var(--green);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">check_circle</span> ${t('generated_now_saved')}</div>
+          <button class="btn btn-outline btn-xs" onclick="loadRecommendations({refresh:true})" style="gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">refresh</span> ${t('btn_regenerate')}</button>
         </div>`;
     list.innerHTML = `
       ${cachedBadge}
       <div style="margin-bottom:12px;">
-        <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">Темы, которые залетают:</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">${t('themes_working')}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">${(data.top_performing_themes || []).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
       </div>
       ${data.underperforming_themes?.length ? `
       <div style="margin-bottom:12px;">
-        <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">Темы, которые не работают:</div>
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">${t('themes_not_working')}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">${data.underperforming_themes.map(t => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
       </div>` : ''}
-      <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">Рекомендованные темы</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">${t('recommended_topics')}</div>
       <div style="display:grid;gap:6px;">
         ${recs.map(r => `
           <div style="background:var(--surface-container-low);border:none;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;">
             <div style="flex:1;">
               <div style="font-size:13px;font-weight:600;">${esc(r.topic)}</div>
               <div style="font-size:11px;color:var(--text2);margin-top:2px;">${esc(r.rationale)}</div>
-              ${r.related_existing ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">Связано с: ${esc(r.related_existing)}</div>` : ''}
+              ${r.related_existing ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${t('related_to')} ${esc(r.related_existing)}</div>` : ''}
             </div>
-            <span style="background:${r.estimated_appeal === 'high' ? 'var(--green)' : 'var(--orange)'};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;">${r.estimated_appeal === 'high' ? 'ВЫСОКИЙ' : 'СРЕДНИЙ'}</span>
-            <button class="btn btn-blue btn-xs" onclick="createProjectFromRec('${esc(r.topic)}')">Создать</button>
+            <span style="background:${r.estimated_appeal === 'high' ? 'var(--green)' : 'var(--orange)'};color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;">${r.estimated_appeal === 'high' ? t('appeal_high') : t('appeal_medium')}</span>
+            <button class="btn btn-blue btn-xs" onclick="createProjectFromRec('${esc(r.topic)}')">${t('btn_create')}</button>
           </div>
         `).join('')}
       </div>
@@ -5178,7 +5363,7 @@ createProject = async function() {
   const channelId = el('channelSelectNew').value;
   const btn = document.getElementById('btnCreate');
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Создаю...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_creating')}`;
   try {
     const data = await api('/api/new', { topic, channel_id: channelId });
     if (data.ok) {
@@ -5187,7 +5372,7 @@ createProject = async function() {
       hideModal();
       await loadProjects();
     } else {
-      toast(data.error || 'Ошибка', true);
+      toast(data.error || t('toast_generic_error'), true);
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
@@ -5233,7 +5418,7 @@ async function runWizard(mode) {
       if (task === 'description' && data.ok) {
         const desc = data.description || '';
         el('wizDescText').textContent = desc;
-        el('wizDescChars').textContent = `${desc.length} / 1000 символов`;
+        el('wizDescChars').textContent = tp('chars_of_limit', { n: desc.length });
         el('wizShortDesc').textContent = data.short_description ? `Короткое: ${data.short_description}` : '';
         const kwContainer = el('wizKeywords');
         kwContainer.innerHTML = (data.keywords || []).map(k => `<span style="background:rgba(59,130,246,0.1);color:var(--blue);padding:2px 6px;border-radius:3px;font-size:10px;">${esc(k)}</span>`).join('');
@@ -5292,7 +5477,7 @@ async function generateWizardImage(type) {
       }
       toast(`${type === 'banner' ? 'Баннер' : 'Аватар'} сгенерирован!`);
     } else {
-      toast(data.error || 'Ошибка генерации', true);
+      toast(data.error || t('toast_generation_error'), true);
     }
   } catch(e) { toast(e.message, true); }
 
@@ -5413,20 +5598,20 @@ async function addPersona() {
     const res = await fetch('/api/personas', { method: 'POST', body: fd });
     const data = await res.json();
     if (data.ok) {
-      toast(`Персона "${name}" добавлена!`);
+      toast(tp('toast_persona_added', { name }));
       document.getElementById('personaName').value = '';
       document.getElementById('personaRole').value = '';
       document.getElementById('personaDesc').value = '';
       fileInput.value = '';
       loadPersonas();
     } else {
-      toast(data.error || 'Ошибка', true);
+      toast(data.error || t('toast_generic_error'), true);
     }
   } catch(e) { toast(e.message, true); }
 }
 
 async function removePersona(id) {
-  if (!confirm('Удалить эту персону?')) return;
+  if (!confirm(t('confirm_delete_persona'))) return;
   await fetch(`/api/personas/${id}`, { method: 'DELETE' });
   toast(t('persona_deleted'));
   loadPersonas();
@@ -5442,11 +5627,11 @@ async function load2FAStatus() {
   const disableEl = document.getElementById('twoFaDisable');
 
   if (data.enabled) {
-    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:var(--green);font-weight:600;">2FA включена</span><span style="font-size:12px;color:var(--muted);">Google Authenticator</span></div>';
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:var(--green);font-weight:600;">${t('status_2fa_enabled')}</span><span style="font-size:12px;color:var(--muted);">Google Authenticator</span></div>`;
     setupEl.style.display = 'none';
     disableEl.style.display = '';
   } else {
-    statusEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:var(--red);font-weight:600;">✗ 2FA отключена</span><button class="btn btn-blue btn-sm" onclick="setup2FA()">Настроить 2FA</button></div>';
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="color:var(--red);font-weight:600;">✗ ${t('status_2fa_disabled')}</span><button class="btn btn-blue btn-sm" onclick="setup2FA()">${t('btn_setup_2fa') || 'Настроить 2FA'}</button></div>`;
     setupEl.style.display = 'none';
     disableEl.style.display = 'none';
   }
@@ -5454,7 +5639,7 @@ async function load2FAStatus() {
 
 async function setup2FA() {
   const data = await api('/api/2fa/setup', {});
-  if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
+  if (!data.ok) { toast(data.error || t('toast_generic_error'), true); return; }
 
   totpSetupSecret = data.secret;
   document.getElementById('totpSecretDisplay').textContent = data.secret;
@@ -5469,10 +5654,10 @@ async function verifyAndEnable2FA() {
 
   const data = await api('/api/2fa/verify', { secret: totpSetupSecret, code });
   if (data.ok) {
-    toast('2FA включена! При следующем входе потребуется код.');
+    toast(t('toast_2fa_enabled'));
     load2FAStatus();
   } else {
-    toast(data.error || 'Неверный код', true);
+    toast(data.error || t('toast_invalid_2fa_code'), true);
   }
 }
 
@@ -5482,10 +5667,10 @@ async function disable2FA() {
 
   const data = await api('/api/2fa/disable', { code });
   if (data.ok) {
-    toast('2FA отключена');
+    toast(t('toast_2fa_disabled_now'));
     load2FAStatus();
   } else {
-    toast(data.error || 'Неверный код', true);
+    toast(data.error || t('toast_invalid_2fa_code'), true);
   }
 }
 
