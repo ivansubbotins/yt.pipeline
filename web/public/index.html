@@ -910,6 +910,76 @@ const T = {
     resource_storage: 'Хранилище',
     created_label: 'Создан:',
     current_step: 'Текущий шаг:',
+    // Expert notes panel
+    expert_notes_title: 'Экспертные заметки',
+    expert_notes_subtitle: 'Уникальные инсайты для сценария',
+    expert_notes_empty: 'Нет заметок',
+    expert_notes_placeholder: 'Добавить экспертный инсайт, факт или историю...',
+    expert_notes_help: 'Добавьте уникальные факты, личные истории, кейсы — они будут вплетены в сценарий при генерации',
+    // Angle selection
+    angle_confirmed: 'Угол выбран — будет использован при генерации контент-плана и сценария',
+    rec_titles_preliminary: 'Предварительные — финальные заголовки создаются на шаге «Контент-план» по выбранному углу',
+    // Async step runner
+    btn_working: 'Работаю...',
+    btn_resetting: 'Сброс...',
+    btn_running_all_steps: 'Запуск всех шагов...',
+    btn_dubbing: 'Дублирование...',
+    btn_creating: 'Создаю...',
+    btn_generating: 'Генерирую...',
+    toast_step_started: 'Шаг «{step}» запущен. Ожидаем результат...',
+    toast_step_completed: 'Шаг «{step}» готов',
+    toast_step_failed: 'Шаг «{step}» упал',
+    toast_step_status: 'Шаг «{step}»: {status}',
+    toast_step_timeout: 'Шаг «{step}» — таймаут ожидания ({minutes} мин). Проверьте позже.',
+    toast_step_restarted: 'Шаг «{step}» перезапущен. Ожидаем результат...',
+    confirm_restart_step: 'Перезапустить шаг «{step}»? Текущие данные будут сброшены.',
+    // Save flow
+    toast_field_collection_error: 'Ошибка сбора полей: {msg}',
+    toast_network_error: 'Сеть/сервер: {msg}',
+    toast_save_error: 'Ошибка сохранения',
+    saved_channel_suffix: ' (канал)',
+    toast_upload_error: 'Ошибка загрузки',
+    toast_generic_error: 'Ошибка',
+    // Empty states
+    empty_covers: 'Нет обложек',
+    empty_videos: 'Нет видео',
+    empty_notes: 'Нет заметок',
+    empty_styles: 'Нет загруженных стилей. Добавьте референс-обложки выше.',
+    empty_personas: 'Нет персон. Добавьте в Настройках.',
+    empty_personas_added: 'Нет добавленных персон. Добавьте эксперта или известную личность.',
+    empty_links: 'Нет ссылок. Добавьте ссылки для описания видео.',
+    // Channel
+    toast_channel_not_authorized: 'Канал не авторизован',
+    toast_channel_created: 'Канал «{name}» создан!',
+    status_niche_not_set: 'Ниша не указана',
+    // Alerts
+    alert_topic_mismatch: 'Тема может не совпадать с ЦА канала',
+    alert_topic_not_suitable: 'Тема не подходит для этого канала',
+    // Loading/recommendations
+    toast_loading_recommendations: 'Загрузка рекомендаций...',
+    toast_videos_loaded: '{count} видео загружено',
+    // Source upload
+    toast_source_added: 'Источник добавлен!',
+    toast_source_added_youtube: 'YouTube-видео добавлено! Транскрипт будет загружен.',
+    toast_notebook_connected: 'NotebookLM блокнот подключён!',
+    confirm_delete_source: 'Удалить этот источник?',
+    confirm_delete_style: 'Удалить этот стиль?',
+    confirm_delete_persona: 'Удалить эту персону?',
+    // Persona
+    toast_persona_added: 'Персона «{name}» добавлена!',
+    // 2FA
+    status_2fa_enabled: '2FA включена',
+    status_2fa_disabled: '2FA отключена',
+    toast_2fa_enabled: '2FA включена! При следующем входе потребуется код.',
+    toast_invalid_2fa_code: 'Неверный код',
+    // Wizard
+    toast_asset_generated_banner: 'Баннер сгенерирован!',
+    toast_asset_generated_avatar: 'Аватар сгенерирован!',
+    toast_generating_banner: 'Генерирую баннер...',
+    toast_generating_avatar: 'Генерирую аватар...',
+    btn_generate_banner: 'Сгенерировать баннер',
+    btn_generate_avatar: 'Сгенерировать аватар',
+    chars_of_limit: '{n} / 1000 символов',
     // Projects list
     projects_title: 'Проекты',
     btn_new_project: '+ Новый проект',
@@ -1403,6 +1473,76 @@ const T = {
     resource_ai: 'AI Compute',
     resource_storage: 'Storage',
     created_label: 'Created:',
+    // Expert notes panel
+    expert_notes_title: 'Expert notes',
+    expert_notes_subtitle: 'Unique insights for the script',
+    expert_notes_empty: 'No notes yet',
+    expert_notes_placeholder: 'Add an expert insight, fact, or story...',
+    expert_notes_help: 'Add unique facts, personal stories, cases — they will be woven into the script during generation',
+    // Angle selection
+    angle_confirmed: 'Angle selected — it will be used when generating the content plan and script',
+    rec_titles_preliminary: 'Preliminary — final titles are created at the «Content plan» step using the selected angle',
+    // Async step runner
+    btn_working: 'Working...',
+    btn_resetting: 'Resetting...',
+    btn_running_all_steps: 'Running all steps...',
+    btn_dubbing: 'Dubbing...',
+    btn_creating: 'Creating...',
+    btn_generating: 'Generating...',
+    toast_step_started: 'Step «{step}» started. Waiting for result...',
+    toast_step_completed: 'Step «{step}» is ready',
+    toast_step_failed: 'Step «{step}» failed',
+    toast_step_status: 'Step «{step}»: {status}',
+    toast_step_timeout: 'Step «{step}» — timeout ({minutes} min). Check back later.',
+    toast_step_restarted: 'Step «{step}» restarted. Waiting for result...',
+    confirm_restart_step: 'Restart step «{step}»? Current data will be reset.',
+    // Save flow
+    toast_field_collection_error: 'Error collecting fields: {msg}',
+    toast_network_error: 'Network/server: {msg}',
+    toast_save_error: 'Save error',
+    saved_channel_suffix: ' (channel)',
+    toast_upload_error: 'Upload error',
+    toast_generic_error: 'Error',
+    // Empty states
+    empty_covers: 'No covers',
+    empty_videos: 'No videos',
+    empty_notes: 'No notes',
+    empty_styles: 'No styles uploaded. Add reference covers above.',
+    empty_personas: 'No personas. Add them in Settings.',
+    empty_personas_added: 'No personas added. Add an expert or a known personality.',
+    empty_links: 'No links. Add links for video description.',
+    // Channel
+    toast_channel_not_authorized: 'Channel not authorized',
+    toast_channel_created: 'Channel «{name}» created!',
+    status_niche_not_set: 'Niche not set',
+    // Alerts
+    alert_topic_mismatch: 'Topic may not match channel audience',
+    alert_topic_not_suitable: 'Topic is not suitable for this channel',
+    // Loading/recommendations
+    toast_loading_recommendations: 'Loading recommendations...',
+    toast_videos_loaded: '{count} videos loaded',
+    // Source upload
+    toast_source_added: 'Source added!',
+    toast_source_added_youtube: 'YouTube video added! Transcript will be fetched.',
+    toast_notebook_connected: 'NotebookLM notebook connected!',
+    confirm_delete_source: 'Delete this source?',
+    confirm_delete_style: 'Delete this style?',
+    confirm_delete_persona: 'Delete this persona?',
+    // Persona
+    toast_persona_added: 'Persona «{name}» added!',
+    // 2FA
+    status_2fa_enabled: '2FA enabled',
+    status_2fa_disabled: '2FA disabled',
+    toast_2fa_enabled: '2FA enabled! The next login will ask for a code.',
+    toast_invalid_2fa_code: 'Invalid code',
+    // Wizard
+    toast_asset_generated_banner: 'Banner generated!',
+    toast_asset_generated_avatar: 'Avatar generated!',
+    toast_generating_banner: 'Generating banner...',
+    toast_generating_avatar: 'Generating avatar...',
+    btn_generate_banner: 'Generate banner',
+    btn_generate_avatar: 'Generate avatar',
+    chars_of_limit: '{n} / 1000 characters',
     projects_title: 'Projects',
     btn_new_project: '+ New project',
     empty_projects: 'No projects. Click "+ New project" to start.',
@@ -1835,6 +1975,12 @@ const T = {
   }
 };
 function t(k) { return (T[LANG] || T.ru)[k] || T.ru[k] || k; }
+// t('key', {step: 'research'}) → replaces {step} in the translated string
+function tp(k, params) {
+  let s = t(k);
+  if (params) for (const [key, val] of Object.entries(params)) s = s.replace(new RegExp('\\{' + key + '\\}', 'g'), val);
+  return s;
+}
 function setLang(l) { localStorage.setItem('yt_lang', l); location.reload(); }
 document.addEventListener('DOMContentLoaded', () => {
   document.title = t('page_title');
@@ -2904,7 +3050,7 @@ async function refreshDetail() {
           ${recTitles.length ? `
           <div style="margin-top:12px;">
             <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">${t('rec_titles')}</div>
-            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic;">Предварительные — финальные заголовки создаются на шаге «Контент-план» по выбранному углу</div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-style:italic;">${t('rec_titles_preliminary')}</div>
             ${recTitles.map(rt => `<div style="font-size:12px;color:var(--text2);padding:4px 0;opacity:0.6;">• ${esc(rt)}</div>`).join('')}
           </div>
           ` : ''}
@@ -3266,16 +3412,16 @@ async function refreshDetail() {
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <div style="font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:1px;">
               <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">edit_note</span>
-              Экспертные заметки
+              ${t('expert_notes_title')}
             </div>
-            <span style="font-size:10px;color:var(--muted);">Уникальные инсайты для сценария</span>
+            <span style="font-size:10px;color:var(--muted);">${t('expert_notes_subtitle')}</span>
           </div>
           <div id="expertNotesList" style="margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;">
-            <input type="text" id="expertNoteInput" placeholder="Добавить экспертный инсайт, факт или историю..." style="flex:1;padding:8px 12px;font-size:12px;" onkeydown="if(event.key==='Enter')addExpertNote()">
+            <input type="text" id="expertNoteInput" placeholder="${t('expert_notes_placeholder')}" style="flex:1;padding:8px 12px;font-size:12px;" onkeydown="if(event.key==='Enter')addExpertNote()">
             <button class="btn btn-outline btn-sm" onclick="addExpertNote()">+</button>
           </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:6px;">Добавьте уникальные факты, личные истории, кейсы — они будут вплетены в сценарий при генерации</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;">${t('expert_notes_help')}</div>
         </div>`;
     }
 
@@ -3704,16 +3850,16 @@ async function runStepValidated(step, btn) {
 // ── Run Step ──
 async function runStep(step, btn) {
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Работаю...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_working')}`;
   try {
     const data = await api('/api/run-step', { project_id: currentProject, step });
     if (!data.ok) {
-      toast(data.error || 'Ошибка', true);
+      toast(data.error || t('toast_generic_error'), true);
       btn.disabled = false;
       btn.textContent = t('btn_run');
       return;
     }
-    toast(`Шаг "${step}" запущен. Ожидаем результат...`);
+    toast(tp('toast_step_started', { step }));
     await refreshDetail();
     // Poll until the step is no longer in_progress. Timeout: 30 min.
     await pollStepStatus(currentProject, step, { maxSeconds: 1800, intervalMs: 5000 });
@@ -3727,7 +3873,6 @@ async function pollStepStatus(projectId, step, { maxSeconds = 1800, intervalMs =
   const startAt = Date.now();
   let lastStatus = null;
   while ((Date.now() - startAt) / 1000 < maxSeconds) {
-    // Stop polling if user switched away from this project
     if (currentProject !== projectId) return;
     try {
       const data = await api(`/api/project/${projectId}`);
@@ -3735,13 +3880,12 @@ async function pollStepStatus(projectId, step, { maxSeconds = 1800, intervalMs =
         const st = data.state.steps?.[step]?.status || 'pending';
         if (st !== lastStatus) {
           lastStatus = st;
-          // Re-render whenever status transitions
           if (currentProject === projectId) await refreshDetail();
         }
         if (['completed','approved','waiting','failed'].includes(st)) {
-          const msg = st === 'completed' || st === 'approved' ? `Шаг "${step}" готов` :
-                      st === 'failed' ? `Шаг "${step}" упал` :
-                      `Шаг "${step}": ${st}`;
+          const msg = st === 'completed' || st === 'approved' ? tp('toast_step_completed', { step }) :
+                      st === 'failed' ? tp('toast_step_failed', { step }) :
+                      tp('toast_step_status', { step, status: st });
           toast(msg, st === 'failed');
           return;
         }
@@ -3749,24 +3893,24 @@ async function pollStepStatus(projectId, step, { maxSeconds = 1800, intervalMs =
     } catch(e) { /* transient — keep polling */ }
     await new Promise(r => setTimeout(r, intervalMs));
   }
-  toast(`Шаг "${step}" — таймаут ожидания (${Math.round(maxSeconds/60)} мин). Проверьте позже.`, true);
+  toast(tp('toast_step_timeout', { step, minutes: Math.round(maxSeconds/60) }), true);
 }
 
 // ── Restart Step ──
 async function restartStep(step, btn) {
-  if (!confirm(`Перезапустить шаг «${step}»? Текущие данные будут сброшены.`)) return;
+  if (!confirm(tp('confirm_restart_step', { step }))) return;
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Сброс...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_resetting')}`;
   try {
     const resetData = await api('/api/reset-step', { project_id: currentProject, step });
-    if (!resetData.ok) { toast(resetData.error || 'Ошибка сброса', true); return; }
+    if (!resetData.ok) { toast(resetData.error || t('reset_error'), true); return; }
     const runData = await api('/api/run-step', { project_id: currentProject, step });
     if (runData.ok) {
-      toast(`Шаг «${step}» перезапущен. Ожидаем результат...`);
+      toast(tp('toast_step_restarted', { step }));
       await refreshDetail();
       await pollStepStatus(currentProject, step, { maxSeconds: 1800, intervalMs: 5000 });
     } else {
-      toast(runData.error || 'Ошибка запуска', true);
+      toast(runData.error || t('run_error'), true);
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
@@ -3777,14 +3921,14 @@ async function restartStep(step, btn) {
 async function runAll() {
   const btn = document.getElementById('btnRunAll');
   btn.disabled = true;
-  btn.innerHTML = '<span class="loading"></span>Запуск всех шагов...';
+  btn.innerHTML = `<span class="loading"></span>${t('btn_running_all_steps')}`;
   try {
     const data = await api('/api/run-all', { project_id: currentProject });
     if (data.ok) {
       toast(t('all_done'));
       await refreshDetail();
     } else {
-      toast(data.error || 'Ошибка', true);
+      toast(data.error || t('toast_generic_error'), true);
     }
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
@@ -4034,7 +4178,7 @@ async function saveContext() {
     };
   } catch (e) {
     console.error('[saveContext] failed to build payload:', e);
-    toast('Ошибка сбора полей: ' + e.message, true);
+    toast(tp('toast_field_collection_error', { msg: e.message }), true);
     return;
   }
 
@@ -4049,13 +4193,13 @@ async function saveContext() {
     }
     console.log('[saveContext] response:', data);
     if (data && data.ok) {
-      toast(t('settings_saved') + (currentChannelId ? ' (канал)' : ''));
+      toast(t('settings_saved') + (currentChannelId ? t('saved_channel_suffix') : ''));
     } else {
-      toast((data && data.error) ? data.error : 'Ошибка сохранения', true);
+      toast((data && data.error) ? data.error : t('toast_save_error'), true);
     }
   } catch (e) {
     console.error('[saveContext] request failed:', e);
-    toast('Сеть/сервер: ' + e.message, true);
+    toast(tp('toast_network_error', { msg: e.message }), true);
   }
 
   // Upload expert photo if selected
@@ -4072,7 +4216,7 @@ async function saveContext() {
       const resp = await fetch(uploadUrl, { method: 'POST', body: fd });
       const r = await resp.json();
       if (r.ok) {
-        toast(t('expert_photo_uploaded') + (currentChannelId ? ' (канал)' : ''));
+        toast(t('expert_photo_uploaded') + (currentChannelId ? t('saved_channel_suffix') : ''));
         // Refresh preview — cache-buster ensures we see the new image
         const preview = el('refExpertPhoto');
         if (preview) {
@@ -4080,7 +4224,7 @@ async function saveContext() {
           preview.src = '/api/assets/expert.jpg' + suffix;
         }
       }
-      else toast(r.error || 'Ошибка загрузки', true);
+      else toast(r.error || t('toast_upload_error'), true);
     } catch (e) { toast(t('photo_upload_error') + e.message, true); }
   }
 }
@@ -4101,7 +4245,7 @@ function renderStylesGallery() {
   const gallery = document.getElementById('stylesGallery');
   if (!gallery) return;
   if (allStyles.length === 0) {
-    gallery.innerHTML = '<p style="color:var(--muted);font-size:13px;">Нет загруженных стилей. Добавьте референс-обложки выше.</p>';
+    gallery.innerHTML = `<p style="color:var(--muted);font-size:13px;">${t('empty_styles')}</p>`;
     return;
   }
   gallery.innerHTML = allStyles.map(s => `
@@ -4181,7 +4325,7 @@ async function renderCoverPersonas() {
   const personas = data.personas || [];
 
   if (personas.length === 0) {
-    container.innerHTML = '<span style="font-size:11px;color:var(--muted);">Нет персон. Добавьте в Настройках.</span>';
+    container.innerHTML = `<span style="font-size:11px;color:var(--muted);">${t('empty_personas')}</span>`;
     return;
   }
 
@@ -4435,7 +4579,7 @@ function renderExpertNotes() {
   const list = document.getElementById('expertNotesList');
   if (!list) return;
   if (expertNotes.length === 0) {
-    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Нет заметок</div>';
+    list.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:4px 0;">${t('expert_notes_empty')}</div>`;
     return;
   }
   list.innerHTML = expertNotes.map((n, i) => `
@@ -4486,7 +4630,7 @@ function selectAngle(idx, el) {
     const conf = document.createElement('div');
     conf.id = 'angleConfirmation';
     conf.style.cssText = 'margin-top:12px;padding:12px 16px;background:rgba(173,198,255,0.08);border-radius:8px;font-size:12px;color:var(--primary);display:flex;align-items:center;gap:8px;';
-    conf.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">check_circle</span> Угол выбран — будет использован при генерации контент-плана и сценария';
+    conf.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">check_circle</span> ${t('angle_confirmed')}`;
     document.getElementById('anglesGrid').after(conf);
   }
   // Save
@@ -4609,7 +4753,7 @@ refreshDetail = async function() {
           `<img src="${f}" style="height:80px;border-radius:6px;border:none;object-fit:cover;" onerror="this.remove()">`
         ).join('');
       } else {
-        refsGrid.innerHTML = '<span style="font-size:11px;color:var(--muted);">Нет обложек</span>';
+        refsGrid.innerHTML = `<span style="font-size:11px;color:var(--muted);">${t('empty_covers')}</span>`;
       }
     }
 
@@ -4696,7 +4840,7 @@ function updateChannelDisplay() {
     const ch = allChannels.find(c => c.id === sel.value);
     if (ch) {
       nameEl.textContent = ch.name;
-      nicheEl.textContent = ch.niche || 'Ниша не указана';
+      nicheEl.textContent = ch.niche || t('status_niche_not_set');
     }
   } else {
     nameEl.textContent = sel.options[0]?.textContent || 'Основной канал';
@@ -4926,7 +5070,7 @@ async function loadChannelVideos() {
           <span class="material-symbols-outlined" style="font-size:16px;">login</span> Подключить YouTube
         </button>
       </div>`;
-    toast('Канал не авторизован', true);
+    toast(t('toast_channel_not_authorized'), true);
     return;
   }
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
@@ -4936,7 +5080,7 @@ async function loadChannelVideos() {
   const list = document.getElementById('channelVideosList');
   section.style.display = '';
 
-  if (!videos.length) { list.innerHTML = '<p style="color:var(--muted);">Нет видео</p>'; return; }
+  if (!videos.length) { list.innerHTML = `<p style="color:var(--muted);">${t('empty_videos')}</p>`; return; }
 
   const avgViews = videos.reduce((s, v) => s + v.views, 0) / videos.length;
 
@@ -4961,14 +5105,14 @@ async function loadChannelVideos() {
           </div>`;
       }).join('')}
     </div>`;
-  toast(`${videos.length} видео загружено`);
+  toast(tp('toast_videos_loaded', { count: videos.length }));
 }
 
 // ── Topic Recommendations ──
 async function loadRecommendations(opts = {}) {
   const chId2 = currentChannelId || 'default';
   const refresh = opts.refresh === true;
-  toast(refresh ? t('generating_recs') : 'Загрузка рекомендаций...');
+  toast(refresh ? t('generating_recs') : t('toast_loading_recommendations'));
   const url = `/api/channels/${chId2}/recommendations${refresh ? '?refresh=1' : ''}`;
   const data = await api(url);
   if (!data.ok) { toast(data.error || 'Ошибка', true); return; }
@@ -5173,7 +5317,7 @@ function renderDynamicLinks() {
   if (!list) return;
 
   if (channelLinks.length === 0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px;">Нет ссылок. Добавьте ссылки для описания видео.</div>';
+    list.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:8px;">${t('empty_links')}</div>`;
     return;
   }
 
@@ -5237,7 +5381,7 @@ async function loadPersonas() {
   const personas = data.personas || [];
 
   if (personas.length === 0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--muted);">Нет добавленных персон. Добавьте эксперта или известную личность.</div>';
+    list.innerHTML = `<div style="font-size:12px;color:var(--muted);">${t('empty_personas_added')}</div>`;
     return;
   }
 
