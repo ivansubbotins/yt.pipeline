@@ -278,24 +278,43 @@ function callClaude(systemPrompt, userMessage) {
       maxBuffer: 10 * 1024 * 1024,
       cwd: path.join(__dirname, '..'),
     }, (err, stdout, stderr) => {
-      if (err) {
-        console.error('[Claude Python Error]', err.message, stderr?.substring(0, 200));
-        return reject(new Error('Claude error: ' + (err.message || 'unknown')));
-      }
-      try {
-        const result = JSON.parse(stdout);
-        if (result.ok) {
-          const u = result.usage || {};
-          console.log(`[Claude] OK: ${u.input_tokens || '?'} in / ${u.output_tokens || '?'} out`);
-          resolve(result.text);
-        } else {
-          console.error('[Claude API Error]', result.error);
-          reject(new Error(result.error || 'Claude error'));
+      // Python ALWAYS prints JSON to stdout, even when exiting non-zero on API error.
+      // Try parsing stdout FIRST — that gives us the structured error message.
+      // Only fall back to err.message if stdout doesn't contain valid JSON.
+      if (stdout) {
+        try {
+          const result = JSON.parse(stdout.trim());
+          if (result.ok) {
+            const u = result.usage || {};
+            console.log(`[Claude] OK: ${u.input_tokens || '?'} in / ${u.output_tokens || '?'} out`);
+            return resolve(result.text);
+          }
+          // result.ok === false — extract clean error message
+          let errMsg = result.error || 'Claude API error';
+          // Pretty-print common errors
+          if (/credit balance is too low/i.test(errMsg)) {
+            errMsg = 'Anthropic credit balance is too low. Top up at console.anthropic.com → Plans & Billing.';
+          } else if (/invalid x-api-key/i.test(errMsg)) {
+            errMsg = 'Invalid ANTHROPIC_API_KEY. Check .env on the server.';
+          } else if (/rate limit/i.test(errMsg)) {
+            errMsg = 'Anthropic rate limit hit. Wait a minute and retry.';
+          }
+          console.error('[Claude API Error]', errMsg);
+          return reject(new Error(errMsg));
+        } catch (e) {
+          // stdout wasn't valid JSON — fall through to err handling
+          console.error('[Claude Parse Error] stdout:', stdout.substring(0, 300));
         }
-      } catch (e) {
-        console.error('[Claude Parse Error]', stdout?.substring(0, 300));
-        reject(e);
       }
+      if (err) {
+        console.error('[Claude Python Error]', err.code, stderr?.substring(0, 300));
+        // Don't expose the full command in the message — it's huge and useless to the user
+        const shortMsg = err.code === 'ETIMEDOUT' ? 'Claude request timed out (120s)'
+                       : stderr ? stderr.substring(0, 200)
+                       : 'Claude script failed (exit ' + (err.code || '?') + ')';
+        return reject(new Error(shortMsg));
+      }
+      reject(new Error('Claude returned no output'));
     });
   });
 }
