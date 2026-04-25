@@ -572,6 +572,25 @@ input[type="range"] { width: 100%; accent-color: var(--primary); height: 4px; }
       <button class="btn btn-red" onclick="clearDrawing()" style="flex:1;">🗑 Очистить всё</button>
     </div>
   </div>
+
+  <!-- AI region edit -->
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--outline-variant);">
+    <div style="font-size:11px;font-weight:600;color:var(--primary);margin-bottom:6px;">
+      ✨ AI правка выделенной области
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.4;">
+      Закрась кистью область, опиши что сделать — AI обработает выделение и удалит мазки.
+      Примеры: <code>удали этот текст</code>, <code>замени слово на "ШОК"</code>, <code>нарисуй стоматологическое кресло</code>.
+    </div>
+    <textarea id="regionEditInstruction" rows="2" placeholder="Что сделать с выделенной областью?"
+      style="width:100%;font-size:12px;padding:6px 8px;background:var(--surface-container-lowest);color:var(--text);border:none;border-radius:6px;resize:vertical;font-family:inherit;"></textarea>
+    <button class="btn btn-blue" onclick="applyRegionEdit()" id="btnRegionEdit" style="width:100%;margin-top:6px;">
+      ✨ Применить AI правку
+    </button>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px;">
+      Стоит ~$0.04 за вызов. Результат заменит текущую обложку.
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1750,6 +1769,82 @@ function clearDrawing() {
   getDrawCtx().clearRect(0, 0, c.width, c.height);
   drawHistory = [];
   toast('Рисунок очищен');
+}
+
+// Composite the current background image + brush strokes into a single PNG data URL,
+// send to the server for AI region-edit, and replace the background with the result.
+async function applyRegionEdit() {
+  const instruction = (el('regionEditInstruction').value || '').trim();
+  if (!instruction) { toast('Опишите что сделать с областью', true); return; }
+  if (!projectId) { toast('Не указан проект', true); return; }
+
+  // Check that the user actually drew something — composite canvas is non-trivial
+  const drawC = el('drawingCanvas');
+  const drawCtx = drawC.getContext('2d');
+  const imgData = drawCtx.getImageData(0, 0, drawC.width, drawC.height);
+  let hasMarks = false;
+  for (let i = 3; i < imgData.data.length; i += 4) {
+    if (imgData.data[i] > 0) { hasMarks = true; break; }
+  }
+  if (!hasMarks) { toast('Сначала закрась область кистью', true); return; }
+
+  const btn = el('btnRegionEdit');
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span class="loading"></span> AI редактирует...';
+
+  try {
+    // Get current background image
+    const bgEl = el('layerBg');
+    const bgUrl = (bgEl.style.backgroundImage.match(/url\(["']?([^"')]+)["']?\)/) || [])[1];
+    if (!bgUrl) { toast('Нет фоновой картинки для редактирования', true); btn.disabled = false; btn.innerHTML = origText; return; }
+
+    // Composite: load background + draw onto offscreen canvas + overlay strokes
+    const W = drawC.width, H = drawC.height;
+    const composite = document.createElement('canvas');
+    composite.width = W; composite.height = H;
+    const cctx = composite.getContext('2d');
+
+    const bgImg = new Image();
+    bgImg.crossOrigin = 'anonymous';
+    await new Promise((resolve, reject) => {
+      bgImg.onload = resolve;
+      bgImg.onerror = () => reject(new Error('Не удалось загрузить фон'));
+      bgImg.src = bgUrl + (bgUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    });
+    // Cover-fit
+    cctx.drawImage(bgImg, 0, 0, W, H);
+    // Burn brush strokes on top
+    cctx.drawImage(drawC, 0, 0);
+
+    const dataUrl = composite.toDataURL('image/png');
+
+    const data = await api('/api/cover-region-edit', {
+      project_id: projectId,
+      instruction,
+      image_base64: dataUrl,
+    });
+
+    if (data.ok && data.image_url) {
+      const newUrl = data.image_url + '?t=' + Date.now();
+      bgEl.style.backgroundImage = `url(${newUrl})`;
+      // Add to versions and switch to it
+      if (!editorState.versions.includes(data.image_url)) editorState.versions.push(data.image_url);
+      editorState.activeVersion = editorState.versions.length - 1;
+      renderLayers();
+      // Clear the marks since they're baked into the new version
+      clearDrawing();
+      el('regionEditInstruction').value = '';
+      toast('Готово! Область обновлена.');
+    } else {
+      toast(data.error || 'Ошибка AI правки', true);
+    }
+  } catch (e) {
+    toast(e.message || 'Ошибка', true);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = origText;
 }
 
 // Drawing event handlers

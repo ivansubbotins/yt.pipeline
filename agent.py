@@ -310,6 +310,57 @@ def cmd_generate_cover_custom(args):
     print(f"Generated: {out_path}")
 
 
+def cmd_edit_cover_region(args):
+    """Apply an AI region edit to a thumbnail using a marked-up image + user instruction.
+
+    The marked image (background + user's brush strokes flattened) is uploaded to fal.ai,
+    Nano Banana edits the marked region per `instruction` and removes the strokes.
+    """
+    from config import BASE_DIR, CHANNELS_DIR
+    from thumbnail_generator import edit_thumbnail_with_marks
+    from state import PipelineState
+
+    marked_image_path = Path(args.marked_image)
+    if not marked_image_path.exists():
+        print(f"Error: marked image not found: {marked_image_path}")
+        sys.exit(1)
+
+    # Find expert photo (per-channel preferred, else global)
+    expert_photo = None
+    try:
+        tmp_state = PipelineState(args.project_id)
+        project_channel_id = tmp_state.channel_id or ""
+    except Exception:
+        project_channel_id = ""
+    if project_channel_id:
+        for name in ("expert.jpg", "expert.png"):
+            p = CHANNELS_DIR / project_channel_id / name
+            if p.exists():
+                expert_photo = str(p)
+                break
+    if not expert_photo:
+        for name in ("expert.jpg", "expert.png"):
+            p = BASE_DIR / "assets" / name
+            if p.exists():
+                expert_photo = str(p)
+                break
+
+    pipe = Pipeline(args.project_id)
+    out_dir = pipe.state.project_dir / "thumbnails"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    existing = list(out_dir.glob("custom_*.jpg"))
+    idx = len(existing) + 1
+    out_path = out_dir / f"custom_{idx}.jpg"
+
+    img = edit_thumbnail_with_marks(
+        marked_image_path=str(marked_image_path),
+        user_instruction=args.instruction,
+        expert_photo_path=expert_photo,
+    )
+    img.save(str(out_path), "JPEG", quality=95)
+    print(f"Edited: {out_path}")
+
+
 def cmd_publish(args):
     if not args.approve:
         print("Публикация требует утверждения Иваном.")
@@ -593,6 +644,12 @@ def main():
     p_gcc.add_argument("project_id", help="ID проекта")
     p_gcc.add_argument("params", help="JSON params: {prompt, text_on_image, style_id, neon_color}")
 
+    # edit-cover-region — AI-edit a thumbnail region using brush marks + instruction
+    p_ecr = subparsers.add_parser("edit-cover-region", help="AI-правка области обложки по разметке кистью")
+    p_ecr.add_argument("project_id", help="ID проекта")
+    p_ecr.add_argument("marked_image", help="Path to image with brush marks burned in")
+    p_ecr.add_argument("instruction", help="Что сделать с выделенной областью (RU)")
+
     # playlists
     subparsers.add_parser("playlists", help="Список плейлистов канала")
 
@@ -639,6 +696,7 @@ def main():
         "shot-done": cmd_shot_done,
         "edit-done": cmd_edit_done,
         "generate-cover-custom": cmd_generate_cover_custom,
+        "edit-cover-region": cmd_edit_cover_region,
         "publish": cmd_publish,
         "dub": cmd_dub,
         "playlists": cmd_playlists,

@@ -152,6 +152,73 @@ def generate_thumbnail_nano_banana(
     return img
 
 
+def edit_thumbnail_with_marks(
+    marked_image_path: str | Path,
+    user_instruction: str,
+    expert_photo_path: str | Path | None = None,
+) -> Image.Image:
+    """Region-edit a thumbnail using Nano Banana 2 with user-painted marks as visual hints.
+
+    The marked_image_path is the current thumbnail with the user's brush strokes burned in
+    (as a flat composite). We send it to Nano Banana with an instruction telling the model
+    to act on the marked area and remove the marks afterward.
+
+    user_instruction examples:
+      - 'удали этот текст'
+      - 'нарисуй стоматологическое кресло'
+      - 'замени слово на ШОК'
+    """
+    import fal_client
+
+    os.environ["FAL_KEY"] = FAL_KEY
+
+    # Upload the marked image (current thumbnail + user's brush strokes flattened)
+    img_url = fal_client.upload_file(str(marked_image_path))
+    logger.info(f"Marked image uploaded: {img_url}")
+
+    image_urls = [img_url]
+    if expert_photo_path and Path(expert_photo_path).exists():
+        expert_url = fal_client.upload_file(str(expert_photo_path))
+        image_urls.append(expert_url)
+        logger.info(f"Expert reference uploaded: {expert_url}")
+
+    # Compose an instruction-based edit prompt.
+    # The model gets: original-with-marks + an instruction that uses the marks as
+    # location hints and explicitly asks to remove the strokes from the output.
+    expert_clause = (
+        " Image #2 is a reference for the person's face — keep their identity identical."
+        if len(image_urls) > 1 else ""
+    )
+    full_prompt = (
+        f"{MASTER_PROMPT} "
+        "The user has drawn coloured brush strokes on the image to mark a region. "
+        f"Apply this edit to the marked region: {user_instruction}. "
+        "After applying the edit, OUTPUT A CLEAN IMAGE — the brush strokes/marks must be "
+        "completely removed from the final result. Do not modify other parts of the image. "
+        "Preserve the original composition, lighting, and the rest of the scene."
+        f"{expert_clause}"
+    )
+
+    logger.info(f"Region-edit Nano Banana: instruction={user_instruction[:80]}...")
+
+    result = fal_client.subscribe("fal-ai/nano-banana-pro/edit", arguments={
+        "prompt": full_prompt,
+        "image_urls": image_urls,
+        "aspect_ratio": "16:9",
+        "output_format": "jpeg",
+        "num_images": 1,
+    })
+
+    image_url = result["images"][0]["url"]
+    logger.info(f"Region-edit result: {image_url}")
+
+    img_resp = requests.get(image_url, timeout=60)
+    img_resp.raise_for_status()
+    img = Image.open(io.BytesIO(img_resp.content))
+    img = img.resize((THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT), Image.LANCZOS)
+    return img
+
+
 def generate_scene_gradient(colors: list[str]) -> Image.Image:
     """Fallback: generate a gradient background."""
     img = Image.new("RGB", (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT))

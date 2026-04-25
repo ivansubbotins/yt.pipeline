@@ -3505,6 +3505,58 @@ Rules:
     return;
   }
 
+  // POST /api/cover-region-edit — AI-edit a region using brush marks + text instruction
+  // Body: { project_id, instruction, image_base64 (data URL of marked image — bg + brush strokes flattened) }
+  if (pathname === '/api/cover-region-edit' && req.method === 'POST') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const projectId = body.project_id;
+      const instruction = (body.instruction || '').trim();
+      const imageDataUrl = body.image_base64 || '';
+
+      if (!projectId) throw new Error('project_id required');
+      if (!instruction) throw new Error('instruction required');
+      if (!imageDataUrl.startsWith('data:image/')) throw new Error('image_base64 must be a data URL');
+
+      // Strip data URL header and decode base64
+      const b64 = imageDataUrl.split(',')[1] || '';
+      const buf = Buffer.from(b64, 'base64');
+      const tmpDir = path.join(DATA_DIR, projectId, 'thumbnails');
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const tmpPath = path.join(tmpDir, `_marked_${Date.now()}.png`);
+      fs.writeFileSync(tmpPath, buf);
+
+      console.log('[Region Edit] project:', projectId, 'instruction:', instruction.substring(0, 80), 'marked size:', buf.length, 'bytes');
+
+      try {
+        await runAgent(['edit-cover-region', projectId, tmpPath, instruction]);
+      } finally {
+        // Clean up the temp marked image
+        try { fs.unlinkSync(tmpPath); } catch(_) {}
+      }
+
+      // Find the latest custom_*.jpg
+      let imageUrl = '';
+      if (fs.existsSync(tmpDir)) {
+        const files = fs.readdirSync(tmpDir).filter(f => f.startsWith('custom_'))
+          .sort((a, b) => {
+            const na = parseInt(a.match(/custom_(\d+)/)?.[1] || '0');
+            const nb = parseInt(b.match(/custom_(\d+)/)?.[1] || '0');
+            return nb - na;
+          });
+        if (files[0]) imageUrl = `/api/file/${projectId}/thumbnails/${files[0]}`;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, image_url: imageUrl }));
+    } catch (err) {
+      console.error('[Region Edit Error]', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
   // POST /api/generate-cover-editor — generate cover from editor state
   if (pathname === '/api/generate-cover-editor' && req.method === 'POST') {
     try {
