@@ -43,7 +43,11 @@ RECRAFT_I2I_URL = "https://external.api.recraft.ai/v1/images/imageToImage"
 MASTER_PROMPT = (
     "Keep the person's face identical to the uploaded photo. "
     "Create a vibrant, clickable YouTube thumbnail with the person. "
-    "If text is specified, render it exactly as described — correct spelling, position, and style."
+    "If text is specified, render it exactly as described — correct spelling, position, and style. "
+    "All on-image text must be in Cyrillic (Russian alphabet), NEVER Latin/English. "
+    "If the scene shows money or banknotes, they MUST be Russian 5000-ruble notes "
+    "(distinctive purple/violet color with Khabarov monument, NOT US dollars, NOT euros). "
+    "Russian audience — Russian visual context."
 )
 
 
