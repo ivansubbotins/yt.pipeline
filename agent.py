@@ -497,10 +497,11 @@ def cmd_recommend_topics(args):
     )
 
     from steps.base import _build_anthropic_client
+    from config import ANTHROPIC_MODEL
     client = _build_anthropic_client()
     result = ""
     with client.messages.stream(
-        model="claude-sonnet-4-20250514",
+        model=ANTHROPIC_MODEL,
         max_tokens=8000,
         system="Ты — YouTube-стратег. Анализируешь видео канала и предлагаешь темы для новых видео.",
         messages=[{"role": "user", "content": f"""Проанализируй видео канала и предложи темы для новых видео.

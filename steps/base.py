@@ -7,7 +7,7 @@ import os
 
 import anthropic
 
-from config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL, load_channel_context
+from config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL, ANTHROPIC_FALLBACK_MODEL, load_channel_context
 from state import PipelineState, StepStatus
 
 logger = logging.getLogger(__name__)
@@ -29,16 +29,21 @@ def _build_anthropic_client():
     # No credentials anywhere — let the SDK throw its own error when we actually call it
     return anthropic.Anthropic()
 
-# Claude pricing (per 1M tokens) — Sonnet 4 / Sonnet 3.5
+# Claude pricing (per 1M tokens)
 CLAUDE_PRICING = {
-    "claude-sonnet-4-20250514": {"input": 3.0, "output": 15.0},
+    "claude-sonnet-4-5": {"input": 3.0, "output": 15.0},
+    "claude-sonnet-4-5-20250929": {"input": 3.0, "output": 15.0},
+    "claude-sonnet-4-6": {"input": 3.0, "output": 15.0},
+    "claude-sonnet-4-7": {"input": 3.0, "output": 15.0},
+    "claude-sonnet-4-20250514": {"input": 3.0, "output": 15.0},  # legacy alias
     "claude-3-5-sonnet-20241022": {"input": 3.0, "output": 15.0},
     "claude-3-5-sonnet-latest": {"input": 3.0, "output": 15.0},
-    "claude-sonnet-4-6": {"input": 3.0, "output": 15.0},
+    "claude-opus-4-7": {"input": 15.0, "output": 75.0},
     "claude-opus-4-6": {"input": 15.0, "output": 75.0},
     "claude-3-opus-20240229": {"input": 15.0, "output": 75.0},
-    "claude-3-haiku-20240307": {"input": 0.25, "output": 1.25},
+    "claude-haiku-4-5": {"input": 1.0, "output": 5.0},
     "claude-haiku-4-5-20251001": {"input": 1.0, "output": 5.0},
+    "claude-3-haiku-20240307": {"input": 0.25, "output": 1.25},
 }
 
 
@@ -130,34 +135,51 @@ class BaseStep(ABC):
         return "Контекст автора и канала:\n" + "\n".join(parts)
 
     def ask_claude(self, system: str, prompt: str) -> str:
-        """Send a prompt to Claude and return the response text. Tracks token usage."""
+        """Send a prompt to Claude and return the response text. Tracks token usage.
+        Falls back to ANTHROPIC_FALLBACK_MODEL on rate-limit (subscription Sonnet/Opus
+        quota tends to deplete before Haiku does).
+        """
         from datetime import datetime
         today = datetime.now().strftime("%Y-%m-%d")
         author_ctx = self._build_author_context()
         system = "Сегодняшняя дата: " + today + ". Контекст: Россия, русскоязычная аудитория, все цены в рублях, российские реалии. Используй актуальный год.\n\n" + (author_ctx + "\n\n" if author_ctx else "") + system
-        result = ""
-        with self.client.messages.stream(
-            model=self.model,
-            max_tokens=32000,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
-        ) as stream:
-            for text in stream.text_stream:
-                result += text
-            # Get final message with usage stats
-            final = stream.get_final_message()
+
+        def _stream_with(model_name: str):
+            text_out = ""
+            with self.client.messages.stream(
+                model=model_name,
+                max_tokens=32000,
+                system=system,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                for chunk in stream.text_stream:
+                    text_out += chunk
+                return text_out, stream.get_final_message()
+
+        try:
+            result, final = _stream_with(self.model)
+            used_model = self.model
+        except anthropic.RateLimitError as rl_err:
+            if ANTHROPIC_FALLBACK_MODEL and ANTHROPIC_FALLBACK_MODEL != self.model:
+                logger.warning(
+                    f"Rate-limited on {self.model}, falling back to {ANTHROPIC_FALLBACK_MODEL}: {rl_err}"
+                )
+                result, final = _stream_with(ANTHROPIC_FALLBACK_MODEL)
+                used_model = ANTHROPIC_FALLBACK_MODEL
+            else:
+                raise
 
         # Track usage
         if final and hasattr(final, 'usage') and final.usage:
             inp = final.usage.input_tokens or 0
             out = final.usage.output_tokens or 0
-            pricing = CLAUDE_PRICING.get(self.model, {"input": 3.0, "output": 15.0})
+            pricing = CLAUDE_PRICING.get(used_model, {"input": 3.0, "output": 15.0})
             cost = (inp * pricing["input"] + out * pricing["output"]) / 1_000_000
             self._usage_total["input_tokens"] += inp
             self._usage_total["output_tokens"] += out
             self._usage_total["cost_usd"] += cost
             self._usage_total["calls"] += 1
-            logger.info(f"  Claude call: {inp:,} in + {out:,} out = ${cost:.4f}")
+            logger.info(f"  Claude call ({used_model}): {inp:,} in + {out:,} out = ${cost:.4f}")
 
         return result
 

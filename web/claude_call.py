@@ -64,22 +64,36 @@ def main():
         }, ensure_ascii=False))
         sys.exit(1)
 
-    # Optional model override; defaults to a known-good Sonnet build.
-    model = os.environ.get("ANTHROPIC_MODEL", "").strip() or "claude-sonnet-4-20250514"
+    # Optional model override; defaults to current Sonnet build name.
+    primary_model = os.environ.get("ANTHROPIC_MODEL", "").strip() or "claude-sonnet-4-5"
+    fallback_model = os.environ.get("ANTHROPIC_FALLBACK_MODEL", "").strip() or "claude-haiku-4-5"
 
-    try:
-        client = anthropic.Anthropic(**auth_kwargs)
-        response = client.messages.create(
-            model=model,
+    client = anthropic.Anthropic(**auth_kwargs)
+
+    def _call(model_name):
+        return client.messages.create(
+            model=model_name,
             max_tokens=4096,
             system=system_prompt,
             messages=[{"role": "user", "content": user_message}],
         )
+
+    try:
+        try:
+            response = _call(primary_model)
+            used_model = primary_model
+        except anthropic.RateLimitError:
+            # Subscription quota for Sonnet/Opus often runs out before Haiku does
+            # — fall back to a cheaper/faster model rather than failing the whole step.
+            response = _call(fallback_model)
+            used_model = fallback_model + " (fallback after rate-limit)"
+
         text = response.content[0].text if response.content else ""
         usage = {
             "input_tokens": response.usage.input_tokens,
             "output_tokens": response.usage.output_tokens,
             "auth_mode": mode,
+            "model": used_model,
         }
         print(json.dumps({"ok": True, "text": text, "usage": usage}, ensure_ascii=False))
     except Exception as e:
