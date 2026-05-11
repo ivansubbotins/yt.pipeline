@@ -3,12 +3,31 @@
 import logging
 from abc import ABC, abstractmethod
 
+import os
+
 import anthropic
 
 from config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL, load_channel_context
 from state import PipelineState, StepStatus
 
 logger = logging.getLogger(__name__)
+
+
+def _build_anthropic_client():
+    """Create an Anthropic client using OAuth subscription token if available,
+    otherwise fall back to a pay-per-use API key. Mirrors the resolution in
+    web/claude_call.py so all entrypoints share the same auth path.
+    """
+    oauth = (
+        os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "").strip()
+        or os.environ.get("ANTHROPIC_AUTH_TOKEN", "").strip()
+    )
+    if oauth:
+        return anthropic.Anthropic(auth_token=oauth)
+    if ANTHROPIC_API_KEY:
+        return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    # No credentials anywhere — let the SDK throw its own error when we actually call it
+    return anthropic.Anthropic()
 
 # Claude pricing (per 1M tokens) — Sonnet 4 / Sonnet 3.5
 CLAUDE_PRICING = {
@@ -30,7 +49,7 @@ class BaseStep(ABC):
 
     def __init__(self, state: PipelineState):
         self.state = state
-        self.client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        self.client = _build_anthropic_client()
         self.model = ANTHROPIC_MODEL
         self._usage_total = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "calls": 0}
 

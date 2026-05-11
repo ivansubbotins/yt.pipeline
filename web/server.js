@@ -293,9 +293,11 @@ function callClaude(systemPrompt, userMessage) {
           let errMsg = result.error || 'Claude API error';
           // Pretty-print common errors
           if (/credit balance is too low/i.test(errMsg)) {
-            errMsg = 'Anthropic credit balance is too low. Top up at console.anthropic.com → Plans & Billing.';
-          } else if (/invalid x-api-key/i.test(errMsg)) {
-            errMsg = 'Invalid ANTHROPIC_API_KEY. Check .env on the server.';
+            errMsg = 'Anthropic credit balance is too low. Top up at console.anthropic.com → Plans & Billing — or set CLAUDE_CODE_OAUTH_TOKEN to use a Pro/Max subscription instead.';
+          } else if (/Could not resolve authentication method/i.test(errMsg) || /No Claude credentials/i.test(errMsg)) {
+            errMsg = 'Claude not configured. Run `claude setup-token` locally, paste the result into the server\'s .env as CLAUDE_CODE_OAUTH_TOKEN=... (uses your Pro/Max subscription). Or set ANTHROPIC_API_KEY=sk-ant-... for pay-per-use credits.';
+          } else if (/invalid x-api-key/i.test(errMsg) || /invalid bearer token/i.test(errMsg)) {
+            errMsg = 'Invalid Claude credentials. Check CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY in .env on the server.';
           } else if (/rate limit/i.test(errMsg)) {
             errMsg = 'Anthropic rate limit hit. Wait a minute and retry.';
           }

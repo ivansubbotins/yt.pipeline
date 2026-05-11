@@ -496,7 +496,8 @@ def cmd_recommend_topics(args):
         ensure_ascii=False, indent=2
     )
 
-    client = anthropic.Anthropic()
+    from steps.base import _build_anthropic_client
+    client = _build_anthropic_client()
     result = ""
     with client.messages.stream(
         model="claude-sonnet-4-20250514",
