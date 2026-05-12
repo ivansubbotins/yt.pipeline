@@ -68,6 +68,12 @@ class DubbingStep(BaseStep):
         # 2. Transcribe Russian
         transcript_path = dubbing_dir / "transcript_ru.json"
         segments = self._transcribe(audio_path, transcript_path)
+        # Write Russian subtitles (idempotent, cheap)
+        self._write_subtitles(
+            segments,
+            dubbing_dir / "subtitles.ru.srt",
+            dubbing_dir / "subtitles.ru.vtt",
+        )
 
         # 3. Separate vocals from background (demucs)
         background_path = dubbing_dir / "background.wav"
@@ -107,6 +113,13 @@ class DubbingStep(BaseStep):
                 self._save_progress(dubbing_dir, lang_code, "combining_audio", {})
                 combined_path = lang_dir / "combined.wav"
                 self._combine_audio(tts_files, translated, background_path, combined_path, video_duration)
+
+                # 6b. Write translated subtitles (SRT + VTT) for this language
+                self._write_subtitles(
+                    translated,
+                    dubbing_dir / f"subtitles.{lang_code}.srt",
+                    dubbing_dir / f"subtitles.{lang_code}.vtt",
+                )
 
                 self._save_progress(dubbing_dir, lang_code, "translating_metadata", {})
                 metadata = self._translate_metadata(
@@ -587,6 +600,32 @@ Respond ONLY with valid JSON:
         state[lang_code] = {"stage": stage, "updated_at": time.time(), **data}
         with open(state_file, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
+
+    @staticmethod
+    def _fmt_ts(sec: float, comma: bool = True) -> str:
+        """Format seconds as HH:MM:SS,mmm (SRT) or HH:MM:SS.mmm (VTT)."""
+        h = int(sec // 3600)
+        m = int((sec % 3600) // 60)
+        s = sec - h * 3600 - m * 60
+        out = f"{h:02d}:{m:02d}:{s:06.3f}"
+        return out.replace(".", ",") if comma else out
+
+    def _write_subtitles(self, segments: list, srt_path: Path, vtt_path: Path):
+        """Write SRT and WebVTT subtitle files from [{start,end,text}] segments."""
+        with open(srt_path, "w", encoding="utf-8") as f:
+            for i, seg in enumerate(segments, 1):
+                f.write(
+                    f"{i}\n{self._fmt_ts(seg['start'])} --> {self._fmt_ts(seg['end'])}\n"
+                    f"{(seg.get('text') or '').strip()}\n\n"
+                )
+        with open(vtt_path, "w", encoding="utf-8") as f:
+            f.write("WEBVTT\n\n")
+            for i, seg in enumerate(segments, 1):
+                f.write(
+                    f"{i}\n{self._fmt_ts(seg['start'], comma=False)} --> "
+                    f"{self._fmt_ts(seg['end'], comma=False)}\n"
+                    f"{(seg.get('text') or '').strip()}\n\n"
+                )
 
 
 # ── Standalone functions for API use ──

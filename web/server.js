@@ -1120,6 +1120,26 @@ http.createServer(async (req, res) => {
       return;
     }
 
+    // GET /api/v1/projects/:id/dubbing/:lang/subtitles[.srt|.vtt] — download subtitles
+    {
+      const m = v1path.match(/^\/projects\/([^/]+)\/dubbing\/([a-z]{2})\/subtitles(\.srt|\.vtt)?$/);
+      if (m && req.method === 'GET') {
+        const projectId = m[1];
+        const lang = m[2];
+        const ext = (m[3] || '.srt').slice(1); // 'srt' or 'vtt'
+        const subPath = path.join(DATA_DIR, projectId, 'dubbing', `subtitles.${lang}.${ext}`);
+        if (!fs.existsSync(subPath)) return jsonErr('NOT_FOUND', `Subtitles not found for ${lang} (${ext})`, 404);
+        const stat = fs.statSync(subPath);
+        res.writeHead(200, {
+          'Content-Type': ext === 'vtt' ? 'text/vtt; charset=utf-8' : 'application/x-subrip; charset=utf-8',
+          'Content-Length': stat.size,
+          'Content-Disposition': `attachment; filename="subtitles_${lang}.${ext}"`,
+        });
+        fs.createReadStream(subPath).pipe(res);
+        return;
+      }
+    }
+
     // POST /api/v1/projects/:id/dubbing/:lang/publish — publish dubbed video to YouTube
     if (v1path.match(/^\/projects\/[^/]+\/dubbing\/[a-z]{2}\/publish$/) && req.method === 'POST') {
       const parts = v1path.split('/');

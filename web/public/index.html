@@ -3847,7 +3847,7 @@ async function refreshDetail() {
         const failed = langs.filter(l => l.status === 'failed');
         dubbingPanel = `
         <div style="margin-top:12px;">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
             <div style="background:var(--surface-container-low);border:1px solid var(--green);border-radius:8px;padding:10px;text-align:center;min-width:100px;">
               <div style="font-size:22px;font-weight:700;color:var(--green);">${completed.length}</div>
               <div style="font-size:10px;color:var(--muted);">${t('done_label')}</div>
@@ -3857,6 +3857,11 @@ async function refreshDetail() {
               <div style="font-size:22px;font-weight:700;color:var(--red);">${failed.length}</div>
               <div style="font-size:10px;color:var(--muted);">${t('errors_label')}</div>
             </div>` : ''}
+            <div style="display:flex;gap:6px;align-items:center;margin-left:auto;">
+              <span style="font-size:11px;color:var(--muted);">🇷🇺 RU subs:</span>
+              <button class="btn btn-outline btn-xs" title="Russian subtitles (SRT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/ru/subtitles.srt')">SRT</button>
+              <button class="btn btn-outline btn-xs" title="Russian subtitles (WebVTT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/ru/subtitles.vtt')">VTT</button>
+            </div>
           </div>
           <div style="display:grid;gap:8px;">
             ${langs.map(l => {
@@ -3872,7 +3877,9 @@ async function refreshDetail() {
                 <span style="color:${isOk ? 'var(--green)' : 'var(--red)'};font-size:13px;">${isOk ? '✓' : 'Error: ' + esc(l.error || '')}</span>
                 ${isOk ? `
                   <audio controls style="height:28px;max-width:150px;" src="/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}" preload="none"></audio>
-                  <button class="btn btn-outline btn-xs" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}')"><span class="material-symbols-outlined" style="font-size:14px;">download</span></button>
+                  <button class="btn btn-outline btn-xs" title="Audio (WAV)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}')"><span class="material-symbols-outlined" style="font-size:14px;">download</span></button>
+                  <button class="btn btn-outline btn-xs" title="Subtitles (SRT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}/subtitles.srt')">SRT</button>
+                  <button class="btn btn-outline btn-xs" title="Subtitles (WebVTT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}/subtitles.vtt')">VTT</button>
                 ` : ''}
               </div>`;
             }).join('')}
