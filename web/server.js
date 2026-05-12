@@ -1154,6 +1154,54 @@ http.createServer(async (req, res) => {
       return json200({ project_id: projectId, lang, output: output.trim() });
     }
 
+    // POST /api/v1/projects/:id/cover-translations — start translating cover text into all dubbing languages
+    if (v1path.match(/^\/projects\/[^/]+\/cover-translations$/) && req.method === 'POST') {
+      const projectId = v1path.split('/')[2];
+      const projectDir = path.join(DATA_DIR, projectId);
+      if (!fs.existsSync(projectDir)) return jsonErr('NOT_FOUND', 'Project not found', 404);
+      const body = await readBody(req).then(b => { try { return JSON.parse(b || '{}'); } catch { return {}; } });
+
+      // Detach via nohup so a PM2 restart doesn't kill the long-running translation
+      const logPath = `/tmp/cover-translate-${Date.now()}.log`;
+      const python = fs.existsSync(path.join(PIPELINE_DIR, '.venv', 'bin', 'python3'))
+        ? path.join(PIPELINE_DIR, '.venv', 'bin', 'python3')
+        : 'python3';
+      // Real command: <python> agent.py translate-covers <project> [--files X] [--force]
+      const filesArg = body.files && body.files.length ? `--files ${JSON.stringify(body.files.join(','))}` : '';
+      const forceArg = body.force ? '--force' : '';
+      const shellCmd = `cd ${JSON.stringify(PIPELINE_DIR)} && nohup ${JSON.stringify(python)} ${JSON.stringify(AGENT_PY)} translate-covers ${JSON.stringify(projectId)} ${filesArg} ${forceArg} > ${JSON.stringify(logPath)} 2>&1 < /dev/null &`;
+      const proc = spawn('bash', ['-c', shellCmd], { detached: true, stdio: 'ignore' });
+      proc.unref();
+      return json200({ ok: true, started: true, project_id: projectId, log_path: logPath });
+    }
+
+    // GET /api/v1/projects/:id/cover-translations — status + results listing
+    if (v1path.match(/^\/projects\/[^/]+\/cover-translations$/) && req.method === 'GET') {
+      const projectId = v1path.split('/')[2];
+      const stateFile = path.join(DATA_DIR, projectId, 'thumbnails', 'translated', '_state.json');
+      if (!fs.existsSync(stateFile)) return json200({ status: 'never_run', results: {}, languages: [], files: [] });
+      try {
+        return json200(JSON.parse(fs.readFileSync(stateFile, 'utf8')));
+      } catch (e) {
+        return jsonErr('READ_FAILED', e.message, 500);
+      }
+    }
+
+    // GET /api/v1/projects/:id/cover-translations/:lang/:file.jpg — serve translated cover image
+    {
+      const m = v1path.match(/^\/projects\/([^/]+)\/cover-translations\/([a-z]{2})\/(.+\.jpg)$/);
+      if (m && req.method === 'GET') {
+        const [, projectId, lang, file] = m;
+        // The file should already be prefixed with <lang>_ on disk.
+        const expectedName = file.startsWith(`${lang}_`) ? file : `${lang}_${file}`;
+        const imgPath = path.join(DATA_DIR, projectId, 'thumbnails', 'translated', expectedName);
+        if (!fs.existsSync(imgPath)) return jsonErr('NOT_FOUND', `Translated cover not found: ${expectedName}`, 404);
+        res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' });
+        fs.createReadStream(imgPath).pipe(res);
+        return;
+      }
+    }
+
     // GET /api/v1/dubbing/languages — available languages
     if (v1path === '/dubbing/languages' && req.method === 'GET') {
       return json200({

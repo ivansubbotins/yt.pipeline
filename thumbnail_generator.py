@@ -219,6 +219,56 @@ def edit_thumbnail_with_marks(
     return img
 
 
+def translate_thumbnail_text(
+    image_path: str | Path,
+    translated_text: str,
+    language_name: str,
+    original_text: str = "",
+) -> Image.Image:
+    """Replace the text overlay on a thumbnail with a translation, keeping visuals identical.
+
+    Used by the per-project 'translate covers to 7 languages' flow. Sends the existing
+    cover image plus an instruction to Nano Banana that asks the model to swap out only
+    the text overlay — same font style, same position, same everything else.
+    """
+    import fal_client
+
+    os.environ["FAL_KEY"] = FAL_KEY
+    img_url = fal_client.upload_file(str(image_path))
+    logger.info(f"Cover uploaded for translation ({language_name}): {img_url}")
+
+    original_clause = f" The original text is in Russian: \"{original_text}\"." if original_text else ""
+    full_prompt = (
+        f"{MASTER_PROMPT} "
+        "TASK: Replace ALL text on this image with the new text below. "
+        "Keep the visual style, colors, layout, person, facial features, composition, "
+        "lighting, background and every other detail IDENTICAL to the input image. "
+        "ONLY the text should change. Use the same font weight (bold), same approximate "
+        "size and the same position as the original text. Preserve any color highlights "
+        "or stroke effects used in the original."
+        f"{original_clause} "
+        f"NEW TEXT ({language_name}): \"{translated_text}\". "
+        "Render the new text accurately and legibly — every character must be readable. "
+        "For non-Latin scripts (Japanese/Chinese/Korean) use clean sans-serif typography "
+        "that fits the YouTube thumbnail style."
+    )
+
+    logger.info(f"Cover-translate Nano Banana: {language_name} → {translated_text[:60]}")
+    result = fal_client.subscribe("fal-ai/nano-banana-pro/edit", arguments={
+        "prompt": full_prompt,
+        "image_urls": [img_url],
+        "aspect_ratio": "16:9",
+        "output_format": "jpeg",
+        "num_images": 1,
+    })
+    image_url = result["images"][0]["url"]
+    img_resp = requests.get(image_url, timeout=60)
+    img_resp.raise_for_status()
+    img = Image.open(io.BytesIO(img_resp.content))
+    img = img.resize((THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT), Image.LANCZOS)
+    return img
+
+
 def generate_scene_gradient(colors: list[str]) -> Image.Image:
     """Fallback: generate a gradient background."""
     img = Image.new("RGB", (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT))

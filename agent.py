@@ -361,6 +361,188 @@ def cmd_edit_cover_region(args):
     print(f"Edited: {out_path}")
 
 
+def cmd_translate_covers(args):
+    """Translate the text overlay on project covers into every dubbing language.
+
+    For each cover file in data/<project>/thumbnails/ (or a subset specified by --files),
+    read the Russian text via Claude vision (cached in cover_text_cache.json),
+    translate it via Claude to each language in dubbing_config.json, then call
+    Nano Banana to swap the text on the original image. Results land in
+    data/<project>/thumbnails/translated/<lang>_<orig_name>.
+
+    Progress is written to data/<project>/thumbnails/translated/_state.json
+    so the UI can poll.
+    """
+    import json as _json
+    import base64
+    from PIL import Image
+    from io import BytesIO
+    from config import load_channel_context_by_id
+    from thumbnail_generator import translate_thumbnail_text
+    from steps.dubbing import LANGUAGES
+    from steps.base import _build_anthropic_client
+    from state import PipelineState
+
+    state = PipelineState(args.project_id)
+    project_dir = state.project_dir
+    thumbs_dir = project_dir / "thumbnails"
+    if not thumbs_dir.exists():
+        print(f"Error: no thumbnails dir for project {args.project_id}")
+        sys.exit(1)
+
+    # Resolve which covers to translate
+    if args.files:
+        cover_files = [thumbs_dir / f for f in args.files.split(",") if (thumbs_dir / f).exists()]
+    else:
+        cover_files = sorted([p for p in thumbs_dir.iterdir() if p.is_file() and p.suffix.lower() in (".jpg", ".jpeg", ".png")])
+        # Skip already-translated files (named <lang>_*.jpg in the translated subdir)
+        cover_files = [p for p in cover_files if not p.name.startswith("translated_")]
+    if not cover_files:
+        print("No cover files to translate.")
+        return
+
+    # Load target languages
+    config_file = project_dir / "dubbing_config.json"
+    if config_file.exists():
+        languages = _json.loads(config_file.read_text("utf-8")).get("languages", [])
+    else:
+        languages = list(LANGUAGES.keys())
+    languages = [l for l in languages if l in LANGUAGES]
+    if not languages:
+        print("No target languages configured.")
+        return
+
+    out_dir = thumbs_dir / "translated"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    state_file = out_dir / "_state.json"
+
+    def _save_state(s):
+        state_file.write_text(_json.dumps(s, ensure_ascii=False, indent=2), "utf-8")
+
+    progress = {
+        "started_at": __import__("time").time(),
+        "files": [c.name for c in cover_files],
+        "languages": languages,
+        "status": "in_progress",
+        "results": {},  # {cover_name: {lang: {status, file?, error?}}}
+        "original_texts": {},  # {cover_name: ru_text}
+    }
+    _save_state(progress)
+
+    client = _build_anthropic_client()
+    text_cache_file = thumbs_dir / "cover_text_cache.json"
+    text_cache = {}
+    if text_cache_file.exists():
+        try:
+            text_cache = _json.loads(text_cache_file.read_text("utf-8"))
+        except Exception:
+            text_cache = {}
+
+    def _extract_ru_text(image_path: Path) -> str:
+        """Read Russian text from cover via Claude vision (cached)."""
+        if image_path.name in text_cache:
+            return text_cache[image_path.name]
+        img_bytes = image_path.read_bytes()
+        b64 = base64.standard_b64encode(img_bytes).decode("ascii")
+        media_type = "image/jpeg" if image_path.suffix.lower() in (".jpg", ".jpeg") else "image/png"
+        resp = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=300,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
+                    {"type": "text", "text": (
+                        "Прочитай ВЕСЬ текст, который видишь на этой обложке YouTube. "
+                        "Верни строго JSON: {\"text\": \"<весь текст с обложки одной строкой, как написано>\"}. "
+                        "Если на обложке несколько отдельных надписей — объедини их через ' | '. "
+                        "Без объяснений, только JSON."
+                    )},
+                ],
+            }],
+        )
+        raw = resp.content[0].text.strip()
+        # Strip code fences if present
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw
+            raw = raw.rsplit("```", 1)[0]
+        try:
+            data = _json.loads(raw)
+            text = (data.get("text") or "").strip()
+        except Exception:
+            text = raw.strip().strip('"')
+        text_cache[image_path.name] = text
+        text_cache_file.write_text(_json.dumps(text_cache, ensure_ascii=False, indent=2), "utf-8")
+        return text
+
+    def _translate(ru_text: str, lang_name: str) -> str:
+        prompt = (
+            f"Translate this YouTube thumbnail text from Russian to {lang_name}. "
+            "Keep it SHORT, PUNCHY and ALL CAPS where the original uses caps. "
+            "If the original is split by ' | ' keep the same split in the translation. "
+            "Return strict JSON: {\"text\": \"<translation>\"}.\n\n"
+            f"Russian: \"{ru_text}\""
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw
+            raw = raw.rsplit("```", 1)[0]
+        try:
+            return (_json.loads(raw).get("text") or "").strip()
+        except Exception:
+            return raw.strip().strip('"')
+
+    # Process each cover × each language
+    for cover_path in cover_files:
+        progress["results"].setdefault(cover_path.name, {})
+        try:
+            ru_text = _extract_ru_text(cover_path)
+        except Exception as e:
+            print(f"Failed to read text from {cover_path.name}: {e}")
+            progress["results"][cover_path.name]["__read_error__"] = str(e)
+            _save_state(progress)
+            continue
+        progress["original_texts"][cover_path.name] = ru_text
+        _save_state(progress)
+
+        for lang_code in languages:
+            lang_name = LANGUAGES[lang_code]
+            out_path = out_dir / f"{lang_code}_{cover_path.stem}.jpg"
+            if out_path.exists() and not args.force:
+                progress["results"][cover_path.name][lang_code] = {"status": "completed", "file": out_path.name, "skipped": True}
+                _save_state(progress)
+                continue
+            try:
+                translated = _translate(ru_text, lang_name)
+                img = translate_thumbnail_text(
+                    image_path=cover_path,
+                    translated_text=translated,
+                    language_name=lang_name,
+                    original_text=ru_text,
+                )
+                img.save(str(out_path), "JPEG", quality=92)
+                progress["results"][cover_path.name][lang_code] = {
+                    "status": "completed",
+                    "file": out_path.name,
+                    "translated_text": translated,
+                }
+                print(f"  ✓ {cover_path.name} → {lang_code}: {translated[:60]}")
+            except Exception as e:
+                progress["results"][cover_path.name][lang_code] = {"status": "failed", "error": str(e)}
+                print(f"  ✗ {cover_path.name} → {lang_code}: {e}")
+            _save_state(progress)
+
+    progress["status"] = "completed"
+    progress["finished_at"] = __import__("time").time()
+    _save_state(progress)
+    print(f"Done. {len(cover_files)} covers × {len(languages)} languages.")
+
+
 def cmd_publish(args):
     if not args.approve:
         print("Публикация требует утверждения Иваном.")
@@ -652,6 +834,12 @@ def main():
     p_ecr.add_argument("marked_image", help="Path to image with brush marks burned in")
     p_ecr.add_argument("instruction", help="Что сделать с выделенной областью (RU)")
 
+    # translate-covers — translate text on selected covers into all dubbing languages
+    p_tc = subparsers.add_parser("translate-covers", help="Перевести текст обложек на все языки дубляжа")
+    p_tc.add_argument("project_id", help="ID проекта")
+    p_tc.add_argument("--files", default="", help="Через запятую: какие обложки переводить (по умолчанию все)")
+    p_tc.add_argument("--force", action="store_true", help="Перегенерировать, если файл уже существует")
+
     # playlists
     subparsers.add_parser("playlists", help="Список плейлистов канала")
 
@@ -699,6 +887,7 @@ def main():
         "edit-done": cmd_edit_done,
         "generate-cover-custom": cmd_generate_cover_custom,
         "edit-cover-region": cmd_edit_cover_region,
+        "translate-covers": cmd_translate_covers,
         "publish": cmd_publish,
         "dub": cmd_dub,
         "playlists": cmd_playlists,

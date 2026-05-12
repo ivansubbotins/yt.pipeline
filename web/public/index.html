@@ -3921,6 +3921,16 @@ async function refreshDetail() {
               </div>`;
             }).join('')}
           </div>
+          <!-- Cover translations -->
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-weight:600;font-size:13px;">${t('cover_translations') || 'Переводы обложек'}</div>
+              <button class="btn btn-blue btn-sm" id="btnTranslateCovers" onclick="startCoverTranslations('${state.project_id}', this)">
+                <span class="material-symbols-outlined" style="font-size:14px;">translate</span> ${t('btn_translate_covers') || 'Перевести обложки'}
+              </button>
+            </div>
+            <div id="coverTranslationsView" data-project="${state.project_id}" style="font-size:12px;color:var(--muted);">${t('cover_translations_hint') || 'Запусти перевод — на каждой обложке текст заменится переводом на все языки дубляжа.'}</div>
+          </div>
         </div>`;
       }
     }
@@ -4188,6 +4198,129 @@ async function startDubbing(btn) {
   } catch (e) { toast(e.message, true); }
   btn.disabled = false;
   btn.textContent = t('btn_start_dubbing');
+}
+
+// ── Cover translations (per-language thumbnail text swap) ──
+
+async function startCoverTranslations(projectId, btn) {
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="loading"></span>${t('btn_translating') || 'Перевожу…'}`; }
+  try {
+    const r = await fetch(`/api/v1/projects/${projectId}/cover-translations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const data = await r.json();
+    if (!r.ok || data.error) {
+      toast((data.error && data.error.message) || t('toast_generic_error'), true);
+      if (btn) { btn.disabled = false; btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;">translate</span> ${t('btn_translate_covers') || 'Перевести обложки'}`; }
+      return;
+    }
+    toast(t('toast_translation_started') || 'Перевод обложек запущен');
+    // Poll while running
+    pollCoverTranslations(projectId, btn);
+  } catch (e) {
+    toast(e.message, true);
+    if (btn) { btn.disabled = false; btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;">translate</span> ${t('btn_translate_covers') || 'Перевести обложки'}`; }
+  }
+}
+
+async function pollCoverTranslations(projectId, btn) {
+  let stableCount = 0;
+  let lastDoneCount = -1;
+  for (let i = 0; i < 360; i++) { // up to 30 min
+    try {
+      const r = await fetch(`/api/v1/projects/${projectId}/cover-translations`);
+      const data = await r.json();
+      renderCoverTranslations(projectId, data);
+      if (data.status === 'completed') break;
+      // Track doneness — if it hasn't moved in 3 polls AND nothing is in_progress, consider stale
+      const doneCount = countDoneCoverTranslations(data);
+      if (doneCount === lastDoneCount) stableCount++;
+      else { stableCount = 0; lastDoneCount = doneCount; }
+      if (data.status !== 'in_progress' && stableCount >= 3) break;
+    } catch {}
+    await new Promise(res => setTimeout(res, 5000));
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;">refresh</span> ${t('btn_translate_covers_again') || 'Перевести ещё раз'}`;
+  }
+}
+
+function countDoneCoverTranslations(data) {
+  let n = 0;
+  for (const cover of Object.values(data.results || {})) {
+    for (const lang of Object.values(cover || {})) {
+      if (lang && lang.status === 'completed') n++;
+    }
+  }
+  return n;
+}
+
+function renderCoverTranslations(projectId, data) {
+  const root = document.getElementById('coverTranslationsView');
+  if (!root) return;
+  const results = data.results || {};
+  const originals = data.original_texts || {};
+  const covers = Object.keys(results);
+  if (covers.length === 0) {
+    root.innerHTML = `<div style="font-size:12px;color:var(--muted);">${t('cover_translations_hint') || 'Запусти перевод — на каждой обложке текст заменится переводом на все языки дубляжа.'}</div>`;
+    return;
+  }
+  const langFlags = { en: '🇺🇸', es: '🇪🇸', pt: '🇧🇷', de: '🇩🇪', ko: '🇰🇷', ja: '🇯🇵', zh: '🇨🇳' };
+  root.innerHTML = covers.map(coverName => {
+    const orig = originals[coverName] || '';
+    const langMap = results[coverName] || {};
+    const cells = Object.keys(langMap).filter(k => k !== '__read_error__').map(lang => {
+      const r = langMap[lang];
+      const flag = langFlags[lang] || '🏳️';
+      if (!r) return '';
+      if (r.status === 'completed') {
+        const imgUrl = `/api/v1/projects/${projectId}/cover-translations/${lang}/${encodeURIComponent(r.file)}`;
+        return `<a href="${imgUrl}" target="_blank" style="display:block;text-decoration:none;color:inherit;">
+          <div style="position:relative;border:1px solid var(--green);border-radius:6px;overflow:hidden;background:var(--surface-container-low);">
+            <img src="${imgUrl}" style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;" loading="lazy">
+            <div style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;">${flag} ${lang.toUpperCase()}</div>
+          </div>
+          ${r.translated_text ? `<div style="font-size:10px;color:var(--muted);padding:4px 2px;">${esc(r.translated_text)}</div>` : ''}
+        </a>`;
+      }
+      if (r.status === 'failed') {
+        return `<div style="border:1px solid var(--red);border-radius:6px;padding:8px;text-align:center;font-size:11px;color:var(--red);" title="${esc(r.error || '')}">${flag} ${lang.toUpperCase()}<br>✗ ${t('error_short') || 'Ошибка'}</div>`;
+      }
+      return `<div style="border:1px dashed var(--border);border-radius:6px;padding:8px;text-align:center;font-size:11px;color:var(--muted);">${flag} ${lang.toUpperCase()}<br>…</div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:600;">${esc(coverName)}</div>
+        ${orig ? `<div style="font-size:10px;color:var(--muted);max-width:60%;text-align:right;">🇷🇺 ${esc(orig)}</div>` : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));gap:8px;">${cells}</div>
+    </div>`;
+  }).join('');
+}
+
+// Auto-load existing cover-translation state when dubbing panel renders
+document.addEventListener('DOMContentLoaded', () => {
+  // Initial load handled by an observer below
+});
+// Lazy-fetch existing cover translations the first time the panel is rendered
+function ensureCoverTranslationsLoaded() {
+  document.querySelectorAll('#coverTranslationsView[data-project]:not([data-loaded])').forEach(async (el) => {
+    el.setAttribute('data-loaded', '1');
+    const pid = el.getAttribute('data-project');
+    try {
+      const r = await fetch(`/api/v1/projects/${pid}/cover-translations`);
+      const data = await r.json();
+      if (data && (data.status === 'completed' || data.status === 'in_progress')) {
+        renderCoverTranslations(pid, data);
+      }
+      if (data && data.status === 'in_progress') {
+        pollCoverTranslations(pid, null);
+      }
+    } catch {}
+  });
 }
 
 async function uploadDubbingAudio(btn) {
@@ -4951,6 +5084,8 @@ async function saveDashTitles() {
 const _origRefreshDetail = refreshDetail;
 refreshDetail = async function() {
   await _origRefreshDetail();
+  // Hydrate cover-translations view if the dubbing panel rendered one
+  if (typeof ensureCoverTranslationsLoaded === 'function') ensureCoverTranslationsLoaded();
   if (currentProject) {
     // Load sources list
     loadSourcesList();
