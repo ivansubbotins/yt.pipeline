@@ -3470,15 +3470,15 @@ async function refreshDetail() {
         <!-- Titles -->
         <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:6px;">${t('video_titles_label')}</div>
         <div class="options-grid" id="dashTitlesGrid">
-          ${titles.map((t, ti) => `
+          ${titles.map((ttl, ti) => `
             <div class="option-card" id="dtitle-${ti}" onclick="toggleDashTitle(${ti})">
               <div class="check"></div>
               <div class="card-actions">
                 <button onclick="event.stopPropagation(); editDashTitle(${ti})" title="${t('btn_edit')}">✏</button>
                 <button class="btn-delete" onclick="event.stopPropagation(); removeDashTitle(${ti})" title="${t('btn_delete')}">×</button>
               </div>
-              <div class="title-text">${esc(t)}</div>
-              <div class="char-count">${tp('chars_count_suffix', { n: t.length })}</div>
+              <div class="title-text">${esc(ttl)}</div>
+              <div class="char-count">${tp('chars_count_suffix', { n: ttl.length })}</div>
             </div>
           `).join('')}
         </div>
@@ -3968,7 +3968,7 @@ async function refreshDetail() {
   if (files.thumbnails && files.thumbnails.length) {
     filesHtml += `<h3 style="margin-bottom:8px;">${t('covers_section')}</h3>`;
     filesHtml += '<div class="thumbs-grid">';
-    files.thumbnails.forEach(t => { filesHtml += `<img src="${t}" alt="thumbnail">`; });
+    files.thumbnails.forEach(thumb => { filesHtml += `<img src="${thumb}" alt="thumbnail">`; });
     filesHtml += '</div>';
   }
   if (files.teleprompter) {
@@ -5117,12 +5117,12 @@ async function loadChannelContext() {
         </div>
         <div style="margin-bottom:12px;">
           <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">${t('themes_working')}</div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">${(recsData.top_performing_themes||[]).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">${(recsData.top_performing_themes||[]).map(th => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(th)}</span>`).join('')}</div>
         </div>
         ${recsData.underperforming_themes?.length ? `
         <div style="margin-bottom:12px;">
           <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">${t('themes_not_working')}</div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">${recsData.underperforming_themes.map(t => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">${recsData.underperforming_themes.map(th => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(th)}</span>`).join('')}</div>
         </div>` : ''}
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">${t('recommended_topics')}</div>
         <div style="display:grid;gap:6px;">
@@ -5322,12 +5322,12 @@ async function loadRecommendations(opts = {}) {
       ${cachedBadge}
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;color:var(--green);font-weight:600;margin-bottom:4px;">${t('themes_working')}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">${(data.top_performing_themes || []).map(t => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">${(data.top_performing_themes || []).map(th => `<span style="background:rgba(34,197,94,0.1);border:1px solid var(--green);color:var(--green);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(th)}</span>`).join('')}</div>
       </div>
       ${data.underperforming_themes?.length ? `
       <div style="margin-bottom:12px;">
         <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">${t('themes_not_working')}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">${data.underperforming_themes.map(t => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(t)}</span>`).join('')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">${data.underperforming_themes.map(th => `<span style="background:rgba(239,68,68,0.1);border:1px solid var(--red);color:var(--red);padding:3px 8px;border-radius:4px;font-size:11px;">${esc(th)}</span>`).join('')}</div>
       </div>` : ''}
       <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;">${t('recommended_topics')}</div>
       <div style="display:grid;gap:6px;">
