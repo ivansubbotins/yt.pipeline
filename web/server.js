@@ -2316,10 +2316,14 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
       let audioBuffer = null;
       let audioFilename = 'source_audio.mp3';
 
+      // Body was decoded as latin1 to preserve binary integrity for the file part;
+      // text fields that contain UTF-8 (e.g. Cyrillic project_id) must be re-decoded.
+      const fromLatin1 = (s) => Buffer.from(s, 'latin1').toString('utf8');
+
       for (const part of parts) {
         if (part.includes('name="project_id"')) {
           const hEnd = part.indexOf('\r\n\r\n');
-          if (hEnd >= 0) projectId = part.slice(hEnd + 4).trim().replace(/\r\n--$/, '').trim();
+          if (hEnd >= 0) projectId = fromLatin1(part.slice(hEnd + 4).trim().replace(/\r\n--$/, '').trim());
         }
         if (part.includes('name="audio"') && part.includes('filename=')) {
           const fnMatch = part.match(/filename="([^"]+)"/);
@@ -2377,10 +2381,12 @@ Return JSON: ["prompt1", "prompt2", "prompt3"]`
       let videoBuffer = null;
       let videoFilename = 'video.mp4';
 
+      const fromLatin1 = (s) => Buffer.from(s, 'latin1').toString('utf8');
+
       for (const part of parts) {
         if (part.includes('name="express_id"')) {
           const hEnd = part.indexOf('\r\n\r\n');
-          if (hEnd >= 0) expressId = part.slice(hEnd + 4).trim().replace(/\r\n--$/, '').trim();
+          if (hEnd >= 0) expressId = fromLatin1(part.slice(hEnd + 4).trim().replace(/\r\n--$/, '').trim());
         }
         if (part.includes('name="video"') && part.includes('filename=')) {
           const fnMatch = part.match(/filename="([^"]+)"/);
