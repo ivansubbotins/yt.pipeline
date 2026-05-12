@@ -2997,10 +2997,16 @@ async function openProject(id) {
 // ── Refresh Detail ──
 async function refreshDetail() {
   if (!currentProject) return;
-  const data = await api(`/api/project/${currentProject}`);
+  const [data, dubExtra] = await Promise.all([
+    api(`/api/project/${currentProject}`),
+    fetch(`/api/v1/projects/${currentProject}/dubbing`).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
   if (!data.ok) { toast(t('load_error'), true); return; }
 
   const { state, files } = data;
+  // Map of per-language metadata pulled from dubbing/<lang>/metadata.json,
+  // used by the dubbing panel to show translated title/desc/tags with copy buttons.
+  const dubMeta = (dubExtra && dubExtra.languages) || {};
   document.getElementById('detailTopic').textContent = state.topic;
   document.getElementById('detailMeta').textContent = `${t('created_label')} ${new Date(state.created_at).toLocaleDateString(LANG === 'ru' ? 'ru-RU' : 'en-US')}`;
 
@@ -3867,20 +3873,51 @@ async function refreshDetail() {
             ${langs.map(l => {
               const info = allLangs[l.lang_code] || { name: l.lang_name, flag: '—', provider: '' };
               const isOk = l.status === 'completed';
+              const meta = (dubMeta[l.lang_code] && dubMeta[l.lang_code].metadata) || null;
+              const metaId = 'meta-' + l.lang_code;
               return `
-              <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-container-low);border:1px solid ${isOk ? 'var(--green)' : 'var(--red)'};border-radius:8px;">
-                <span style="font-size:20px;">${info.flag}</span>
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:13px;">${info.name}</div>
-                  <div style="font-size:10px;color:var(--muted);">${l.provider || info.provider}${l.translated_title ? ' • ' + esc(l.translated_title) : ''}</div>
+              <div style="background:var(--surface-container-low);border:1px solid ${isOk ? 'var(--green)' : 'var(--red)'};border-radius:8px;">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px;">
+                  <span style="font-size:20px;">${info.flag}</span>
+                  <div style="flex:1;">
+                    <div style="font-weight:600;font-size:13px;">${info.name}</div>
+                    <div style="font-size:10px;color:var(--muted);">${l.provider || info.provider}${l.translated_title ? ' • ' + esc(l.translated_title) : ''}</div>
+                  </div>
+                  <span style="color:${isOk ? 'var(--green)' : 'var(--red)'};font-size:13px;">${isOk ? '✓' : 'Error: ' + esc(l.error || '')}</span>
+                  ${isOk ? `
+                    <audio controls style="height:28px;max-width:150px;" src="/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}" preload="none"></audio>
+                    <button class="btn btn-outline btn-xs" title="Audio (WAV)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}')"><span class="material-symbols-outlined" style="font-size:14px;">download</span></button>
+                    <button class="btn btn-outline btn-xs" title="Subtitles (SRT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}/subtitles.srt')">SRT</button>
+                    <button class="btn btn-outline btn-xs" title="Subtitles (WebVTT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}/subtitles.vtt')">VTT</button>
+                    ${meta ? `<button class="btn btn-outline btn-xs" title="${t('show_translation') || 'Title/desc/tags'}" onclick="toggleData('${metaId}')"><span class="material-symbols-outlined" style="font-size:14px;">translate</span></button>` : ''}
+                  ` : ''}
                 </div>
-                <span style="color:${isOk ? 'var(--green)' : 'var(--red)'};font-size:13px;">${isOk ? '✓' : 'Error: ' + esc(l.error || '')}</span>
-                ${isOk ? `
-                  <audio controls style="height:28px;max-width:150px;" src="/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}" preload="none"></audio>
-                  <button class="btn btn-outline btn-xs" title="Audio (WAV)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}')"><span class="material-symbols-outlined" style="font-size:14px;">download</span></button>
-                  <button class="btn btn-outline btn-xs" title="Subtitles (SRT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}/subtitles.srt')">SRT</button>
-                  <button class="btn btn-outline btn-xs" title="Subtitles (WebVTT)" onclick="window.open('/api/v1/projects/${state.project_id}/dubbing/${l.lang_code}/subtitles.vtt')">VTT</button>
-                ` : ''}
+                ${meta ? `
+                <div id="${metaId}" style="display:none;border-top:1px solid var(--border);padding:12px;background:var(--surface-container);">
+                  <div style="margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                      <div style="font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;">${t('label_title') || 'Title'}</div>
+                      <button class="btn btn-outline btn-xs" onclick="copyText(${JSON.stringify(meta.title || '').replace(/"/g,'&quot;')}, this)"><span class="material-symbols-outlined" style="font-size:13px;">content_copy</span></button>
+                    </div>
+                    <div style="font-size:13px;font-weight:600;">${esc(meta.title || '')}</div>
+                  </div>
+                  <div style="margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                      <div style="font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;">${t('label_description') || 'Description'}</div>
+                      <button class="btn btn-outline btn-xs" onclick="copyText(${JSON.stringify(meta.description || '').replace(/"/g,'&quot;')}, this)"><span class="material-symbols-outlined" style="font-size:13px;">content_copy</span></button>
+                    </div>
+                    <pre style="font-size:11px;white-space:pre-wrap;font-family:inherit;background:var(--surface-container-low);padding:8px;border-radius:6px;max-height:200px;overflow:auto;margin:0;">${esc(meta.description || '')}</pre>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                      <div style="font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;">${t('label_tags') || 'Tags'}</div>
+                      <button class="btn btn-outline btn-xs" onclick="copyText(${JSON.stringify((meta.tags || []).join(', ')).replace(/"/g,'&quot;')}, this)"><span class="material-symbols-outlined" style="font-size:13px;">content_copy</span></button>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                      ${(meta.tags || []).map(tag => `<span style="font-size:11px;background:var(--surface-container-low);border:1px solid var(--border);padding:2px 8px;border-radius:4px;">${esc(tag)}</span>`).join('')}
+                    </div>
+                  </div>
+                </div>` : ''}
               </div>`;
             }).join('')}
           </div>
