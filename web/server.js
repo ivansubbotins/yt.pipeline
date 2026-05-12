@@ -3676,7 +3676,12 @@ Rules:
     // SPA fallback
     const indexPath = path.join(__dirname, 'public', 'index.html');
     if (fs.existsSync(indexPath)) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      });
       fs.createReadStream(indexPath).pipe(res);
     } else {
       res.writeHead(404);
@@ -3685,7 +3690,15 @@ Rules:
     return;
   }
   const ext = path.extname(absPath).toLowerCase();
-  res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+  // HTML pages contain inline JS/i18n we frequently update — never cache them.
+  // Other static assets (images/fonts/etc.) can use their dedicated handlers above.
+  const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+  if (ext === '.html') {
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    headers['Pragma'] = 'no-cache';
+    headers['Expires'] = '0';
+  }
+  res.writeHead(200, headers);
   fs.createReadStream(absPath).pipe(res);
 
 }).listen(PORT, () => {
