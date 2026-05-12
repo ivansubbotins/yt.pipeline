@@ -3026,11 +3026,8 @@ async function refreshDetail() {
     const statusLabels = { pending: t('status_pending'), in_progress: t('status_in_progress'), completed: t('status_completed'), waiting: t('status_waiting'), failed: t('status_failed'), approved: t('status_approved') };
     const statusColors = { pending: 'var(--muted)', completed: 'var(--green)', in_progress: 'var(--blue)', waiting: 'var(--orange)', failed: 'var(--red)', approved: 'var(--purple)' };
 
-    // Check if previous step is completed (strict pipeline order)
-    const prevStepKey = i > 0 ? STEPS[i - 1].key : null;
-    const prevStatus = prevStepKey ? (state.steps[prevStepKey]?.status || 'pending') : 'completed';
-    const prevDone = prevStatus === 'completed' || prevStatus === 'approved';
-    const isLocked = i > 0 && !prevDone;
+    // Steps are unlocked unconditionally — user can run any step in any order.
+    const isLocked = false;
 
     let actionBtn = '';
     if (s.auto && (status === 'pending' || status === 'failed')) {
@@ -4001,32 +3998,17 @@ function togglePanel(id, event) {
   if (icon) icon.style.transform = isHidden ? '' : 'rotate(-90deg)';
 }
 
-// ── Run Step (with validation) ──
+// ── Run Step (soft validation only — never blocks the run) ──
 async function runStepValidated(step, btn) {
-  // Validate prerequisites
-  if (step === 'content_plan') {
-    // Check if angle was selected (from saved state)
-    if (!selectedAngleText) {
-      // Double-check from API
-      if (currentProject) {
-        const ad = await api(`/api/project/${currentProject}/selected-angle`);
-        if (ad.ok && ad.angle) {
-          selectedAngleText = ad.angle;
-        }
-      }
+  // For content_plan: warn if no angle selected, but proceed anyway.
+  if (step === 'content_plan' && !selectedAngleText) {
+    if (currentProject) {
+      const ad = await api(`/api/project/${currentProject}/selected-angle`);
+      if (ad.ok && ad.angle) selectedAngleText = ad.angle;
     }
     if (!selectedAngleText) {
       toast(t('select_angle_first'), true);
-      // Expand research panel and scroll to angles
-      const resPanel = document.getElementById('panel-research');
-      if (resPanel && resPanel.style.display === 'none') {
-        togglePanel('panel-research', { target: {} });
-      }
-      setTimeout(() => {
-        const anglesGrid = document.getElementById('anglesGrid');
-        if (anglesGrid) anglesGrid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-      return;
+      // Just a heads-up — don't block the run.
     }
   }
   return runStep(step, btn);
