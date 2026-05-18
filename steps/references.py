@@ -9,7 +9,10 @@ import json
 import logging
 from pathlib import Path
 
-from steps.base import BaseStep
+import anthropic
+
+from config import ANTHROPIC_FALLBACK_MODEL
+from steps.base import BaseStep, CLAUDE_PRICING
 
 logger = logging.getLogger(__name__)
 
@@ -167,15 +170,43 @@ class ReferencesStep(BaseStep):
             ANALYSIS_SYSTEM_PROMPT
         )
 
-        result_text = ""
-        with self.client.messages.stream(
-            model=self.model,
-            max_tokens=16000,
-            system=system,
-            messages=[{"role": "user", "content": messages_content}],
-        ) as stream:
-            for text in stream.text_stream:
-                result_text += text
+        def _stream_with(model_name: str) -> tuple[str, object]:
+            text_out = ""
+            with self.client.messages.stream(
+                model=model_name,
+                max_tokens=16000,
+                system=system,
+                messages=[{"role": "user", "content": messages_content}],
+            ) as stream:
+                for text in stream.text_stream:
+                    text_out += text
+                return text_out, stream.get_final_message()
+
+        try:
+            result_text, final_msg = _stream_with(self.model)
+            used_model = self.model
+        except anthropic.RateLimitError as rl_err:
+            if ANTHROPIC_FALLBACK_MODEL and ANTHROPIC_FALLBACK_MODEL != self.model:
+                logger.warning(
+                    f"Rate-limited on {self.model}, falling back to "
+                    f"{ANTHROPIC_FALLBACK_MODEL}: {rl_err}"
+                )
+                result_text, final_msg = _stream_with(ANTHROPIC_FALLBACK_MODEL)
+                used_model = ANTHROPIC_FALLBACK_MODEL
+            else:
+                raise
+
+        # Track usage so this step's cost shows up in the dashboard
+        if final_msg is not None and hasattr(final_msg, "usage") and final_msg.usage:
+            inp = final_msg.usage.input_tokens or 0
+            out = final_msg.usage.output_tokens or 0
+            pricing = CLAUDE_PRICING.get(used_model, {"input": 3.0, "output": 15.0})
+            cost = (inp * pricing["input"] + out * pricing["output"]) / 1_000_000
+            self._usage_total["input_tokens"] += inp
+            self._usage_total["output_tokens"] += out
+            self._usage_total["cost_usd"] += cost
+            self._usage_total["calls"] += 1
+            logger.info(f"  Claude vision call ({used_model}): {inp:,} in + {out:,} out = ${cost:.4f}")
 
         try:
             result = json.loads(result_text)
